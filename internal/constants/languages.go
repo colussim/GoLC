@@ -1,6 +1,6 @@
 package constants
 
-import "github.com/colussim/go-cloc/pkg/gcloc/language"
+import "github.com/colussim/gcloc_m/pkg/gcloc/language"
 
 var Languages = language.Languages{
 	"ActionScript": {
