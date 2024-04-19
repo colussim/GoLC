@@ -1,5 +1,0 @@
-
-Number of Repository analyzed in Organization 'demos66' is '39' 
-In Organization 'demos66' the largest number of line of code is <'1 625 332'> and the repository is <'pickuplogitics'>
-
-Reports are located in the Results directory
