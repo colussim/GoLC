@@ -14,6 +14,7 @@ import (
 
 func Getter(src string) (string, error) {
 	spinner := newSpinner(fmt.Sprintf(" Extracting files from %s", src))
+	spinner.Color("green", "bold")
 	spinner.Start()
 	defer spinner.Stop()
 
@@ -62,7 +63,6 @@ func newSpinner(text string) *spinner.Spinner {
 		spinner.CharSets[35],
 		100*time.Millisecond,
 		spinner.WithSuffix(text),
-		spinner.WithColor("green"),
 	)
 }
 
