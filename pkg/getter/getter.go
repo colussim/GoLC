@@ -59,9 +59,10 @@ func Getter(src string) (string, error) {
 
 func newSpinner(text string) *spinner.Spinner {
 	return spinner.New(
-		spinner.CharSets[14],
+		spinner.CharSets[35],
 		100*time.Millisecond,
 		spinner.WithSuffix(text),
+		spinner.WithColor("green"),
 	)
 }
 

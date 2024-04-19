@@ -186,7 +186,7 @@ func AnalyseReposListB(DestinationResult string, user string, AccessToken string
 
 		//	pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s%s", Protocol, user, AccessToken, trimmedURL, project.ProjectKey, project.RepoSlug, pathBranches)
 		pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s.git", Protocol, user, AccessToken, trimmedURL, project.ProjectKey, project.RepoSlug)
-		fmt.Println("Scan PATH :", pathToScan)
+		//fmt.Println("Scan PATH :", pathToScan)
 		outputFileName := fmt.Sprintf("Result_%s", project.RepoSlug)
 
 		params := gcloc.Params{
@@ -471,10 +471,10 @@ func main() {
 				return
 			}
 
-			for _, project := range projects {
+			/*for _, project := range projects {
 				fmt.Printf("Projet: %s, Repo: %s, Branche: %s, Taille: %d\n", project.ProjectKey, project.RepoSlug, project.MainBranch, project.LargestSize)
 
-			}
+			}*/
 			NumberProject1 := int(uintptr(len(projects)))
 			fmt.Printf("\nNumber of Projects : '%d'\n", NumberProject1)
 
