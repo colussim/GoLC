@@ -3,16 +3,16 @@ package gcloc
 import (
 	"fmt"
 
-	"github.com/colussim/go-cloc/pkg/analyzer"
-	"github.com/colussim/go-cloc/pkg/filesystem"
-	"github.com/colussim/go-cloc/pkg/gcloc/language"
-	"github.com/colussim/go-cloc/pkg/gogit"
-	"github.com/colussim/go-cloc/pkg/reporter"
-	"github.com/colussim/go-cloc/pkg/reporter/json"
-	"github.com/colussim/go-cloc/pkg/reporter/prompt"
-	"github.com/colussim/go-cloc/pkg/scanner"
-	"github.com/colussim/go-cloc/pkg/sorter"
-	"github.com/colussim/go-cloc/pkg/utils"
+	"github.com/colussim/gcloc_m/pkg/analyzer"
+	"github.com/colussim/gcloc_m/pkg/filesystem"
+	"github.com/colussim/gcloc_m/pkg/gcloc/language"
+	"github.com/colussim/gcloc_m/pkg/gogit"
+	"github.com/colussim/gcloc_m/pkg/reporter"
+	"github.com/colussim/gcloc_m/pkg/reporter/json"
+	"github.com/colussim/gcloc_m/pkg/reporter/prompt"
+	"github.com/colussim/gcloc_m/pkg/scanner"
+	"github.com/colussim/gcloc_m/pkg/sorter"
+	"github.com/colussim/gcloc_m/pkg/utils"
 )
 
 type Params struct {

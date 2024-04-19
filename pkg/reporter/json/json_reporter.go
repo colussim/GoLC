@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/colussim/go-cloc/pkg/sorter"
+	"github.com/colussim/gcloc_m/pkg/sorter"
 )
 
 type JsonReporter struct {

@@ -9,12 +9,12 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
-	"github.com/colussim/go-cloc/internal/constants"
-	"github.com/colussim/go-cloc/pkg/devops/getgithub"
-	"github.com/colussim/go-cloc/pkg/devops/getgitlab"
-	getbibucketdc "github.com/colussim/go-cloc/pkg/devops/v1/getbitbucketdc"
-	"github.com/colussim/go-cloc/pkg/gcloc"
-	"github.com/colussim/go-cloc/pkg/utils"
+	"github.com/colussim/gcloc_m/internal/constants"
+	getbibucketdc "github.com/colussim/gcloc_m/pkg/devops/getbitbucketdc"
+	"github.com/colussim/gcloc_m/pkg/devops/getgithub"
+	"github.com/colussim/gcloc_m/pkg/devops/getgitlab"
+	"github.com/colussim/gcloc_m/pkg/gcloc"
+	"github.com/colussim/gcloc_m/pkg/utils"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )

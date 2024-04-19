@@ -1,0 +1,11 @@
+go 1.21
+
+use ./pkg/devops/getgithub
+use ./pkg/devops/analyser
+use ./pkg/devops/filesystem
+use ./pkg/devops/gcloc
+use ./pkg/devops/getter
+use ./pkg/devops/reporter
+use ./pkg/devops/scanner
+use ./pkg/devops/sorter
+use ./pkg/devops/utils

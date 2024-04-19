@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/colussim/go-cloc/pkg/scanner"
+	"github.com/colussim/gcloc_m/pkg/scanner"
 )
 
 type FileSorter struct {

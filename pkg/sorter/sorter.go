@@ -3,7 +3,7 @@ package sorter
 import (
 	"sort"
 
-	"github.com/colussim/go-cloc/pkg/scanner"
+	"github.com/colussim/gcloc_m/pkg/scanner"
 )
 
 type Result struct {
