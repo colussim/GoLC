@@ -112,7 +112,7 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken string) ([]Projec
 	nbRepos := 0
 	emptyRepo := 0
 	bitbucketURLBase := "http://ec2-18-194-139-24.eu-central-1.compute.amazonaws.com:7990/"
-	bitbucketURL := fmt.Sprintf("%s%s%s/project", url, baseapi, apiver)
+	bitbucketURL := fmt.Sprintf("%s%s%s/projects", url, baseapi, apiver)
 
 	// Get All Projects
 
@@ -123,8 +123,9 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken string) ([]Projec
 
 	projects, err := fetchAllProjects(bitbucketURL, accessToken)
 	if err != nil {
-		fmt.Println("❌ Error Get All Projects:", err)
-		return
+		fmt.Println("\r❌ Error Get All Projects:", err)
+		spin.Stop()
+		return nil, err
 	}
 	spin.Stop()
 	fmt.Printf("\r✅ Number of projects: %d\n", len(projects))
@@ -139,13 +140,14 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken string) ([]Projec
 		largestRepoBranch = ""
 		largestRepoProject = ""
 
-		urlrepos := fmt.Sprintf("%s%s/%s/projects/%s/repos", url, baseapi, apiver, project.Key)
+		urlrepos := fmt.Sprintf("%s%s%s/projects/%s/repos", url, baseapi, apiver, project.Key)
 
 		// Get Repos for each Project
 
 		repos, err := fetchAllRepos(urlrepos, accessToken)
 		if err != nil {
-			fmt.Println("❌ Get Repos for each Project:", err)
+			fmt.Println("\r❌ Get Repos for each Project:", err)
+			spin.Stop()
 			continue
 		}
 		spin.Stop()
@@ -158,10 +160,10 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken string) ([]Projec
 		spin.Start()
 		for _, repo := range repos {
 
-			//  isRepositoryEmpty(projectKey, repoSlug, accessToken, bitbucketURLBase, apiver string)
 			isEmpty, err := isRepositoryEmpty(project.Key, repo.Slug, accessToken, bitbucketURLBase, apiver)
 			if err != nil {
 				fmt.Printf("❌ Error when Testing if repo is empty %s: %v\n", repo.Name, err)
+				spin.Stop()
 				continue
 			}
 			if !isEmpty {
@@ -171,6 +173,7 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken string) ([]Projec
 				branches, err := fetchAllBranches(urlrepos, accessToken)
 				if err != nil {
 					fmt.Printf("❌ Error when retrieving branches for repo %s: %v\n", repo.Name, err)
+					spin.Stop()
 					continue
 				}
 				// Display Number of branches by repo
@@ -184,6 +187,7 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken string) ([]Projec
 					size, err := fetchBranchSize(project.Key, repo.Slug, branch.Name, accessToken, url, apiver)
 					if err != nil {
 						fmt.Println("❌ Error retrieving branch size:", err)
+						spin.Stop()
 						continue
 					}
 					// Display size of branch

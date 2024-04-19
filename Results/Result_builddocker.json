@@ -1,0 +1,33 @@
+{
+  "TotalFiles": 6,
+  "TotalLines": 329,
+  "TotalBlankLines": 62,
+  "TotalComments": 26,
+  "TotalCodeLines": 241,
+  "Results": [
+    {
+      "Language": "PowerShell",
+      "Files": 3,
+      "Lines": 269,
+      "BlankLines": 54,
+      "Comments": 20,
+      "CodeLines": 195
+    },
+    {
+      "Language": "YAML",
+      "Files": 2,
+      "Lines": 40,
+      "BlankLines": 4,
+      "Comments": 6,
+      "CodeLines": 30
+    },
+    {
+      "Language": "Markdown",
+      "Files": 1,
+      "Lines": 20,
+      "BlankLines": 4,
+      "Comments": 0,
+      "CodeLines": 16
+    }
+  ]
+}

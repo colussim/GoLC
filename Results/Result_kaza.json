@@ -1,0 +1,97 @@
+{
+  "TotalFiles": 526,
+  "TotalLines": 95157,
+  "TotalBlankLines": 14443,
+  "TotalComments": 15684,
+  "TotalCodeLines": 65030,
+  "Results": [
+    {
+      "Language": "PHP",
+      "Files": 295,
+      "Lines": 48971,
+      "BlankLines": 7548,
+      "Comments": 10688,
+      "CodeLines": 30735
+    },
+    {
+      "Language": "JavaScript",
+      "Files": 60,
+      "Lines": 30564,
+      "BlankLines": 4325,
+      "Comments": 4410,
+      "CodeLines": 21829
+    },
+    {
+      "Language": "CSS",
+      "Files": 19,
+      "Lines": 6431,
+      "BlankLines": 996,
+      "Comments": 197,
+      "CodeLines": 5238
+    },
+    {
+      "Language": "Scss",
+      "Files": 55,
+      "Lines": 4860,
+      "BlankLines": 722,
+      "Comments": 359,
+      "CodeLines": 3779
+    },
+    {
+      "Language": "Markdown",
+      "Files": 12,
+      "Lines": 2032,
+      "BlankLines": 516,
+      "Comments": 0,
+      "CodeLines": 1516
+    },
+    {
+      "Language": "Plain Text",
+      "Files": 4,
+      "Lines": 1218,
+      "BlankLines": 274,
+      "Comments": 0,
+      "CodeLines": 944
+    },
+    {
+      "Language": "Json",
+      "Files": 62,
+      "Lines": 567,
+      "BlankLines": 8,
+      "Comments": 0,
+      "CodeLines": 559
+    },
+    {
+      "Language": "YAML",
+      "Files": 4,
+      "Lines": 237,
+      "BlankLines": 10,
+      "Comments": 0,
+      "CodeLines": 227
+    },
+    {
+      "Language": "Makefile",
+      "Files": 1,
+      "Lines": 93,
+      "BlankLines": 23,
+      "Comments": 1,
+      "CodeLines": 69
+    },
+    {
+      "Language": "HTML",
+      "Files": 10,
+      "Lines": 69,
+      "BlankLines": 0,
+      "Comments": 0,
+      "CodeLines": 69
+    },
+    {
+      "Language": "XML",
+      "Files": 4,
+      "Lines": 115,
+      "BlankLines": 21,
+      "Comments": 29,
+      "CodeLines": 65
+    }
+  ]
+}

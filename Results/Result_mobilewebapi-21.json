@@ -1,0 +1,81 @@
+{
+  "TotalFiles": 186,
+  "TotalLines": 11707,
+  "TotalBlankLines": 1727,
+  "TotalComments": 1468,
+  "TotalCodeLines": 8512,
+  "Results": [
+    {
+      "Language": "C#",
+      "Files": 171,
+      "Lines": 10895,
+      "BlankLines": 1631,
+      "Comments": 1453,
+      "CodeLines": 7811
+    },
+    {
+      "Language": "Json",
+      "Files": 5,
+      "Lines": 270,
+      "BlankLines": 13,
+      "Comments": 0,
+      "CodeLines": 257
+    },
+    {
+      "Language": "YAML",
+      "Files": 4,
+      "Lines": 154,
+      "BlankLines": 12,
+      "Comments": 0,
+      "CodeLines": 142
+    },
+    {
+      "Language": "JavaScript",
+      "Files": 1,
+      "Lines": 100,
+      "BlankLines": 9,
+      "Comments": 0,
+      "CodeLines": 91
+    },
+    {
+      "Language": "PowerShell",
+      "Files": 1,
+      "Lines": 130,
+      "BlankLines": 29,
+      "Comments": 13,
+      "CodeLines": 88
+    },
+    {
+      "Language": "HTML",
+      "Files": 1,
+      "Lines": 110,
+      "BlankLines": 24,
+      "Comments": 2,
+      "CodeLines": 84
+    },
+    {
+      "Language": "CSS",
+      "Files": 1,
+      "Lines": 27,
+      "BlankLines": 5,
+      "Comments": 0,
+      "CodeLines": 22
+    },
+    {
+      "Language": "Markdown",
+      "Files": 1,
+      "Lines": 20,
+      "BlankLines": 4,
+      "Comments": 0,
+      "CodeLines": 16
+    },
+    {
+      "Language": "Plain Text",
+      "Files": 1,
+      "Lines": 1,
+      "BlankLines": 0,
+      "Comments": 0,
+      "CodeLines": 1
+    }
+  ]
+}

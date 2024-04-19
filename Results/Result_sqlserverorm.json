@@ -1,0 +1,57 @@
+{
+  "TotalFiles": 492,
+  "TotalLines": 20222,
+  "TotalBlankLines": 2104,
+  "TotalComments": 1853,
+  "TotalCodeLines": 16265,
+  "Results": [
+    {
+      "Language": "JavaScript",
+      "Files": 415,
+      "Lines": 14972,
+      "BlankLines": 1325,
+      "Comments": 1430,
+      "CodeLines": 12217
+    },
+    {
+      "Language": "C#",
+      "Files": 27,
+      "Lines": 2626,
+      "BlankLines": 415,
+      "Comments": 294,
+      "CodeLines": 1917
+    },
+    {
+      "Language": "CSS",
+      "Files": 35,
+      "Lines": 1909,
+      "BlankLines": 236,
+      "Comments": 119,
+      "CodeLines": 1554
+    },
+    {
+      "Language": "HTML",
+      "Files": 6,
+      "Lines": 467,
+      "BlankLines": 104,
+      "Comments": 10,
+      "CodeLines": 353
+    },
+    {
+      "Language": "Plain Text",
+      "Files": 8,
+      "Lines": 215,
+      "BlankLines": 16,
+      "Comments": 0,
+      "CodeLines": 199
+    },
+    {
+      "Language": "Markdown",
+      "Files": 1,
+      "Lines": 33,
+      "BlankLines": 8,
+      "Comments": 0,
+      "CodeLines": 25
+    }
+  ]
+}

@@ -26,13 +26,6 @@ type Repository struct {
 	Path          string `json:"path"`
 }
 
-type ProjectBranch struct {
-	ProjectKey  string
-	RepoSlug    string
-	MainBranch  string
-	LargestSize int
-}
-
 type Project struct {
 	KEY    string `json:"key"`
 	ID     int    `json:"id"`
@@ -61,6 +54,7 @@ type Configuration struct {
 	Url          string
 	Apiver       string
 	Baseapi      string
+	Protocol     string
 }
 
 type Report struct {
@@ -175,6 +169,62 @@ func parseJSONFile(filePath, reponame string) int {
 	//fmt.Printf("\nTotal Lines Of Code : %d\n\n", report.TotalCodeLines)
 
 	return report.TotalCodeLines
+}
+
+func AnalyseReposListB(DestinationResult string, user string, AccessToken string, Protocol string, URL string, DevOps string, repolist []getbibucketdc.ProjectBranch) (cpt int) {
+
+	//var pathBranches string
+	trimmedURL := strings.TrimPrefix(URL, "http://")
+
+	for _, project := range repolist {
+		//fmt.Printf("Projet: %s, Repo: %s, Branche: %s, Taille: %d\n", project.ProjectKey, project.RepoSlug, project.MainBranch, project.LargestSize)
+		// http://mcolussi:OTU0NTk2ODM4NzU5Olfp6bsKkIMp9QbL1qq01gZRA6Ez@ec2-18-194-139-24.eu-central-1.compute.amazonaws.com:7990/scm/jav/bb-java-security-demo.git
+
+		//fmt.Printf("    - %s\n", project.MainBranc)
+
+		//	pathBranches = fmt.Sprintf("?ref=%s", project.MainBranch)
+
+		//	pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s%s", Protocol, user, AccessToken, trimmedURL, project.ProjectKey, project.RepoSlug, pathBranches)
+		pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s.git", Protocol, user, AccessToken, trimmedURL, project.ProjectKey, project.RepoSlug)
+		fmt.Println("Scan PATH :", pathToScan)
+		outputFileName := fmt.Sprintf("Result_%s", project.RepoSlug)
+
+		params := gcloc.Params{
+			Path:              pathToScan,
+			ByFile:            false,
+			ExcludePaths:      []string{},
+			ExcludeExtensions: []string{},
+			IncludeExtensions: []string{},
+			OrderByLang:       false,
+			OrderByFile:       false,
+			OrderByCode:       false,
+			OrderByLine:       false,
+			OrderByBlank:      false,
+			OrderByComment:    false,
+			Order:             "DESC",
+			OutputName:        outputFileName,
+			OutputPath:        DestinationResult,
+			ReportFormats:     []string{"json"},
+		}
+
+		gc, err := gcloc.NewGCloc(params, constants.Languages)
+		if err != nil {
+			fmt.Println("\nError Analyse Repositories: ", err)
+			os.Exit(1)
+		}
+
+		gc.Run()
+		cpt++
+
+		// Remove Repository Directory
+		err1 := os.RemoveAll(gc.Repopath)
+		if err != nil {
+			fmt.Printf("Error deleting Repository Directory: %v\n", err1)
+			return
+		}
+
+	}
+	return cpt
 }
 
 func AnalyseReposList(DestinationResult string, Users string, AccessToken string, DevOps string, Organization string, repolist []Repository1) (cpt int) {
@@ -421,13 +471,14 @@ func main() {
 				return
 			}
 
-			//	var projectList []Project1
 			for _, project := range projects {
 				fmt.Printf("Projet: %s, Repo: %s, Branche: %s, Taille: %d\n", project.ProjectKey, project.RepoSlug, project.MainBranch, project.LargestSize)
 
 			}
 			NumberProject1 := int(uintptr(len(projects)))
 			fmt.Printf("\nNumber of Projects : '%d'\n", NumberProject1)
+
+			NumberRepos = AnalyseReposListB(DestinationResult, AppConfig.Users, AppConfig.AccessToken, AppConfig.Protocol, AppConfig.Url, AppConfig.DevOps, projects)
 
 		}
 	}

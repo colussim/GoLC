@@ -1,0 +1,33 @@
+{
+  "TotalFiles": 3,
+  "TotalLines": 136,
+  "TotalBlankLines": 17,
+  "TotalComments": 8,
+  "TotalCodeLines": 111,
+  "Results": [
+    {
+      "Language": "XML",
+      "Files": 1,
+      "Lines": 76,
+      "BlankLines": 0,
+      "Comments": 0,
+      "CodeLines": 76
+    },
+    {
+      "Language": "Markdown",
+      "Files": 1,
+      "Lines": 26,
+      "BlankLines": 8,
+      "Comments": 0,
+      "CodeLines": 18
+    },
+    {
+      "Language": "Bash",
+      "Files": 1,
+      "Lines": 34,
+      "BlankLines": 9,
+      "Comments": 8,
+      "CodeLines": 17
+    }
+  ]
+}

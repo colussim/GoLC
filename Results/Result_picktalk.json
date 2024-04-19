@@ -1,0 +1,113 @@
+{
+  "TotalFiles": 1804,
+  "TotalLines": 339373,
+  "TotalBlankLines": 38595,
+  "TotalComments": 82710,
+  "TotalCodeLines": 218068,
+  "Results": [
+    {
+      "Language": "JavaScript",
+      "Files": 371,
+      "Lines": 142459,
+      "BlankLines": 12613,
+      "Comments": 41810,
+      "CodeLines": 88036
+    },
+    {
+      "Language": "C#",
+      "Files": 969,
+      "Lines": 123623,
+      "BlankLines": 19413,
+      "Comments": 34285,
+      "CodeLines": 69925
+    },
+    {
+      "Language": "XML",
+      "Files": 26,
+      "Lines": 14170,
+      "BlankLines": 8,
+      "Comments": 0,
+      "CodeLines": 14162
+    },
+    {
+      "Language": "TypeScript",
+      "Files": 148,
+      "Lines": 23580,
+      "BlankLines": 4478,
+      "Comments": 5986,
+      "CodeLines": 13116
+    },
+    {
+      "Language": "SQL",
+      "Files": 61,
+      "Lines": 10635,
+      "BlankLines": 323,
+      "Comments": 63,
+      "CodeLines": 10249
+    },
+    {
+      "Language": "CSS",
+      "Files": 21,
+      "Lines": 8376,
+      "BlankLines": 78,
+      "Comments": 43,
+      "CodeLines": 8255
+    },
+    {
+      "Language": "Json",
+      "Files": 27,
+      "Lines": 5722,
+      "BlankLines": 2,
+      "Comments": 0,
+      "CodeLines": 5720
+    },
+    {
+      "Language": "PowerShell",
+      "Files": 46,
+      "Lines": 5352,
+      "BlankLines": 970,
+      "Comments": 454,
+      "CodeLines": 3928
+    },
+    {
+      "Language": "HTML",
+      "Files": 64,
+      "Lines": 4058,
+      "BlankLines": 512,
+      "Comments": 4,
+      "CodeLines": 3542
+    },
+    {
+      "Language": "Plain Text",
+      "Files": 54,
+      "Lines": 615,
+      "BlankLines": 103,
+      "Comments": 0,
+      "CodeLines": 512
+    },
+    {
+      "Language": "YAML",
+      "Files": 5,
+      "Lines": 417,
+      "BlankLines": 61,
+      "Comments": 6,
+      "CodeLines": 350
+    },
+    {
+      "Language": "Batch",
+      "Files": 10,
+      "Lines": 348,
+      "BlankLines": 27,
+      "Comments": 59,
+      "CodeLines": 262
+    },
+    {
+      "Language": "Markdown",
+      "Files": 2,
+      "Lines": 18,
+      "BlankLines": 7,
+      "Comments": 0,
+      "CodeLines": 11
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "TotalFiles": 6,
+  "TotalLines": 1708,
+  "TotalBlankLines": 302,
+  "TotalComments": 110,
+  "TotalCodeLines": 1296,
+  "Results": [
+    {
+      "Language": "Golang",
+      "Files": 2,
+      "Lines": 1560,
+      "BlankLines": 288,
+      "Comments": 110,
+      "CodeLines": 1162
+    },
+    {
+      "Language": "Json",
+      "Files": 3,
+      "Lines": 103,
+      "BlankLines": 0,
+      "Comments": 0,
+      "CodeLines": 103
+    },
+    {
+      "Language": "Markdown",
+      "Files": 1,
+      "Lines": 45,
+      "BlankLines": 14,
+      "Comments": 0,
+      "CodeLines": 31
+    }
+  ]
+}

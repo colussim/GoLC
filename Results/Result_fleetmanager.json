@@ -1,0 +1,33 @@
+{
+  "TotalFiles": 33,
+  "TotalLines": 46347,
+  "TotalBlankLines": 533,
+  "TotalComments": 140,
+  "TotalCodeLines": 45674,
+  "Results": [
+    {
+      "Language": "Plain Text",
+      "Files": 2,
+      "Lines": 43614,
+      "BlankLines": 168,
+      "Comments": 0,
+      "CodeLines": 43446
+    },
+    {
+      "Language": "C#",
+      "Files": 30,
+      "Lines": 2713,
+      "BlankLines": 361,
+      "Comments": 140,
+      "CodeLines": 2212
+    },
+    {
+      "Language": "Markdown",
+      "Files": 1,
+      "Lines": 20,
+      "BlankLines": 4,
+      "Comments": 0,
+      "CodeLines": 16
+    }
+  ]
+}

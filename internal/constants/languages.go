@@ -8,11 +8,6 @@ var Languages = language.Languages{
 		MultiLineComments: [][]string{{"/*", "*/"}},
 		Extensions:        []string{".as"},
 	},
-	"Assembly": {
-		LineComments:      []string{"//", ";", "#", "@", "|", "!"},
-		MultiLineComments: [][]string{{"*", "*"}},
-		Extensions:        []string{".asm"},
-	},
 	"Abap": {
 		LineComments:      []string{"\""},
 		MultiLineComments: [][]string{{"/*", "*/"}},
@@ -22,16 +17,6 @@ var Languages = language.Languages{
 		LineComments:      []string{"//"},
 		MultiLineComments: [][]string{{"/*", "*/"}},
 		Extensions:        []string{".cls", ".trigger"},
-	},
-	"Batch": {
-		LineComments:      []string{"REM", "rem"},
-		MultiLineComments: [][]string{},
-		Extensions:        []string{".bat"},
-	},
-	"Bash": {
-		LineComments:      []string{"#"},
-		MultiLineComments: [][]string{},
-		Extensions:        []string{".bash", ".sh"},
 	},
 	"C": {
 		LineComments:      []string{"//"},
@@ -56,17 +41,7 @@ var Languages = language.Languages{
 	"COBOL": {
 		LineComments:      []string{"*", "/"},
 		MultiLineComments: [][]string{},
-		Extensions:        []string{".cbl"},
-	},
-	"CoffeeScript": {
-		LineComments:      []string{"#"},
-		MultiLineComments: [][]string{{"###", "###"}},
-		Extensions:        []string{".coffee"},
-	},
-	"Clojure": {
-		LineComments:      []string{";", ";;", "#_"},
-		MultiLineComments: [][]string{},
-		Extensions:        []string{".clj"},
+		Extensions:        []string{".cbl", ".ccp", ".cob", ".cobol", ".cpy"},
 	},
 	"C#": {
 		LineComments:      []string{"//"},
@@ -78,31 +53,6 @@ var Languages = language.Languages{
 		MultiLineComments: [][]string{{"/*", "*/"}},
 		Extensions:        []string{".css"},
 	},
-	"Dart": {
-		LineComments:      []string{"//", "///"},
-		MultiLineComments: [][]string{{"/*", "*/"}},
-		Extensions:        []string{".dart"},
-	},
-	"Elixir": {
-		LineComments:      []string{"#"},
-		MultiLineComments: [][]string{},
-		Extensions:        []string{".ex", ".exs"},
-	},
-	"Erlang": {
-		LineComments:      []string{"%", "%%"},
-		MultiLineComments: [][]string{},
-		Extensions:        []string{".erl"},
-	},
-	"Lua": {
-		LineComments:      []string{"--"},
-		MultiLineComments: [][]string{{"--[[", "]]"}},
-		Extensions:        []string{".lua"},
-	},
-	"Lisp": {
-		LineComments:      []string{";"},
-		MultiLineComments: [][]string{},
-		Extensions:        []string{".lsp", ".lisp"},
-	},
 	"Golang": {
 		LineComments:      []string{"//"},
 		MultiLineComments: [][]string{{"/*", "*/"}},
@@ -112,11 +62,6 @@ var Languages = language.Languages{
 		LineComments:      []string{},
 		MultiLineComments: [][]string{{"<!--", "-->"}},
 		Extensions:        []string{".html", ".htm", ".cshtml", ".vbhtml", ".aspx", ".ascx", ".rhtml", ".erb", ".shtml", ".shtm", "cmp"},
-	},
-	"Haskell": {
-		LineComments:      []string{"--"},
-		MultiLineComments: [][]string{},
-		Extensions:        []string{".hs"},
 	},
 	"Java": {
 		LineComments:      []string{"//"},
@@ -128,90 +73,51 @@ var Languages = language.Languages{
 		MultiLineComments: [][]string{{"/*", "*/"}},
 		Extensions:        []string{".js", ".jsx", ".jsp", ".jspf"},
 	},
-	"Jupyter Notebook": {
-		LineComments:      []string{"#"},
-		MultiLineComments: [][]string{},
-		Extensions:        []string{".ipynb"},
-	},
-	"Json": {
-		LineComments:      []string{},
-		MultiLineComments: [][]string{},
-		Extensions:        []string{".json"},
-	},
 	"Kotlin": {
 		LineComments:      []string{"//"},
 		MultiLineComments: [][]string{{"/*", "*/"}},
 		Extensions:        []string{".kt", ".kts"},
 	},
-	"Markdown": {
-		LineComments:      []string{},
-		MultiLineComments: [][]string{},
-		Extensions:        []string{".md", ".markdown"},
-	},
-	"Maven": {
-		LineComments:      []string{"<!--"},
-		MultiLineComments: [][]string{{"<!--", "-->"}},
-		Extensions:        []string{".maven"},
-	},
-	"Makefile": {
-		LineComments:      []string{"#"},
-		MultiLineComments: [][]string{},
-		Extensions:        []string{"Makefile"},
+	"Flex": {
+		LineComments:      []string{"//"},
+		MultiLineComments: [][]string{{"/*", "*/"}},
+		Extensions:        []string{".as"},
 	},
 	"PHP": {
 		LineComments:      []string{"//", "#"},
 		MultiLineComments: [][]string{{"/*", "*/"}},
-		Extensions:        []string{".php"},
+		Extensions:        []string{".php", ".php3", ".php4", ".php5", ".phtml", ".inc"},
 	},
-	"Perl": {
-		LineComments:      []string{"#"},
-		MultiLineComments: [][]string{{"=", "=cut"}},
-		Extensions:        []string{".pl"},
-	},
-	"Plain Text": {
-		LineComments:      []string{},
-		MultiLineComments: [][]string{},
-		Extensions:        []string{".txt", ".text"},
-	},
-	"PowerShell": {
-		LineComments:      []string{"#"},
-		MultiLineComments: [][]string{},
-		Extensions:        []string{".ps1"},
-	},
-	"Protocol Buffers": {
-		LineComments:      []string{"//"},
-		MultiLineComments: [][]string{},
-		Extensions:        []string{".proto"},
-	},
-	"Processing": {
+	"Objective-C": {
 		LineComments:      []string{"//"},
 		MultiLineComments: [][]string{{"/*", "*/"}},
-		Extensions:        []string{".pde"},
+		Extensions:        []string{".m"},
+	},
+	"Oracle PL/SQL": {
+		LineComments:      []string{"--"},
+		MultiLineComments: [][]string{{"/*", "*/"}},
+		Extensions:        []string{".pkb"},
+	},
+	"PL/I": {
+		LineComments:      []string{"--"},
+		MultiLineComments: [][]string{{"/*", "*/"}},
+		Extensions:        []string{".pl1"},
 	},
 	"Python": {
 		LineComments:      []string{"#"},
 		MultiLineComments: [][]string{{"\"\"\"", "\"\"\""}},
 		Extensions:        []string{".py"},
 	},
-	"R": {
+
+	"RPG": {
 		LineComments:      []string{"#"},
 		MultiLineComments: [][]string{},
-		Extensions:        []string{".r", ".R"},
-	},
-	"Rego": {
-		LineComments:      []string{"#"},
-		MultiLineComments: [][]string{},
-		Extensions:        []string{".rego"},
+		Extensions:        []string{".rpg"},
 	},
 	"Ruby": {
 		LineComments:      []string{"#"},
 		MultiLineComments: [][]string{{"=begin", "=end"}},
 		Extensions:        []string{".rb"},
-	},
-	"Rust": {
-		LineComments:      []string{"//"},
-		MultiLineComments: [][]string{{"/*", "*/"}},
-		Extensions:        []string{".rs"},
 	},
 	"Scala": {
 		LineComments:      []string{"//"},
@@ -238,29 +144,39 @@ var Languages = language.Languages{
 		MultiLineComments: [][]string{{"/*", "*/"}},
 		Extensions:        []string{".ts", ".tsx"},
 	},
-	"Vim": {
-		LineComments:      []string{`"`},
+	"T-SQL": {
+		LineComments:      []string{"--"},
 		MultiLineComments: [][]string{},
-		Extensions:        []string{".vim"},
+		Extensions:        []string{".tsql"},
 	},
 	"Vue": {
 		LineComments:      []string{"<!--"},
 		MultiLineComments: [][]string{{"<!--", "-->"}},
 		Extensions:        []string{".vue"},
 	},
+	"Visual Basic .NET": {
+		LineComments:      []string{"'"},
+		MultiLineComments: [][]string{},
+		Extensions:        []string{".vb"},
+	},
 	"XML": {
 		LineComments:      []string{"<!--"},
 		MultiLineComments: [][]string{{"<!--", "-->"}},
 		Extensions:        []string{".xml", ".XML"},
+	},
+	"XHTML": {
+		LineComments:      []string{"<!--"},
+		MultiLineComments: [][]string{{"<!--", "-->"}},
+		Extensions:        []string{".xhtml"},
 	},
 	"YAML": {
 		LineComments:      []string{"#"},
 		MultiLineComments: [][]string{},
 		Extensions:        []string{".yaml", ".yml"},
 	},
-	"Zsh": {
-		LineComments:      []string{"#"},
+	"Terraform": {
+		LineComments:      []string{},
 		MultiLineComments: [][]string{},
-		Extensions:        []string{".zsh"},
+		Extensions:        []string{".tf"},
 	},
 }

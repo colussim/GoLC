@@ -1,0 +1,57 @@
+{
+  "TotalFiles": 29,
+  "TotalLines": 2519,
+  "TotalBlankLines": 272,
+  "TotalComments": 90,
+  "TotalCodeLines": 2157,
+  "Results": [
+    {
+      "Language": "Json",
+      "Files": 14,
+      "Lines": 1194,
+      "BlankLines": 5,
+      "Comments": 0,
+      "CodeLines": 1189
+    },
+    {
+      "Language": "Golang",
+      "Files": 6,
+      "Lines": 1016,
+      "BlankLines": 187,
+      "Comments": 90,
+      "CodeLines": 739
+    },
+    {
+      "Language": "Markdown",
+      "Files": 5,
+      "Lines": 287,
+      "BlankLines": 79,
+      "Comments": 0,
+      "CodeLines": 208
+    },
+    {
+      "Language": "Bash",
+      "Files": 2,
+      "Lines": 13,
+      "BlankLines": 1,
+      "Comments": 0,
+      "CodeLines": 12
+    },
+    {
+      "Language": "Plain Text",
+      "Files": 1,
+      "Lines": 6,
+      "BlankLines": 0,
+      "Comments": 0,
+      "CodeLines": 6
+    },
+    {
+      "Language": "SQL",
+      "Files": 1,
+      "Lines": 3,
+      "BlankLines": 0,
+      "Comments": 0,
+      "CodeLines": 3
+    }
+  ]
+}

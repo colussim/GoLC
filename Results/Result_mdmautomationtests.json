@@ -1,0 +1,25 @@
+{
+  "TotalFiles": 37,
+  "TotalLines": 7441,
+  "TotalBlankLines": 625,
+  "TotalComments": 780,
+  "TotalCodeLines": 6036,
+  "Results": [
+    {
+      "Language": "C#",
+      "Files": 36,
+      "Lines": 7421,
+      "BlankLines": 621,
+      "Comments": 780,
+      "CodeLines": 6020
+    },
+    {
+      "Language": "Markdown",
+      "Files": 1,
+      "Lines": 20,
+      "BlankLines": 4,
+      "Comments": 0,
+      "CodeLines": 16
+    }
+  ]
+}

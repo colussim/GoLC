@@ -1,0 +1,65 @@
+{
+  "TotalFiles": 240,
+  "TotalLines": 1169953,
+  "TotalBlankLines": 2664,
+  "TotalComments": 412,
+  "TotalCodeLines": 1166877,
+  "Results": [
+    {
+      "Language": "Json",
+      "Files": 26,
+      "Lines": 1144616,
+      "BlankLines": 0,
+      "Comments": 0,
+      "CodeLines": 1144616
+    },
+    {
+      "Language": "SQL",
+      "Files": 151,
+      "Lines": 19941,
+      "BlankLines": 1874,
+      "Comments": 283,
+      "CodeLines": 17784
+    },
+    {
+      "Language": "C#",
+      "Files": 55,
+      "Lines": 4753,
+      "BlankLines": 747,
+      "Comments": 107,
+      "CodeLines": 3899
+    },
+    {
+      "Language": "Python",
+      "Files": 1,
+      "Lines": 386,
+      "BlankLines": 13,
+      "Comments": 12,
+      "CodeLines": 361
+    },
+    {
+      "Language": "YAML",
+      "Files": 4,
+      "Lines": 191,
+      "BlankLines": 19,
+      "Comments": 5,
+      "CodeLines": 167
+    },
+    {
+      "Language": "PowerShell",
+      "Files": 2,
+      "Lines": 56,
+      "BlankLines": 11,
+      "Comments": 4,
+      "CodeLines": 41
+    },
+    {
+      "Language": "XML",
+      "Files": 1,
+      "Lines": 10,
+      "BlankLines": 0,
+      "Comments": 1,
+      "CodeLines": 9
+    }
+  ]
+}

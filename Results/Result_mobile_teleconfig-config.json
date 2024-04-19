@@ -1,0 +1,33 @@
+{
+  "TotalFiles": 26,
+  "TotalLines": 843,
+  "TotalBlankLines": 54,
+  "TotalComments": 75,
+  "TotalCodeLines": 714,
+  "Results": [
+    {
+      "Language": "YAML",
+      "Files": 22,
+      "Lines": 695,
+      "BlankLines": 36,
+      "Comments": 53,
+      "CodeLines": 606
+    },
+    {
+      "Language": "SQL",
+      "Files": 3,
+      "Lines": 128,
+      "BlankLines": 14,
+      "Comments": 22,
+      "CodeLines": 92
+    },
+    {
+      "Language": "Markdown",
+      "Files": 1,
+      "Lines": 20,
+      "BlankLines": 4,
+      "Comments": 0,
+      "CodeLines": 16
+    }
+  ]
+}
