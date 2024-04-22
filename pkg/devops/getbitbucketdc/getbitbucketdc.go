@@ -1,11 +1,13 @@
 package getbibucketdc
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/briandowns/spinner"
@@ -104,22 +106,38 @@ type File struct {
 	Size      int    `json:"size"`
 }
 
-type ExclusionListBit struct {
-	Projects []string `json:"projects"`
-	Repos    []string `json:"repos"`
+type ExclusionList struct {
+	Projects map[string]bool   `json:"projects"`
+	Repos    map[string]string `json:"repos"`
 }
 
-func loadExclusionListBit(filePath string) (ExclusionListBit, error) {
-	var exclusionList ExclusionListBit
-	file, err := os.Open(filePath)
+func loadExclusionList(filename string) (*ExclusionList, error) {
+	file, err := os.Open(filename)
 	if err != nil {
-		return exclusionList, err
+		return nil, err
 	}
 	defer file.Close()
 
-	err = json.NewDecoder(file).Decode(&exclusionList)
-	if err != nil {
-		return exclusionList, err
+	exclusionList := &ExclusionList{
+		Projects: make(map[string]bool),
+		Repos:    make(map[string]string),
+	}
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		parts := strings.Split(line, "/")
+		if len(parts) == 1 {
+			// Get Projet
+			exclusionList.Projects[parts[0]] = true
+		} else if len(parts) == 2 {
+			// Get Repos
+			exclusionList.Repos[line] = parts[0]
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
 	}
 
 	return exclusionList, nil
@@ -144,7 +162,7 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile str
 	spin.Color("green", "bold")
 	spin.Start()
 
-	exclusionList, err := loadExclusionListBit(exlusionfile)
+	exclusionList, err := loadExclusionList(exlusionfile)
 	if err != nil {
 		fmt.Println("\r❌ Error Read Exclusion File <.cloc_bitbucket_ignore >:", err)
 		spin.Stop()
@@ -174,7 +192,7 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile str
 
 		// Get Repos for each Project
 
-		repos, err := fetchAllRepos(urlrepos, accessToken)
+		repos, err := fetchAllRepos(urlrepos, accessToken, exclusionList)
 		if err != nil {
 			fmt.Println("\r❌ Get Repos for each Project:", err)
 			spin.Stop()
@@ -267,7 +285,7 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile str
 	return importantBranches, nil
 }
 
-func fetchAllProjects(url string, accessToken string, exclusionList ExclusionListBit) ([]Project, error) {
+func fetchAllProjects(url string, accessToken string, exclusionList *ExclusionList) ([]Project, error) {
 	var allProjects []Project
 	for {
 		projectsResp, err := fetchProjects(url, accessToken)
@@ -276,9 +294,10 @@ func fetchAllProjects(url string, accessToken string, exclusionList ExclusionLis
 		}
 		//allProjects = append(allProjects, projectsResp.Values...)
 		for _, project := range projectsResp.Values {
-			if !isProjectExcluded(project.Key, exclusionList) {
+			if !isProjectExcluded(exclusionList, project.Key) {
 				allProjects = append(allProjects, project)
 			}
+
 		}
 
 		if projectsResp.IsLastPage {
@@ -317,23 +336,40 @@ func fetchProjects(url string, accessToken string) (*ProjectResponse, error) {
 	return &projectsResp, nil
 }
 
-func isProjectExcluded(projectKey string, exclusionList ExclusionListBit) bool {
-	for _, excludedProject := range exclusionList.Projects {
-		if excludedProject == projectKey {
+func isProjectExcluded(exclusionList *ExclusionList, project string) bool {
+	_, excluded := exclusionList.Projects[project]
+	return excluded
+}
+
+func isRepoExcluded(exclusionList *ExclusionList, repo string) bool {
+	_, excluded := exclusionList.Repos[repo]
+	return excluded
+}
+
+/*func isRepoExcluded(exclusionList *ExclusionList, repo Repo) bool {
+
+	for _, exclusion := range exclusionList.Exclusions {
+		if exclusion.Project == repo.Project.Key && exclusion.Repo == repo.Slug {
 			return true
 		}
 	}
 	return false
-}
+}*/
 
-func fetchAllRepos(url string, accessToken string) ([]Repo, error) {
+func fetchAllRepos(url string, accessToken string, exclusionList *ExclusionList) ([]Repo, error) {
 	var allRepos []Repo
 	for {
 		reposResp, err := fetchRepos(url, accessToken)
 		if err != nil {
 			return nil, err
 		}
-		allRepos = append(allRepos, reposResp.Values...)
+		for _, repo := range reposResp.Values {
+			if !isRepoExcluded(exclusionList, repo.Slug) {
+				allRepos = append(allRepos, repo)
+			}
+		}
+		//allRepos = append(allRepos, reposResp.Values...)
+
 		if reposResp.IsLastPage {
 			break
 		}

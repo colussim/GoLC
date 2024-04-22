@@ -164,7 +164,7 @@ func AnalyseReposListB(DestinationResult string, user string, AccessToken string
 	for _, project := range repolist {
 
 		pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s.git", Protocol, user, AccessToken, trimmedURL, project.ProjectKey, project.RepoSlug)
-		outputFileName := fmt.Sprintf("Result_%s", project.RepoSlug)
+		outputFileName := fmt.Sprintf("Result_%s_%s", project.ProjectKey, project.RepoSlug)
 
 		params := gcloc.Params{
 			Path:              pathToScan,
