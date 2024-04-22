@@ -2,32 +2,10 @@ package utils
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 )
-
-type ExclusionListBit struct {
-	Projects []string `json:"projects"`
-	Repos    []string `json:"repos"`
-}
-
-func loadExclusionListBit(filePath string) (ExclusionListBit, error) {
-	var exclusionList ExclusionListBit
-	file, err := os.Open(filePath)
-	if err != nil {
-		return exclusionList, err
-	}
-	defer file.Close()
-
-	err = json.NewDecoder(file).Decode(&exclusionList)
-	if err != nil {
-		return exclusionList, err
-	}
-
-	return exclusionList, nil
-}
 
 func fileExists(fileexclusion string) bool {
 	_, err := os.Stat(fileexclusion)

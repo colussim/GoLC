@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
-"github.com/colussim/gcloc_m/pkg/utils"
+
 	"github.com/briandowns/spinner"
-	//"github.com/colussim/gcloc_m/pkg/utils"
+	//	"github.com/colussim/gcloc_m/pkg/utils"
 )
 
 type ProjectBranch struct {
@@ -108,6 +109,22 @@ type ExclusionListBit struct {
 	Repos    []string `json:"repos"`
 }
 
+func loadExclusionListBit(filePath string) (ExclusionListBit, error) {
+	var exclusionList ExclusionListBit
+	file, err := os.Open(filePath)
+	if err != nil {
+		return exclusionList, err
+	}
+	defer file.Close()
+
+	err = json.NewDecoder(file).Decode(&exclusionList)
+	if err != nil {
+		return exclusionList, err
+	}
+
+	return exclusionList, nil
+}
+
 func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile string) ([]ProjectBranch, error) {
 
 	var largestRepoSize int
@@ -127,7 +144,12 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile str
 	spin.Color("green", "bold")
 	spin.Start()
 
-	exclusionList, err := utils.loadExclusionListBit(exlusionfile)
+	exclusionList, err := loadExclusionListBit(exlusionfile)
+	if err != nil {
+		fmt.Println("\r❌ Error Read Exclusion File <.cloc_bitbucket_ignore >:", err)
+		spin.Stop()
+		return nil, err
+	}
 
 	projects, err := fetchAllProjects(bitbucketURL, accessToken, exclusionList)
 	if err != nil {
