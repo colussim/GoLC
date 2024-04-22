@@ -179,111 +179,106 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile, pr
 		bitbucketURL := fmt.Sprintf("%s%s%s/projects", url, baseapi, apiver)
 	}*/
 
-	if len(project) == 0 && len(repo) == 0 {
-		// Action 1
-		// ...
-	} else if len(project) == 0 && len(repo) == 1 {
-		// Action 1
-		// ...
+	if len(project) == 0 && (len(repo) == 0 || len(repo) == 1) {
+
+		projects, err := fetchAllProjects(bitbucketURL, accessToken, exclusionList)
+		if err != nil {
+			fmt.Println("\r❌ Error Get All Projects:", err)
+			spin.Stop()
+			return nil, err
+		}
+		spin.Stop()
+		fmt.Printf("\n✅ Number of projects: %d\n", len(projects))
+
+		// Get Repos for each Project
+		spin.Prefix = "Get Repos for each Project..."
+		spin.Start()
+		for _, project := range projects {
+			// Display Project Name
+			//	fmt.Printf("✅ Projet: %s - Key: %s\n", project.Name, project.Key)
+			largestRepoSize = 0
+			largestRepoBranch = ""
+			largestRepoProject = ""
+
+			urlrepos := fmt.Sprintf("%s%s%s/projects/%s/repos", url, baseapi, apiver, project.Key)
+
+			// Get Repos for each Project
+
+			repos, err := fetchAllRepos(urlrepos, accessToken, exclusionList)
+			if err != nil {
+				fmt.Println("\r❌ Get Repos for each Project:", err)
+				spin.Stop()
+				continue
+			}
+			spin.Stop()
+			nbRepos += len(repos)
+			// Display size of Repo
+			// fmt.Printf("\t✅ Number of repos: %d\n", len(repos))
+
+			// Get repo with largest branch size
+			spin.Prefix = "Analysis of repos Finds the largest branch size..."
+			spin.Start()
+			for _, repo := range repos {
+
+				isEmpty, err := isRepositoryEmpty(project.Key, repo.Slug, accessToken, bitbucketURLBase, apiver)
+				if err != nil {
+					fmt.Printf("❌ Error when Testing if repo is empty %s: %v\n", repo.Name, err)
+					spin.Stop()
+					continue
+				}
+				if !isEmpty {
+
+					urlrepos := fmt.Sprintf("%s%s%s/projects/%s/repos/%s/branches", url, baseapi, apiver, project.Key, repo.Slug)
+
+					branches, err := fetchAllBranches(urlrepos, accessToken)
+					if err != nil {
+						fmt.Printf("❌ Error when retrieving branches for repo %s: %v\n", repo.Name, err)
+						spin.Stop()
+						continue
+					}
+					// Display Number of branches by repo
+					// fmt.Printf("\r\t✅ Repo: %s - Number of branches: %d\n", repo.Name, len(branches))
+
+					// Finding the branch with the largest size
+					for _, branch := range branches {
+						// Display Branch name
+						// fmt.Printf("\t\t✅ Branche: %s\n", branch.Name)
+
+						size, err := fetchBranchSize(project.Key, repo.Slug, branch.Name, accessToken, url, apiver)
+						if err != nil {
+							fmt.Println("❌ Error retrieving branch size:", err)
+							spin.Stop()
+							continue
+						}
+						// Display size of branch
+						// fmt.Printf("\t\t\t✅ Size of branch: %s \n", sizemb)
+
+						if size > largestRepoSize {
+							largestRepoSize = size
+							largestRepoProject = project.Name
+							largestRepoBranch = branch.Name
+						}
+
+					}
+					importantBranches = append(importantBranches, ProjectBranch{
+						ProjectKey:  project.Key,
+						RepoSlug:    repo.Slug,
+						MainBranch:  largestRepoBranch,
+						LargestSize: largestRepoSize,
+					})
+				} else {
+					emptyRepo++
+				}
+			}
+			spin.Stop()
+
+		}
 	} else if len(project) == 1 && len(repo) == 0 {
 		// Action 2
 		// ...
 	} else {
 		// Action 3
 		// ...
-	}
-
-	projects, err := fetchAllProjects(bitbucketURL, accessToken, exclusionList)
-	if err != nil {
-		fmt.Println("\r❌ Error Get All Projects:", err)
-		spin.Stop()
-		return nil, err
-	}
-	spin.Stop()
-	fmt.Printf("\n✅ Number of projects: %d\n", len(projects))
-
-	// Get Repos for each Project
-	spin.Prefix = "Get Repos for each Project..."
-	spin.Start()
-	for _, project := range projects {
-		// Display Project Name
-		//	fmt.Printf("✅ Projet: %s - Key: %s\n", project.Name, project.Key)
-		largestRepoSize = 0
-		largestRepoBranch = ""
-		largestRepoProject = ""
-
-		urlrepos := fmt.Sprintf("%s%s%s/projects/%s/repos", url, baseapi, apiver, project.Key)
-
-		// Get Repos for each Project
-
-		repos, err := fetchAllRepos(urlrepos, accessToken, exclusionList)
-		if err != nil {
-			fmt.Println("\r❌ Get Repos for each Project:", err)
-			spin.Stop()
-			continue
-		}
-		spin.Stop()
-		nbRepos += len(repos)
-		// Display size of Repo
-		// fmt.Printf("\t✅ Number of repos: %d\n", len(repos))
-
-		// Get repo with largest branch size
-		spin.Prefix = "Analysis of repos Finds the largest branch size..."
-		spin.Start()
-		for _, repo := range repos {
-
-			isEmpty, err := isRepositoryEmpty(project.Key, repo.Slug, accessToken, bitbucketURLBase, apiver)
-			if err != nil {
-				fmt.Printf("❌ Error when Testing if repo is empty %s: %v\n", repo.Name, err)
-				spin.Stop()
-				continue
-			}
-			if !isEmpty {
-
-				urlrepos := fmt.Sprintf("%s%s%s/projects/%s/repos/%s/branches", url, baseapi, apiver, project.Key, repo.Slug)
-
-				branches, err := fetchAllBranches(urlrepos, accessToken)
-				if err != nil {
-					fmt.Printf("❌ Error when retrieving branches for repo %s: %v\n", repo.Name, err)
-					spin.Stop()
-					continue
-				}
-				// Display Number of branches by repo
-				// fmt.Printf("\r\t✅ Repo: %s - Number of branches: %d\n", repo.Name, len(branches))
-
-				// Finding the branch with the largest size
-				for _, branch := range branches {
-					// Display Branch name
-					// fmt.Printf("\t\t✅ Branche: %s\n", branch.Name)
-
-					size, err := fetchBranchSize(project.Key, repo.Slug, branch.Name, accessToken, url, apiver)
-					if err != nil {
-						fmt.Println("❌ Error retrieving branch size:", err)
-						spin.Stop()
-						continue
-					}
-					// Display size of branch
-					// fmt.Printf("\t\t\t✅ Size of branch: %s \n", sizemb)
-
-					if size > largestRepoSize {
-						largestRepoSize = size
-						largestRepoProject = project.Name
-						largestRepoBranch = branch.Name
-					}
-
-				}
-				importantBranches = append(importantBranches, ProjectBranch{
-					ProjectKey:  project.Key,
-					RepoSlug:    repo.Slug,
-					MainBranch:  largestRepoBranch,
-					LargestSize: largestRepoSize,
-				})
-			} else {
-				emptyRepo++
-			}
-		}
-		spin.Stop()
-
 	}
 	largestRepoSize = 0
 	largestRepoBranch = ""
