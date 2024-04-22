@@ -15,8 +15,6 @@ import (
 	"github.com/colussim/gcloc_m/pkg/devops/getgitlab"
 	"github.com/colussim/gcloc_m/pkg/gcloc"
 	"github.com/colussim/gcloc_m/pkg/utils"
-	"golang.org/x/text/language"
-	"golang.org/x/text/message"
 )
 
 type Repository struct {
@@ -121,6 +119,16 @@ func (r GitlabRepository) GetPath() string {
 }
 func (r GitlabRepository) GetID() int {
 	return r.ID
+}
+
+func formatCodeLines(numLines float64) string {
+	if numLines >= 1000000 {
+		return fmt.Sprintf("%.2fM", numLines/1000000)
+	} else if numLines >= 1000 {
+		return fmt.Sprintf("%.2fK", numLines/1000)
+	} else {
+		return fmt.Sprintf("%.0f", numLines)
+	}
 }
 
 // Read Config file : Config.json
@@ -323,6 +331,7 @@ func main() {
 	var AppConfig = GetConfig(config1)
 	var largestLineCounter int
 	var nameRepos2 string
+	var nameProject string
 	var NumberRepos int
 	var fileexclusion = ".clocignore"
 
@@ -454,17 +463,12 @@ func main() {
 
 			fileexclusion = ".cloc_bitbucket_ignore"
 
-			projects, err := getbibucketdc.GetProjectBitbucketList(AppConfig.Url, AppConfig.Baseapi, AppConfig.Apiver, AppConfig.AccessToken, fileexclusion)
+			projects, err := getbibucketdc.GetProjectBitbucketList(AppConfig.Url, AppConfig.Baseapi, AppConfig.Apiver, AppConfig.AccessToken, fileexclusion, AppConfig.Project, AppConfig.Repos)
 			if err != nil {
 				fmt.Printf("❌ Error Get Info Projects in Bitbucket server '%s' : ", err)
 				return
 			}
 
-			// Degug show List of Projects
-			/*for _, project := range projects {
-				fmt.Printf("Projet: %s, Repo: %s, Branche: %s, Taille: %d\n", project.ProjectKey, project.RepoSlug, project.MainBranch, project.LargestSize)
-
-			}*/
 			// Run scanning repositories
 			NumberRepos = AnalyseReposListB(DestinationResult, AppConfig.Users, AppConfig.AccessToken, AppConfig.Protocol, AppConfig.Url, AppConfig.DevOps, projects)
 
@@ -482,26 +486,32 @@ func main() {
 		return
 	}
 
-	// Loop through each file
 	for _, fileInfo := range fileInfos {
 		if !fileInfo.IsDir() && filepath.Ext(fileInfo.Name()) == ".json" {
 			filePath := filepath.Join(DestinationResult, fileInfo.Name())
-			nameRepos := strings.Split(fileInfo.Name(), "_")
-			nameRepos1 := strings.Split(nameRepos[1], ".")
-			TotalCodeLines := parseJSONFile(filePath, nameRepos1[0])
+			nameParts := strings.Split(fileInfo.Name(), "_")
+			if len(nameParts) < 3 {
+
+				continue
+			}
+			repoNameParts := strings.Split(nameParts[2], ".")
+			TotalCodeLines := parseJSONFile(filePath, repoNameParts[0])
 			if TotalCodeLines > largestLineCounter {
 				largestLineCounter = TotalCodeLines
-				nameRepos2 = nameRepos1[0]
+				nameRepos2 = repoNameParts[0]
+				nameProject = nameParts[1]
 			}
 		}
 	}
 	spin.Stop()
 
-	p := message.NewPrinter(language.English)
-	s := strings.Replace(p.Sprintf("%d", largestLineCounter), ",", " ", -1)
+	//p := message.NewPrinter(language.English)
+	//s := strings.Replace(p.Sprintf("%d", largestLineCounter), ",", " ", -1)
+	s := formatCodeLines(float64(largestLineCounter))
+	//	s := formatCodeLines(formattedLines)
 
 	message0 := fmt.Sprintf("\n✅ Number of Repository analyzed in Organization '%s' is '%d' \n", AppConfig.Organization, NumberRepos)
-	message1 := fmt.Sprintf("✅ In Organization '%s' the largest number of line of code is <'%s'> and the repository is <'%s'>\n\n✅ Reports are located in the <'Results'> directory", AppConfig.Organization, s, nameRepos2)
+	message1 := fmt.Sprintf("\n\n✅ In Organization '%s' the largest number of line of code is <'%s'> in the repository <'%s'> in Project :<'%s'>\n\n✅ Reports are located in the <'Results'> directory", AppConfig.Organization, s, nameRepos2, nameProject)
 	message2 := message0 + message1
 	//fmt.Println(message0)
 	fmt.Println(message1)

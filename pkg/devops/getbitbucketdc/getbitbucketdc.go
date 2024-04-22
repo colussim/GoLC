@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
-	//	"github.com/colussim/gcloc_m/pkg/utils"
 )
 
 type ProjectBranch struct {
@@ -107,8 +106,8 @@ type File struct {
 }
 
 type ExclusionList struct {
-	Projects map[string]bool   `json:"projects"`
-	Repos    map[string]string `json:"repos"`
+	Projects map[string]bool `json:"projects"`
+	Repos    map[string]bool `json:"repos"`
 }
 
 func loadExclusionList(filename string) (*ExclusionList, error) {
@@ -120,7 +119,7 @@ func loadExclusionList(filename string) (*ExclusionList, error) {
 
 	exclusionList := &ExclusionList{
 		Projects: make(map[string]bool),
-		Repos:    make(map[string]string),
+		Repos:    make(map[string]bool),
 	}
 
 	scanner := bufio.NewScanner(file)
@@ -132,7 +131,7 @@ func loadExclusionList(filename string) (*ExclusionList, error) {
 			exclusionList.Projects[parts[0]] = true
 		} else if len(parts) == 2 {
 			// Get Repos
-			exclusionList.Repos[line] = parts[0]
+			exclusionList.Repos[line] = true
 		}
 	}
 
@@ -143,7 +142,7 @@ func loadExclusionList(filename string) (*ExclusionList, error) {
 	return exclusionList, nil
 }
 
-func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile string) ([]ProjectBranch, error) {
+func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile, project, repo string) ([]ProjectBranch, error) {
 
 	var largestRepoSize int
 	var largestRepoProject, largestRepoBranch string
@@ -163,10 +162,35 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile str
 	spin.Start()
 
 	exclusionList, err := loadExclusionList(exlusionfile)
+
 	if err != nil {
 		fmt.Println("\r❌ Error Read Exclusion File <.cloc_bitbucket_ignore >:", err)
 		spin.Stop()
 		return nil, err
+	}
+
+	/*if len(project) != 0 {
+		if len(repo) != 0 {
+			bitbucketURL := fmt.Sprintf("%s%s%s/project", url, baseapi, apiver)
+		} else {
+			bitbucketURL := fmt.Sprintf("%s%s%s/projects/%s", url, baseapi, apiver, project)
+		}
+	} else {
+		bitbucketURL := fmt.Sprintf("%s%s%s/projects", url, baseapi, apiver)
+	}*/
+
+	if len(project) == 0 && len(repo) == 0 {
+		// Action 1
+		// ...
+	} else if len(project) == 0 && len(repo) == 1 {
+		// Action 1
+		// ...
+	} else if len(project) == 1 && len(repo) == 0 {
+		// Action 2
+		// ...
+	} else {
+		// Action 3
+		// ...
 	}
 
 	projects, err := fetchAllProjects(bitbucketURL, accessToken, exclusionList)
@@ -176,7 +200,7 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile str
 		return nil, err
 	}
 	spin.Stop()
-	fmt.Printf("\r✅ Number of projects: %d\n", len(projects))
+	fmt.Printf("\n✅ Number of projects: %d\n", len(projects))
 
 	// Get Repos for each Project
 	spin.Prefix = "Get Repos for each Project..."
@@ -297,7 +321,6 @@ func fetchAllProjects(url string, accessToken string, exclusionList *ExclusionLi
 			if !isProjectExcluded(exclusionList, project.Key) {
 				allProjects = append(allProjects, project)
 			}
-
 		}
 
 		if projectsResp.IsLastPage {
@@ -346,16 +369,6 @@ func isRepoExcluded(exclusionList *ExclusionList, repo string) bool {
 	return excluded
 }
 
-/*func isRepoExcluded(exclusionList *ExclusionList, repo Repo) bool {
-
-	for _, exclusion := range exclusionList.Exclusions {
-		if exclusion.Project == repo.Project.Key && exclusion.Repo == repo.Slug {
-			return true
-		}
-	}
-	return false
-}*/
-
 func fetchAllRepos(url string, accessToken string, exclusionList *ExclusionList) ([]Repo, error) {
 	var allRepos []Repo
 	for {
@@ -364,7 +377,9 @@ func fetchAllRepos(url string, accessToken string, exclusionList *ExclusionList)
 			return nil, err
 		}
 		for _, repo := range reposResp.Values {
-			if !isRepoExcluded(exclusionList, repo.Slug) {
+			KEYTEST := repo.Project.Key + "/" + repo.Slug
+
+			if !isRepoExcluded(exclusionList, KEYTEST) {
 				allRepos = append(allRepos, repo)
 			}
 		}
