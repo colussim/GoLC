@@ -49,6 +49,7 @@ type Configuration struct {
 	AccessToken  string
 	Organization string
 	DevOps       string
+	Project      string
 	Repos        string
 	Branch       string
 	Url          string
@@ -122,25 +123,6 @@ func (r GitlabRepository) GetID() int {
 	return r.ID
 }
 
-// Implémentation pour getbitbucket.Repository
-type BitbucketRepository struct {
-	ID            int    `json:"id"`
-	Name          string `json:"name"`
-	DefaultBranch string `json:"default_branch"`
-	Path          string `json:"path_with_namespace"`
-	Empty         bool   `json:"empty_repo"`
-}
-
-func (r BitbucketRepository) GetName() string {
-	return r.Name
-}
-func (r BitbucketRepository) GetPath() string {
-	return r.Path
-}
-func (r BitbucketRepository) GetID() int {
-	return r.ID
-}
-
 // Read Config file : Config.json
 func GetConfig(configjs Configuration) Configuration {
 
@@ -171,6 +153,7 @@ func parseJSONFile(filePath, reponame string) int {
 	return report.TotalCodeLines
 }
 
+// Analyse Repositories bitbucket DC
 func AnalyseReposListB(DestinationResult string, user string, AccessToken string, Protocol string, URL string, DevOps string, repolist []getbibucketdc.ProjectBranch) (cpt int) {
 
 	//var pathBranches string
@@ -182,11 +165,13 @@ func AnalyseReposListB(DestinationResult string, user string, AccessToken string
 
 		//fmt.Printf("    - %s\n", project.MainBranc)
 
-		//	pathBranches = fmt.Sprintf("?ref=%s", project.MainBranch)
+		pathBranches := fmt.Sprintf("?ref=%s", project.MainBranch)
+		//pathBranches := project.MainBranch
+		//	browse?at=refs%2Fheads%2Fmain
 
-		//	pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s%s", Protocol, user, AccessToken, trimmedURL, project.ProjectKey, project.RepoSlug, pathBranches)
-		pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s.git", Protocol, user, AccessToken, trimmedURL, project.ProjectKey, project.RepoSlug)
-		//fmt.Println("Scan PATH :", pathToScan)
+		pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s.git%s", Protocol, user, AccessToken, trimmedURL, project.ProjectKey, project.RepoSlug, pathBranches)
+		//pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s.git", Protocol, user, AccessToken, trimmedURL, project.ProjectKey, project.RepoSlug)
+		fmt.Println("Scan PATH :", pathToScan)
 		outputFileName := fmt.Sprintf("Result_%s", project.RepoSlug)
 
 		params := gcloc.Params{
@@ -219,7 +204,7 @@ func AnalyseReposListB(DestinationResult string, user string, AccessToken string
 		// Remove Repository Directory
 		err1 := os.RemoveAll(gc.Repopath)
 		if err != nil {
-			fmt.Printf("Error deleting Repository Directory: %v\n", err1)
+			fmt.Printf("❌ Error deleting Repository Directory: %v\n", err1)
 			return
 		}
 
@@ -290,7 +275,7 @@ func AnalyseReposList(DestinationResult string, Users string, AccessToken string
 func AnalyseRun(params gcloc.Params, reponame string) {
 	gc, err := gcloc.NewGCloc(params, constants.Languages)
 	if err != nil {
-		fmt.Println("\nError Analyse Repositories: ", err)
+		fmt.Println("\n❌ Error Analyse Repositories: ", err)
 		os.Exit(1)
 	}
 
@@ -357,7 +342,7 @@ func main() {
 	if err == nil {
 		err := os.RemoveAll(DestinationResult)
 		if err != nil {
-			fmt.Printf("Error deleting directory: %s\n", err)
+			fmt.Printf("❌ Error deleting directory: %s\n", err)
 			os.Exit(1)
 		}
 		if err := os.MkdirAll(DestinationResult, os.ModePerm); err != nil {
@@ -375,7 +360,7 @@ func main() {
 	// Create Global Report File
 	file, err := os.Create(GlobalReport)
 	if err != nil {
-		fmt.Println("Error creating file:", err)
+		fmt.Println("❌ Error creating file:", err)
 		return
 	}
 	defer file.Close()
@@ -471,13 +456,12 @@ func main() {
 				return
 			}
 
+			// Degug show List of Projects
 			/*for _, project := range projects {
 				fmt.Printf("Projet: %s, Repo: %s, Branche: %s, Taille: %d\n", project.ProjectKey, project.RepoSlug, project.MainBranch, project.LargestSize)
 
 			}*/
-			NumberProject1 := int(uintptr(len(projects)))
-			fmt.Printf("\nNumber of Projects : '%d'\n", NumberProject1)
-
+			// Run scanning repositories
 			NumberRepos = AnalyseReposListB(DestinationResult, AppConfig.Users, AppConfig.AccessToken, AppConfig.Protocol, AppConfig.Url, AppConfig.DevOps, projects)
 
 		}
@@ -490,7 +474,7 @@ func main() {
 	// List files in the directory
 	fileInfos, err := os.ReadDir(DestinationResult)
 	if err != nil {
-		fmt.Println("Error listing files:", err)
+		fmt.Println("❌ Error listing files:", err)
 		return
 	}
 
@@ -512,10 +496,10 @@ func main() {
 	p := message.NewPrinter(language.English)
 	s := strings.Replace(p.Sprintf("%d", largestLineCounter), ",", " ", -1)
 
-	message0 := fmt.Sprintf("\nNumber of Repository analyzed in Organization '%s' is '%d' \n", AppConfig.Organization, NumberRepos)
-	message1 := fmt.Sprintf("In Organization '%s' the largest number of line of code is <'%s'> and the repository is <'%s'>\n\nReports are located in the Results directory", AppConfig.Organization, s, nameRepos2)
+	message0 := fmt.Sprintf("\n✅ Number of Repository analyzed in Organization '%s' is '%d' \n", AppConfig.Organization, NumberRepos)
+	message1 := fmt.Sprintf("✅ In Organization '%s' the largest number of line of code is <'%s'> and the repository is <'%s'>\n\n✅ Reports are located in the <'Results'> directory", AppConfig.Organization, s, nameRepos2)
 	message2 := message0 + message1
-	fmt.Println(message0)
+	//fmt.Println(message0)
 	fmt.Println(message1)
 
 	// Write message in Gobal Report File
