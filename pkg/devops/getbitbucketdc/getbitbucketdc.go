@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
+	//"github.com/colussim/gcloc_m/pkg/utils"
 )
 
 type ProjectBranch struct {
@@ -102,7 +103,7 @@ type File struct {
 	Size      int    `json:"size"`
 }
 
-func GetProjectBitbucketList(url, baseapi, apiver, accessToken string) ([]ProjectBranch, error) {
+func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile string) ([]ProjectBranch, error) {
 
 	var largestRepoSize int
 	var largestRepoProject, largestRepoBranch string
@@ -120,6 +121,8 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken string) ([]Projec
 	spin.Prefix = "Get Projects... "
 	spin.Color("green", "bold")
 	spin.Start()
+
+	exclusionList, err := utils.loadExclusionListBit(exlusionfile)
 
 	projects, err := fetchAllProjects(bitbucketURL, accessToken)
 	if err != nil {
