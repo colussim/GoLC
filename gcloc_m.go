@@ -159,19 +159,11 @@ func AnalyseReposListB(DestinationResult string, user string, AccessToken string
 	//var pathBranches string
 	trimmedURL := strings.TrimPrefix(URL, "http://")
 
+	fmt.Print("\n🔎 Analysis of Repos ...\n")
+
 	for _, project := range repolist {
-		//fmt.Printf("Projet: %s, Repo: %s, Branche: %s, Taille: %d\n", project.ProjectKey, project.RepoSlug, project.MainBranch, project.LargestSize)
-		// http://mcolussi:OTU0NTk2ODM4NzU5Olfp6bsKkIMp9QbL1qq01gZRA6Ez@ec2-18-194-139-24.eu-central-1.compute.amazonaws.com:7990/scm/jav/bb-java-security-demo.git
 
-		//fmt.Printf("    - %s\n", project.MainBranc)
-
-		//pathBranches := fmt.Sprintf("?ref=%s", project.MainBranch)
-		//pathBranches := project.MainBranch
-		//	browse?at=refs%2Fheads%2Fmain
-
-		//pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s.git%s", Protocol, user, AccessToken, trimmedURL, project.ProjectKey, project.RepoSlug, pathBranches)
 		pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s.git", Protocol, user, AccessToken, trimmedURL, project.ProjectKey, project.RepoSlug)
-		fmt.Println("Scan PATH :", pathToScan)
 		outputFileName := fmt.Sprintf("Result_%s", project.RepoSlug)
 
 		params := gcloc.Params{
@@ -341,13 +333,22 @@ func main() {
 	DestinationResult := pwd + "/Results"
 	_, err = os.Stat(DestinationResult)
 	if err == nil {
-		err := os.RemoveAll(DestinationResult)
-		if err != nil {
-			fmt.Printf("❌ Error deleting directory: %s\n", err)
+
+		fmt.Printf("❗️ Directory <'%s'> already exists. Do you want to delete it? (y/n): ", DestinationResult)
+		var response string
+		fmt.Scanln(&response)
+
+		if response == "y" || response == "Y" {
+			err := os.RemoveAll(DestinationResult)
+			if err != nil {
+				fmt.Printf("❌ Error deleting directory: %s\n", err)
+				os.Exit(1)
+			}
+			if err := os.MkdirAll(DestinationResult, os.ModePerm); err != nil {
+				panic(err)
+			}
+		} else {
 			os.Exit(1)
-		}
-		if err := os.MkdirAll(DestinationResult, os.ModePerm); err != nil {
-			panic(err)
 		}
 
 	} else if os.IsNotExist(err) {
@@ -450,6 +451,8 @@ func main() {
 			NumberRepos = AnalyseReposList(DestinationResult, AppConfig.Users, AppConfig.AccessToken, AppConfig.DevOps, AppConfig.Organization, repoList)
 
 		case "bitbucket_dc":
+
+			fileexclusion = ".cloc_bitbucket_ignore"
 
 			projects, err := getbibucketdc.GetProjectBitbucketList(AppConfig.Url, AppConfig.Baseapi, AppConfig.Apiver, AppConfig.AccessToken)
 			if err != nil {

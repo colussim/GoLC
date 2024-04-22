@@ -49,7 +49,7 @@ func CheckCLOCignoreFile(fileexclusion string, target string) (bool, error) {
 	if fileExists(fileexclusion) {
 		isEmpty, err := isFileEmpty(fileexclusion)
 		if err != nil {
-			fmt.Println("-- Stack: utils.checkCLOCignoreFile Empty Test .clocignore -- ", err)
+			fmt.Println("❌ -- Stack: utils.checkCLOCignoreFile Empty Test .clocignore -- ", err)
 			return false, err
 		}
 
@@ -60,7 +60,7 @@ func CheckCLOCignoreFile(fileexclusion string, target string) (bool, error) {
 			//The file exists but is not empty
 			found, err := searchStringInFile(fileexclusion, target)
 			if err != nil {
-				fmt.Println("-- Stack: utils.checkCLOCignoreFile search exclusion -- ", err)
+				fmt.Println("❌ -- Stack: utils.checkCLOCignoreFile search exclusion -- ", err)
 				return false, err
 			}
 

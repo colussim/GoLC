@@ -38,8 +38,7 @@ func Getrepos(src, branch string) (string, error) {
 	})
 
 	if err != nil {
-		fmt.Println("\n-- Stack: gogit.Getrepos Git Clone -- :", err)
-		fmt.Println("\n-- Stack: gogit.Getrepos Git Clone -Branch - :", branch)
+		fmt.Println("\n--❌ Stack: gogit.Getrepos Git Clone -- :", err)
 	}
 
 	symLink, err := isSymLink(dst)

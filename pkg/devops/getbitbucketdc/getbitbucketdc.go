@@ -281,6 +281,15 @@ func fetchProjects(url string, accessToken string) (*ProjectResponse, error) {
 	return &projectsResp, nil
 }
 
+func isProjectExcluded(projectKey string, exclusionList ExclusionList) bool {
+	for _, excludedProject := range exclusionList.Projects {
+		if excludedProject == projectKey {
+			return true
+		}
+	}
+	return false
+}
+
 func fetchAllRepos(url string, accessToken string) ([]Repo, error) {
 	var allRepos []Repo
 	for {
