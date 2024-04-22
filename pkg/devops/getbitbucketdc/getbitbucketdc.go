@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 	"time"
-
+"github.com/colussim/gcloc_m/pkg/utils"
 	"github.com/briandowns/spinner"
 	//"github.com/colussim/gcloc_m/pkg/utils"
 )
@@ -103,6 +103,11 @@ type File struct {
 	Size      int    `json:"size"`
 }
 
+type ExclusionListBit struct {
+	Projects []string `json:"projects"`
+	Repos    []string `json:"repos"`
+}
+
 func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile string) ([]ProjectBranch, error) {
 
 	var largestRepoSize int
@@ -124,7 +129,7 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile str
 
 	exclusionList, err := utils.loadExclusionListBit(exlusionfile)
 
-	projects, err := fetchAllProjects(bitbucketURL, accessToken)
+	projects, err := fetchAllProjects(bitbucketURL, accessToken, exclusionList)
 	if err != nil {
 		fmt.Println("\r❌ Error Get All Projects:", err)
 		spin.Stop()
@@ -240,14 +245,20 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile str
 	return importantBranches, nil
 }
 
-func fetchAllProjects(url string, accessToken string) ([]Project, error) {
+func fetchAllProjects(url string, accessToken string, exclusionList ExclusionListBit) ([]Project, error) {
 	var allProjects []Project
 	for {
 		projectsResp, err := fetchProjects(url, accessToken)
 		if err != nil {
 			return nil, err
 		}
-		allProjects = append(allProjects, projectsResp.Values...)
+		//allProjects = append(allProjects, projectsResp.Values...)
+		for _, project := range projectsResp.Values {
+			if !isProjectExcluded(project.Key, exclusionList) {
+				allProjects = append(allProjects, project)
+			}
+		}
+
 		if projectsResp.IsLastPage {
 			break
 		}
@@ -284,7 +295,7 @@ func fetchProjects(url string, accessToken string) (*ProjectResponse, error) {
 	return &projectsResp, nil
 }
 
-func isProjectExcluded(projectKey string, exclusionList ExclusionList) bool {
+func isProjectExcluded(projectKey string, exclusionList ExclusionListBit) bool {
 	for _, excludedProject := range exclusionList.Projects {
 		if excludedProject == projectKey {
 			return true

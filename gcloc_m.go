@@ -454,7 +454,7 @@ func main() {
 
 			fileexclusion = ".cloc_bitbucket_ignore"
 
-			projects, err := getbibucketdc.GetProjectBitbucketList(AppConfig.Url, AppConfig.Baseapi, AppConfig.Apiver, AppConfig.AccessToken)
+			projects, err := getbibucketdc.GetProjectBitbucketList(AppConfig.Url, AppConfig.Baseapi, AppConfig.Apiver, AppConfig.AccessToken, fileexclusion)
 			if err != nil {
 				fmt.Printf("❌ Error Get Info Projects in Bitbucket server '%s' : ", err)
 				return
