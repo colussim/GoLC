@@ -190,6 +190,7 @@ func AnalyseReposListB(DestinationResult string, user string, AccessToken string
 			OutputName:        outputFileName,
 			OutputPath:        DestinationResult,
 			ReportFormats:     []string{"json"},
+			Branch:            project.MainBranch,
 		}
 
 		gc, err := gcloc.NewGCloc(params, constants.Languages)
