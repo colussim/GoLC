@@ -37,8 +37,6 @@ func Getter(src string) (string, error) {
 		Mode: getter.ClientModeDir,
 	}
 
-	fmt.Println("------Getter SRC PATH :", client.Src)
-
 	if err := client.Get(); err != nil {
 		return "", err
 	}

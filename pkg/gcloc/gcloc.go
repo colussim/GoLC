@@ -31,6 +31,7 @@ type Params struct {
 	OutputName        string
 	OutputPath        string
 	ReportFormats     []string
+	Branch            string
 }
 
 type GCloc struct {
@@ -43,7 +44,7 @@ type GCloc struct {
 }
 
 func NewGCloc(params Params, languages language.Languages) (*GCloc, error) {
-	path, err := gogit.Getrepos(params.Path)
+	path, err := gogit.Getrepos(params.Path, params.Branch)
 	if err != nil {
 		return nil, err
 	}

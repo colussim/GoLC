@@ -10,10 +10,12 @@ import (
 
 	"github.com/briandowns/spinner"
 	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 )
 
-func Getrepos(src string) (string, error) {
+func Getrepos(src, branch string) (string, error) {
 	spinner := newSpinner(fmt.Sprintf(" Extracting files from %s", src))
+	spinner.Color("green", "bold")
 	spinner.Start()
 	defer spinner.Stop()
 
@@ -29,8 +31,10 @@ func Getrepos(src string) (string, error) {
 	}
 
 	_, err = git.PlainClone(dst, false, &git.CloneOptions{
-		URL:      src,
-		Progress: os.Stdout,
+		URL:           src,
+		Progress:      os.Stdout,
+		ReferenceName: plumbing.NewBranchReferenceName(branch),
+		SingleBranch:  true,
 	})
 
 	if err != nil {
@@ -56,7 +60,7 @@ func Getrepos(src string) (string, error) {
 
 func newSpinner(text string) *spinner.Spinner {
 	return spinner.New(
-		spinner.CharSets[14],
+		spinner.CharSets[35],
 		100*time.Millisecond,
 		spinner.WithSuffix(text),
 	)
