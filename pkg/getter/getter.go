@@ -34,8 +34,10 @@ func Getter(src string) (string, error) {
 		Dst: dst,
 		Pwd: pwd,
 		//Mode: getter.ClientModeAny,
-		//Mode: getter.ClientModeDir,
+		Mode: getter.ClientModeDir,
 	}
+
+	fmt.Println("------Getter SRC PATH :", client.Src)
 
 	if err := client.Get(); err != nil {
 		return "", err

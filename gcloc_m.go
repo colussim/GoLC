@@ -165,12 +165,12 @@ func AnalyseReposListB(DestinationResult string, user string, AccessToken string
 
 		//fmt.Printf("    - %s\n", project.MainBranc)
 
-		pathBranches := fmt.Sprintf("?ref=%s", project.MainBranch)
+		//pathBranches := fmt.Sprintf("?ref=%s", project.MainBranch)
 		//pathBranches := project.MainBranch
 		//	browse?at=refs%2Fheads%2Fmain
 
-		pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s.git%s", Protocol, user, AccessToken, trimmedURL, project.ProjectKey, project.RepoSlug, pathBranches)
-		//pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s.git", Protocol, user, AccessToken, trimmedURL, project.ProjectKey, project.RepoSlug)
+		//pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s.git%s", Protocol, user, AccessToken, trimmedURL, project.ProjectKey, project.RepoSlug, pathBranches)
+		pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s.git", Protocol, user, AccessToken, trimmedURL, project.ProjectKey, project.RepoSlug)
 		fmt.Println("Scan PATH :", pathToScan)
 		outputFileName := fmt.Sprintf("Result_%s", project.RepoSlug)
 
