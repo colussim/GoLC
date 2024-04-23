@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -41,19 +43,8 @@ type SelfLink struct {
 	Href string `json:"href"`
 }
 
-// Declare a struct for Config fields
-type Configuration struct {
-	Users        string
-	AccessToken  string
-	Organization string
-	DevOps       string
-	Project      string
-	Repos        string
-	Branch       string
-	Url          string
-	Apiver       string
-	Baseapi      string
-	Protocol     string
+type Config struct {
+	Platforms map[string]interface{} `json:"platforms"`
 }
 
 type Report struct {
@@ -63,6 +54,24 @@ type Report struct {
 	TotalComments   int
 	TotalCodeLines  int
 	Results         interface{}
+}
+
+type Result struct {
+	TotalFiles      int           `json:"TotalFiles"`
+	TotalLines      int           `json:"TotalLines"`
+	TotalBlankLines int           `json:"TotalBlankLines"`
+	TotalComments   int           `json:"TotalComments"`
+	TotalCodeLines  int           `json:"TotalCodeLines"`
+	Results         []LanguageRes `json:"Results"`
+}
+
+type LanguageRes struct {
+	Language   string `json:"Language"`
+	Files      int    `json:"Files"`
+	Lines      int    `json:"Lines"`
+	BlankLines int    `json:"BlankLines"`
+	Comments   int    `json:"Comments"`
+	CodeLines  int    `json:"CodeLines"`
 }
 
 type Repository1 interface {
@@ -131,16 +140,36 @@ func formatCodeLines(numLines float64) string {
 	}
 }
 
-// Read Config file : Config.json
-func GetConfig(configjs Configuration) Configuration {
-
-	fconfig, err := os.ReadFile("config.json")
+func getFileNameIfExists(filePath string) string {
+	_, err := os.Stat(filePath)
 	if err != nil {
-		panic("❌ Problem with the configuration file : config.json")
-		os.Exit(1)
+		if os.IsNotExist(err) {
+			//The file does not exist
+			return "0"
+		} else {
+			// Check file
+			fmt.Printf("❌ Error check file exclusion: %v\n", err)
+			return "0"
+		}
+	} else {
+		return filePath
 	}
-	json.Unmarshal(fconfig, &configjs)
-	return configjs
+}
+
+func LoadConfig(filename string) (Config, error) {
+	var config Config
+
+	// Lire le contenu du fichier de configuration
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return config, fmt.Errorf("❌ failed to read config file: %w", err)
+	}
+
+	if err := json.Unmarshal(data, &config); err != nil {
+		return config, fmt.Errorf("❌ failed to parse config JSON: %w", err)
+	}
+
+	return config, nil
 }
 
 // Parse Result Files in JSON Format
@@ -327,13 +356,33 @@ func AnalyseRepo(DestinationResult string, Users string, AccessToken string, Dev
 
 func main() {
 
-	var config1 Configuration
-	var AppConfig = GetConfig(config1)
-	var largestLineCounter int
-	var nameRepos2 string
-	var nameProject string
+	var maxTotalCodeLines int
+	var maxProject, maxRepo string
 	var NumberRepos int
-	var fileexclusion = ".clocignore"
+	var startTime time.Time
+
+	devopsFlag := flag.String("devops", "", "Specify the DevOps platform")
+	flag.Parse()
+
+	if *devopsFlag == "" {
+		fmt.Println("\n❌ Please specify the DevOps platform using the --devops flag : <BitBucketSRV>||<BitBucket>||<Github>||<Gitlab>||<Azure>||<File>")
+		fmt.Println("✅ Example for BitBucket server : gcloc_m.go --devops BitBucketSRV")
+		os.Exit(1)
+	}
+	AppConfig, err := LoadConfig("config.json")
+	if err != nil {
+		log.Fatalf("\n❌ Failed to load config: %s", err)
+		os.Exit(1)
+	}
+
+	platformConfig, ok := AppConfig.Platforms[*devopsFlag].(map[string]interface{})
+	if !ok {
+		fmt.Printf("\n❌ Configuration for DevOps platform '%s' not found\n", *devopsFlag)
+		fmt.Println("✅ the --devops flag is : <BitBucketSRV>||<BitBucket>||<Github>||<Gitlab>||<Azure>||<File>")
+		os.Exit(1)
+	}
+
+	fmt.Printf("✅ Using configuration for DevOps platform '%s'\n", *devopsFlag)
 
 	pwd, err := os.Getwd()
 	if err != nil {
@@ -378,145 +427,181 @@ func main() {
 
 	// Test whether the analysis is for one or several repositories AppConfig.Repos != 0 -> 1 repository else more
 	// Analyse 1 repository
-	if len(AppConfig.Repos) != 0 {
+	/*if len(AppConfig.Repos) != 0 {
 		fmt.Printf("\nAnalyse %s Repository %s in Organization: %s\n", AppConfig.DevOps, AppConfig.Repos, AppConfig.Organization)
 		NumberRepos = AnalyseRepo(DestinationResult, AppConfig.Users, AppConfig.AccessToken, AppConfig.DevOps, AppConfig.Organization, AppConfig.Repos)
 
-	} else {
-		// Analyse more repositories
+	} else {*/
+	// Analyse more repositories  ["url"].(string)
 
-		switch devops := AppConfig.DevOps; devops {
-		case "github":
-			var EmptyR = 0
-			repositories, err := getgithub.GetRepoGithubList(AppConfig.AccessToken, AppConfig.Organization)
-			if err != nil {
-				fmt.Printf("Error Get Info Repositories in organization '%s' : '%s'", AppConfig.Organization, err)
-				return
-			}
-			var repoList []Repository1
-
-			for _, repo := range repositories {
-
-				repoItem := GithubRepository{
-					ID:            repo.ID,
-					Name:          repo.Name,
-					DefaultBranch: repo.DefaultBranch,
-					Path:          repo.Path,
-					SizeR:         repo.SizeR,
-				}
-				if repo.SizeR > 0 {
-					ExcludeRepo, _ := utils.CheckCLOCignoreFile(fileexclusion, repo.Name)
-					if !ExcludeRepo {
-						repoList = append(repoList, repoItem)
-					} else {
-						fmt.Printf("\nRepository '%s' in Organization: '%s' is not Analyse because it is excluded\n", repo.Name, AppConfig.Organization)
-						EmptyR = EmptyR + 1
-					}
-				} else {
-					fmt.Print("\nRepository '%s' in Organization: '%s' is not Analyse because it is empty\n", repo.Name, AppConfig.Organization)
-					EmptyR = EmptyR + 1
-				}
-			}
-
-			NumberRepos1 := int(uintptr(len(repositories))) - EmptyR
-			fmt.Printf("\nAnalyse '%s' Repositories('%d') in Organization: '%s'\n", AppConfig.DevOps, NumberRepos1, AppConfig.Organization)
-
-			NumberRepos = AnalyseReposList(DestinationResult, AppConfig.Users, AppConfig.AccessToken, AppConfig.DevOps, AppConfig.Organization, repoList)
-
-		case "gitlab":
-			var EmptyR = 0
-			repositories, err := getgitlab.GetRepoGitlabList(AppConfig.AccessToken, AppConfig.Organization)
-			if err != nil {
-				fmt.Printf("❌ Error Get Info Repositories in organization '%s' : '%s'", AppConfig.Organization, err)
-				return
-			}
-
-			var repoList []Repository1
-			for _, repo := range repositories {
-				repoItem := GitlabRepository{
-					ID:            repo.ID,
-					Name:          repo.Name,
-					DefaultBranch: repo.DefaultBranch,
-					Path:          repo.Path,
-					Empty:         repo.Empty,
-				}
-				if !repo.Empty {
-					ExcludeRepo, _ := utils.CheckCLOCignoreFile(fileexclusion, repo.Name)
-					if !ExcludeRepo {
-						repoList = append(repoList, repoItem)
-					} else {
-						fmt.Print("\nRepository '%s' in Organization: '%s' is not Analyse because it is excluded\n", repo.Name, AppConfig.Organization)
-						EmptyR = EmptyR + 1
-					}
-				} else {
-					fmt.Printf("\nRepository '%s' in Organization:'%s' is not Analyse because it is empty\n", repo.Name, AppConfig.Organization)
-					EmptyR = EmptyR + 1
-				}
-			}
-
-			NumberRepos1 := int(uintptr(len(repositories))) - EmptyR
-			fmt.Printf("\nAnalyse '%s' Repositories('%d') in Organization: '%s'\n", AppConfig.DevOps, NumberRepos1, AppConfig.Organization)
-
-			NumberRepos = AnalyseReposList(DestinationResult, AppConfig.Users, AppConfig.AccessToken, AppConfig.DevOps, AppConfig.Organization, repoList)
-
-		case "bitbucket_dc":
-
-			fileexclusion = ".cloc_bitbucket_ignore"
-
-			projects, err := getbibucketdc.GetProjectBitbucketList(AppConfig.Url, AppConfig.Baseapi, AppConfig.Apiver, AppConfig.AccessToken, fileexclusion, AppConfig.Project, AppConfig.Repos)
-			if err != nil {
-				fmt.Printf("❌ Error Get Info Projects in Bitbucket server '%s' : ", err)
-				return
-			}
-			// Run scanning repositories
-			NumberRepos = AnalyseReposListB(DestinationResult, AppConfig.Users, AppConfig.AccessToken, AppConfig.Protocol, AppConfig.Url, AppConfig.DevOps, projects)
-
+	switch devops := platformConfig["DevOps"].(string); devops {
+	case "github":
+		var EmptyR = 0
+		var fileexclusion = ".clocignore"
+		repositories, err := getgithub.GetRepoGithubList(platformConfig["AccessToken"].(string), platformConfig["Organization"].(string))
+		if err != nil {
+			fmt.Printf("Error Get Info Repositories in organization '%s' : '%s'", platformConfig["Organization"].(string), err)
+			return
 		}
+		var repoList []Repository1
+
+		for _, repo := range repositories {
+
+			repoItem := GithubRepository{
+				ID:            repo.ID,
+				Name:          repo.Name,
+				DefaultBranch: repo.DefaultBranch,
+				Path:          repo.Path,
+				SizeR:         repo.SizeR,
+			}
+			if repo.SizeR > 0 {
+				ExcludeRepo, _ := utils.CheckCLOCignoreFile(fileexclusion, repo.Name)
+				if !ExcludeRepo {
+					repoList = append(repoList, repoItem)
+				} else {
+					fmt.Printf("\nRepository '%s' in Organization: '%s' is not Analyse because it is excluded\n", repo.Name, platformConfig["Organization"].(string))
+					EmptyR = EmptyR + 1
+				}
+			} else {
+				fmt.Print("\nRepository '%s' in Organization: '%s' is not Analyse because it is empty\n", repo.Name, platformConfig["Organization"].(string))
+				EmptyR = EmptyR + 1
+			}
+		}
+
+		NumberRepos1 := int(uintptr(len(repositories))) - EmptyR
+		fmt.Printf("\nAnalyse '%s' Repositories('%d') in Organization: '%s'\n", platformConfig["DevOps"].(string), NumberRepos1, platformConfig["Organization"].(string))
+
+		NumberRepos = AnalyseReposList(DestinationResult, platformConfig["Users"].(string), platformConfig["AccessToken"].(string), platformConfig["DevOps"].(string), platformConfig["Organization"].(string), repoList)
+
+	case "gitlab":
+		var EmptyR = 0
+		var fileexclusion = ".clocignore"
+		repositories, err := getgitlab.GetRepoGitlabList(platformConfig["AccessToken"].(string), platformConfig["Organization"].(string))
+		if err != nil {
+			fmt.Printf("❌ Error Get Info Repositories in organization '%s' : '%s'", platformConfig["Organization"].(string), err)
+			return
+		}
+
+		var repoList []Repository1
+		for _, repo := range repositories {
+			repoItem := GitlabRepository{
+				ID:            repo.ID,
+				Name:          repo.Name,
+				DefaultBranch: repo.DefaultBranch,
+				Path:          repo.Path,
+				Empty:         repo.Empty,
+			}
+			if !repo.Empty {
+				ExcludeRepo, _ := utils.CheckCLOCignoreFile(fileexclusion, repo.Name)
+				if !ExcludeRepo {
+					repoList = append(repoList, repoItem)
+				} else {
+					fmt.Print("\nRepository '%s' in Organization: '%s' is not Analyse because it is excluded\n", repo.Name, platformConfig["Organization"].(string))
+					EmptyR = EmptyR + 1
+				}
+			} else {
+				fmt.Printf("\nRepository '%s' in Organization:'%s' is not Analyse because it is empty\n", repo.Name, platformConfig["Organization"].(string))
+				EmptyR = EmptyR + 1
+			}
+		}
+
+		NumberRepos1 := int(uintptr(len(repositories))) - EmptyR
+		fmt.Printf("\nAnalyse '%s' Repositories('%d') in Organization: '%s'\n", platformConfig["DevOps"].(string), NumberRepos1, platformConfig["Organization"].(string))
+
+		NumberRepos = AnalyseReposList(DestinationResult, platformConfig["Users"].(string), platformConfig["AccessToken"].(string), platformConfig["DevOps"].(string), platformConfig["Organization"].(string), repoList)
+
+	case "bitbucket_dc":
+
+		var fileexclusion = platformConfig["FileExclusion"].(string)
+		fileexclusionEX := getFileNameIfExists(fileexclusion)
+
+		startTime = time.Now()
+		projects, err := getbibucketdc.GetProjectBitbucketList(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["Apiver"].(string), platformConfig["AccessToken"].(string), fileexclusionEX, platformConfig["Project"].(string), platformConfig["Repos"].(string))
+		if err != nil {
+			fmt.Printf("❌ Error Get Info Projects in Bitbucket server '%s' : ", err)
+			return
+		}
+
+		// Run scanning repositories
+		NumberRepos = AnalyseReposListB(DestinationResult, platformConfig["Users"].(string), platformConfig["AccessToken"].(string), platformConfig["Protocol"].(string), platformConfig["Url"].(string), platformConfig["DevOps"].(string), projects)
+
+	case "bitbucket":
+		var fileexclusion = platformConfig["FileExclusion"].(string)
+		fileexclusionEX := getFileNameIfExists(fileexclusion)
+
+		startTime = time.Now()
+
 	}
 
-	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond, spinner.WithWriter(os.Stderr))
+	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
 	spin.Suffix = " \nAnalyse Report..."
+	spin.Color("green", "bold")
 	spin.Start()
 
 	// List files in the directory
-	fileInfos, err := os.ReadDir(DestinationResult)
+	files, err := os.ReadDir(DestinationResult)
 	if err != nil {
 		fmt.Println("❌ Error listing files:", err)
-		return
+		os.Exit(1)
 	}
 
-	for _, fileInfo := range fileInfos {
-		if !fileInfo.IsDir() && filepath.Ext(fileInfo.Name()) == ".json" {
-			filePath := filepath.Join(DestinationResult, fileInfo.Name())
-			nameParts := strings.Split(fileInfo.Name(), "_")
-			if len(nameParts) < 3 {
+	// Initialize the sum of TotalCodeLines
+	totalCodeLinesSum := 0
 
+	for _, file := range files {
+		// Check if the file is a JSON file
+		if !file.IsDir() && strings.HasSuffix(file.Name(), ".json") {
+			// Read contents of JSON file
+			filePath := filepath.Join(DestinationResult, file.Name())
+			jsonData, err := os.ReadFile(filePath)
+			if err != nil {
+				fmt.Printf("\n❌ Error reading file %s: %v\n", file.Name(), err)
 				continue
 			}
-			repoNameParts := strings.Split(nameParts[2], ".")
-			TotalCodeLines := parseJSONFile(filePath, repoNameParts[0])
-			if TotalCodeLines > largestLineCounter {
-				largestLineCounter = TotalCodeLines
-				nameRepos2 = repoNameParts[0]
-				nameProject = nameParts[1]
+
+			// Parse JSON content into a Result structure
+			var result Result
+			err = json.Unmarshal(jsonData, &result)
+			if err != nil {
+				fmt.Printf("\n❌ Error parsing JSON contents of file %s: %v\n", file.Name(), err)
+				continue
+			}
+
+			totalCodeLinesSum += result.TotalCodeLines
+
+			// Check if this repo has a higher TotalCodeLines than the current maximum
+			if result.TotalCodeLines > maxTotalCodeLines {
+				maxTotalCodeLines = result.TotalCodeLines
+				// Extract project and repo name from file name
+				parts := strings.Split(strings.TrimSuffix(file.Name(), ".json"), "_")
+				maxProject = parts[1]
+				maxRepo = parts[2]
 			}
 		}
 	}
+
+	maxTotalCodeLines1 := formatCodeLines(float64(maxTotalCodeLines))
+	totalCodeLinesSum1 := formatCodeLines(float64(totalCodeLinesSum))
 	spin.Stop()
 
-	//p := message.NewPrinter(language.English)
-	//s := strings.Replace(p.Sprintf("%d", largestLineCounter), ",", " ", -1)
-	s := formatCodeLines(float64(largestLineCounter))
-	//	s := formatCodeLines(formattedLines)
+	endTime := time.Now()
+	duration := endTime.Sub(startTime)
 
-	message0 := fmt.Sprintf("\n✅ Number of Repository analyzed in Organization '%s' is '%d' \n", AppConfig.Organization, NumberRepos)
-	message1 := fmt.Sprintf("\n\n✅ In Organization '%s' the largest number of line of code is <'%s'> in the repository <'%s'> in Project :<'%s'>\n\n✅ Reports are located in the <'Results'> directory", AppConfig.Organization, s, nameRepos2, nameProject)
-	message2 := message0 + message1
-	//fmt.Println(message0)
-	fmt.Println(message1)
+	hours := int(duration.Hours())
+	minutes := int(duration.Minutes()) % 60
+	seconds := int(duration.Seconds()) % 60
+
+	message0 := fmt.Sprintf("\n✅ Number of Repository analyzed in Organization '%s' is '%d' \n", platformConfig["Organization"].(string), NumberRepos)
+	message1 := fmt.Sprintf("\n✅ The repository with the largest line of code is in project <'%s'> the repo name is <'%s'> with <'%s'> lines of code\n", maxProject, maxRepo, maxTotalCodeLines1)
+	message2 := fmt.Sprintf("\n✅  The total sum of lines of code in Organization '%s' is : %s\n", platformConfig["Organization"].(string), totalCodeLinesSum1)
+	message3 := message0 + message1 + message2
+
+	fmt.Println(message3)
+	fmt.Println("\n\n✅ Reports are located in the <'Results'> directory")
+	fmt.Printf("\n\n✅ Time elapsed : %02d:%02d:%02d\n", hours, minutes, seconds)
 
 	// Write message in Gobal Report File
-	_, err = file.WriteString(message2)
+	_, err = file.WriteString(message3)
 	if err != nil {
 		fmt.Println("Error writing to file:", err)
 		return
