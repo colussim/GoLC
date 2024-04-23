@@ -273,13 +273,13 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile, pr
 			spin.Stop()
 
 		}
-	} else if len(project) == 1 && len(repo) == 0 {
+	} /*else if len(project) == 1 && len(repo) == 0 {
 		// Action 2
 		// ...
 	} else {
 		// Action 3
 		// ...
-	}
+	}*/
 	largestRepoSize = 0
 	largestRepoBranch = ""
 	largestRepoProject = ""

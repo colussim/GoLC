@@ -468,7 +468,6 @@ func main() {
 				fmt.Printf("❌ Error Get Info Projects in Bitbucket server '%s' : ", err)
 				return
 			}
-
 			// Run scanning repositories
 			NumberRepos = AnalyseReposListB(DestinationResult, AppConfig.Users, AppConfig.AccessToken, AppConfig.Protocol, AppConfig.Url, AppConfig.DevOps, projects)
 
