@@ -12,6 +12,7 @@ import (
 
 	"github.com/briandowns/spinner"
 	"github.com/colussim/gcloc_m/internal/constants"
+	getbibucket "github.com/colussim/gcloc_m/pkg/devops/getbitbucket"
 	getbibucketdc "github.com/colussim/gcloc_m/pkg/devops/getbitbucketdc"
 	"github.com/colussim/gcloc_m/pkg/devops/getgithub"
 	"github.com/colussim/gcloc_m/pkg/devops/getgitlab"
@@ -425,15 +426,6 @@ func main() {
 	}
 	defer file.Close()
 
-	// Test whether the analysis is for one or several repositories AppConfig.Repos != 0 -> 1 repository else more
-	// Analyse 1 repository
-	/*if len(AppConfig.Repos) != 0 {
-		fmt.Printf("\nAnalyse %s Repository %s in Organization: %s\n", AppConfig.DevOps, AppConfig.Repos, AppConfig.Organization)
-		NumberRepos = AnalyseRepo(DestinationResult, AppConfig.Users, AppConfig.AccessToken, AppConfig.DevOps, AppConfig.Organization, AppConfig.Repos)
-
-	} else {*/
-	// Analyse more repositories  ["url"].(string)
-
 	switch devops := platformConfig["DevOps"].(string); devops {
 	case "github":
 		var EmptyR = 0
@@ -530,6 +522,18 @@ func main() {
 		fileexclusionEX := getFileNameIfExists(fileexclusion)
 
 		startTime = time.Now()
+
+		projects1, err := getbibucket.GetProjectBitbucketListCloud(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["Apiver"].(string), platformConfig["AccessToken"].(string), platformConfig["Workspace"].(string), fileexclusionEX, platformConfig["Project"].(string), platformConfig["Repos"].(string))
+		if err != nil {
+			fmt.Printf("❌ Error Get Info Projects in Bitbucket server '%s' : ", err)
+			return
+		}
+		fmt.Println("Taille de pr", len(projects1))
+		for _, allproject := range projects1 {
+
+			fmt.Println("\n✅ Projet KEY: , Projet Name: \n", allproject.Key, allproject.Name)
+			fmt.Println()
+		}
 
 	}
 

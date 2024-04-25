@@ -1,0 +1,133 @@
+{
+  "values": [
+    {
+      "type": "repository",
+      "full_name": "sonarsource/gcloc",
+      "links": {
+        "self": {
+          "href": "https://api.bitbucket.org/2.0/repositories/sonarsource/gcloc"
+        },
+        "html": {
+          "href": "https://bitbucket.org/sonarsource/gcloc"
+        },
+        "avatar": {
+          "href": "https://bytebucket.org/ravatar/%7B9931d088-d72a-4bde-bf76-d7db643549ef%7D?ts=default"
+        },
+        "pullrequests": {
+          "href": "https://api.bitbucket.org/2.0/repositories/sonarsource/gcloc/pullrequests"
+        },
+        "commits": {
+          "href": "https://api.bitbucket.org/2.0/repositories/sonarsource/gcloc/commits"
+        },
+        "forks": {
+          "href": "https://api.bitbucket.org/2.0/repositories/sonarsource/gcloc/forks"
+        },
+        "watchers": {
+          "href": "https://api.bitbucket.org/2.0/repositories/sonarsource/gcloc/watchers"
+        },
+        "branches": {
+          "href": "https://api.bitbucket.org/2.0/repositories/sonarsource/gcloc/refs/branches"
+        },
+        "tags": {
+          "href": "https://api.bitbucket.org/2.0/repositories/sonarsource/gcloc/refs/tags"
+        },
+        "downloads": {
+          "href": "https://api.bitbucket.org/2.0/repositories/sonarsource/gcloc/downloads"
+        },
+        "source": {
+          "href": "https://api.bitbucket.org/2.0/repositories/sonarsource/gcloc/src"
+        },
+        "clone": [
+          {
+            "name": "https",
+            "href": "https://4bboq7ddwnemclozlgyi2zzv63opse@bitbucket.org/sonarsource/gcloc.git"
+          },
+          {
+            "name": "ssh",
+            "href": "git@bitbucket.org:sonarsource/gcloc.git"
+          }
+        ],
+        "hooks": {
+          "href": "https://api.bitbucket.org/2.0/repositories/sonarsource/gcloc/hooks"
+        }
+      },
+      "name": "gcloc",
+      "slug": "gcloc",
+      "description": "",
+      "scm": "git",
+      "website": null,
+      "owner": {
+        "display_name": "sonarsource",
+        "links": {
+          "self": {
+            "href": "https://api.bitbucket.org/2.0/workspaces/%7Bb00e13b7-3249-4d9d-86a3-8e750fead581%7D"
+          },
+          "avatar": {
+            "href": "https://bitbucket.org/account/sonarsource/avatar/"
+          },
+          "html": {
+            "href": "https://bitbucket.org/%7Bb00e13b7-3249-4d9d-86a3-8e750fead581%7D/"
+          }
+        },
+        "type": "team",
+        "uuid": "{b00e13b7-3249-4d9d-86a3-8e750fead581}",
+        "username": "sonarsource"
+      },
+      "workspace": {
+        "type": "workspace",
+        "uuid": "{b00e13b7-3249-4d9d-86a3-8e750fead581}",
+        "name": "sonarsource",
+        "slug": "sonarsource",
+        "links": {
+          "avatar": {
+            "href": "https://bitbucket.org/workspaces/sonarsource/avatar/?ts=1685022677"
+          },
+          "html": {
+            "href": "https://bitbucket.org/sonarsource/"
+          },
+          "self": {
+            "href": "https://api.bitbucket.org/2.0/workspaces/sonarsource"
+          }
+        }
+      },
+      "is_private": true,
+      "project": {
+        "type": "project",
+        "key": "CLOC",
+        "uuid": "{8aa7ae0f-3972-4ee7-928c-bd75c0aaecdd}",
+        "name": "cloc",
+        "links": {
+          "self": {
+            "href": "https://api.bitbucket.org/2.0/workspaces/sonarsource/projects/CLOC"
+          },
+          "html": {
+            "href": "https://bitbucket.org/sonarsource/workspace/projects/CLOC"
+          },
+          "avatar": {
+            "href": "https://bitbucket.org/account/user/sonarsource/projects/CLOC/avatar/32?ts=1713949797"
+          }
+        }
+      },
+      "fork_policy": "no_public_forks",
+      "created_on": "2024-04-24T13:58:55.937587+00:00",
+      "updated_on": "2024-04-24T14:38:01.619389+00:00",
+      "size": 82278780,
+      "language": "",
+      "uuid": "{9931d088-d72a-4bde-bf76-d7db643549ef}",
+      "mainbranch": {
+        "name": "main",
+        "type": "branch"
+      },
+      "override_settings": {
+        "default_merge_strategy": true,
+        "branching_model": true
+      },
+      "parent": null,
+      "has_issues": false,
+      "has_wiki": false
+    }
+  ],
+  "pagelen": 2,
+  "size": 1,
+  "page": 1
+}

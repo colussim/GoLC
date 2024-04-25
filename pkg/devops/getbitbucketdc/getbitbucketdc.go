@@ -334,7 +334,7 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile, pr
 	totalSize = 0
 	nbRepos := 0
 	emptyRepo := 0
-	bitbucketURLBase := "http://ec2-18-194-139-24.eu-central-1.compute.amazonaws.com:7990/"
+	bitbucketURLBase := url
 	bitbucketURL := fmt.Sprintf("%s%s%s/projects", url, baseapi, apiver)
 
 	// Get All Projects
