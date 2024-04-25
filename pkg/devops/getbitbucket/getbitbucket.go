@@ -138,7 +138,7 @@ func GetReposProjectCloud(projects []Projectc, url, baseapi, apiver, accessToken
 			}
 			if !isEmpty {
 
-				urlrepos := fmt.Sprintf("%s%s%s/projects/%s/repos/%s/branches", url, baseapi, apiver, project.Key, repo.Slug)
+				urlrepos := fmt.Sprintf("%s%s/repositories/%s/repos/refs/branches", url, apiver, workspace, repo.Slug)
 
 				branches, err := fetchAllBranches(urlrepos, accessToken)
 				if err != nil {
@@ -365,6 +365,50 @@ func CloudRepos(url string, accessToken string, isProjectResponse bool) (interfa
 
 	return reposResp, nil
 
+}
+
+func CloudAllBranches(url string, accessToken string) ([]Branch, error) {
+	var allBranches []Branch
+	for {
+		branchesResp, err := CloudBranches(url, accessToken)
+		if err != nil {
+			return nil, err
+		}
+		allBranches = append(allBranches, branchesResp.Values...)
+		if branchesResp.IsLastPage {
+			break
+		}
+		url = fmt.Sprintf("%s?start=%d", url, branchesResp.NextPageStart)
+	}
+	return allBranches, nil
+}
+
+func CloudBranches(url string, accessToken string) (*BranchResponse, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var branchesResp BranchResponse
+	err = json.Unmarshal(body, &branchesResp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &branchesResp, nil
 }
 
 func isProjectExcluded(exclusionList *ExclusionList, project string) bool {

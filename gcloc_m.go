@@ -12,7 +12,8 @@ import (
 
 	"github.com/briandowns/spinner"
 	"github.com/colussim/gcloc_m/internal/constants"
-	getbibucket "github.com/colussim/gcloc_m/pkg/devops/getbitbucket"
+
+	//	getbibucket "github.com/colussim/gcloc_m/pkg/devops/getbitbucket"
 	getbibucketdc "github.com/colussim/gcloc_m/pkg/devops/getbitbucketdc"
 	"github.com/colussim/gcloc_m/pkg/devops/getgithub"
 	"github.com/colussim/gcloc_m/pkg/devops/getgitlab"
@@ -383,7 +384,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("✅ Using configuration for DevOps platform '%s'\n", *devopsFlag)
+	fmt.Printf("\n✅ Using configuration for DevOps platform '%s'\n", *devopsFlag)
 
 	pwd, err := os.Getwd()
 	if err != nil {
@@ -416,6 +417,7 @@ func main() {
 		}
 
 	}
+	fmt.Printf("\n")
 
 	GlobalReport := DestinationResult + "/GlobalReport.txt"
 	// Create Global Report File
@@ -511,29 +513,29 @@ func main() {
 		projects, err := getbibucketdc.GetProjectBitbucketList(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["Apiver"].(string), platformConfig["AccessToken"].(string), fileexclusionEX, platformConfig["Project"].(string), platformConfig["Repos"].(string))
 		if err != nil {
 			fmt.Printf("❌ Error Get Info Projects in Bitbucket server '%s' : ", err)
-			return
+			os.Exit(1)
 		}
 
 		// Run scanning repositories
 		NumberRepos = AnalyseReposListB(DestinationResult, platformConfig["Users"].(string), platformConfig["AccessToken"].(string), platformConfig["Protocol"].(string), platformConfig["Url"].(string), platformConfig["DevOps"].(string), projects)
 
 	case "bitbucket":
-		var fileexclusion = platformConfig["FileExclusion"].(string)
-		fileexclusionEX := getFileNameIfExists(fileexclusion)
+		//var fileexclusion = platformConfig["FileExclusion"].(string)
+		/*	fileexclusionEX := getFileNameIfExists(fileexclusion)
 
-		startTime = time.Now()
+			startTime = time.Now()
 
-		projects1, err := getbibucket.GetProjectBitbucketListCloud(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["Apiver"].(string), platformConfig["AccessToken"].(string), platformConfig["Workspace"].(string), fileexclusionEX, platformConfig["Project"].(string), platformConfig["Repos"].(string))
-		if err != nil {
-			fmt.Printf("❌ Error Get Info Projects in Bitbucket server '%s' : ", err)
-			return
-		}
-		fmt.Println("Taille de pr", len(projects1))
-		for _, allproject := range projects1 {
+			projects1, err := getbibucket.GetProjectBitbucketListCloud(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["Apiver"].(string), platformConfig["AccessToken"].(string), platformConfig["Workspace"].(string), fileexclusionEX, platformConfig["Project"].(string), platformConfig["Repos"].(string))
+			if err != nil {
+				fmt.Printf("❌ Error Get Info Projects in Bitbucket server '%s' : ", err)
+				return
+			}
+			fmt.Println("Taille de pr", len(projects1))
+			for _, allproject := range projects1 {
 
-			fmt.Println("\n✅ Projet KEY: , Projet Name: \n", allproject.Key, allproject.Name)
-			fmt.Println()
-		}
+				fmt.Println("\n✅ Projet KEY: , Projet Name: \n", allproject.Key, allproject.Name)
+				fmt.Println()
+			} */
 
 	}
 
@@ -597,7 +599,7 @@ func main() {
 
 	message0 := fmt.Sprintf("\n✅ Number of Repository analyzed in Organization '%s' is '%d' \n", platformConfig["Organization"].(string), NumberRepos)
 	message1 := fmt.Sprintf("\n✅ The repository with the largest line of code is in project <'%s'> the repo name is <'%s'> with <'%s'> lines of code\n", maxProject, maxRepo, maxTotalCodeLines1)
-	message2 := fmt.Sprintf("\n✅  The total sum of lines of code in Organization '%s' is : %s\n", platformConfig["Organization"].(string), totalCodeLinesSum1)
+	message2 := fmt.Sprintf("\n✅  The total sum of lines of code in Organization '%s' is : %s Lines of Code\n", platformConfig["Organization"].(string), totalCodeLinesSum1)
 	message3 := message0 + message1 + message2
 
 	fmt.Println(message3)
