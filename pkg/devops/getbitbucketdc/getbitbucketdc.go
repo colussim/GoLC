@@ -281,7 +281,7 @@ func GetReposProject(projects []Project, url, baseapi, apiver, accessToken, bitb
 	result.ProjectBranches = importantBranches
 
 	// Save Result of Analysis
-	file, err := os.Create("Results/analysis_repos.json")
+	file, err := os.Create("Results/config/analysis_repos.json")
 	if err != nil {
 		fmt.Println("❌ Error creating Analysis file:", err)
 		return importantBranches, nbRepos, emptyRepo
@@ -291,7 +291,7 @@ func GetReposProject(projects []Project, url, baseapi, apiver, accessToken, bitb
 
 	err = encoder.Encode(result)
 	if err != nil {
-		fmt.Println("Error encoding JSON file <Results/analysis_repos.json> :", err)
+		fmt.Println("Error encoding JSON file <Results/config/analysis_repos.json> :", err)
 		return importantBranches, nbRepos, emptyRepo
 	}
 
@@ -372,7 +372,7 @@ func GetRepos(project string, repos []Repo, url, baseapi, apiver, accessToken, b
 	result.ProjectBranches = importantBranches
 
 	// Save Result of Analysis
-	file, err := os.Create("Results/analysis_repos.json")
+	file, err := os.Create("Results/config/analysis_repos.json")
 	if err != nil {
 		fmt.Println("❌ Error creating Analysis file:", err)
 		return importantBranches, nbRepos, emptyRepo
@@ -382,7 +382,7 @@ func GetRepos(project string, repos []Repo, url, baseapi, apiver, accessToken, b
 
 	err = encoder.Encode(result)
 	if err != nil {
-		fmt.Println("Error encoding JSON file <Results/analysis_repos.json> :", err)
+		fmt.Println("Error encoding JSON file <Results/config/analysis_repos.json> :", err)
 		return importantBranches, nbRepos, emptyRepo
 	}
 
