@@ -1,0 +1,84 @@
+{
+    "platforms": {
+      "BitBucketSRV": {
+        "Users": "xxxxxxxxxxxxxx",
+        "AccessToken": "xxxxxxxxxxxxxx",
+        "Organization": "sonar-demo",
+        "DevOps": "bitbucket_dc",
+        "Project": "",
+        "Repos": "",
+        "Branch": "",
+        "Url": "xxxxxxxxxxxxxx",
+        "Apiver": "1.0",
+        "Baseapi": "rest/api/",
+        "Protocol": "http"
+      },
+      "BitBucket": {
+        "Users": "xxxxxxxxxxxxxx",
+        "AccessToken": "xxxxxxxxxxxxxx",
+        "Organization": "sonar-demo",
+        "DevOps": "bitbucket_dc",
+        "Project": "",
+        "Repos": "",
+        "Branch": "",
+        "Url": "hxxxxxxxxxxxxxx",
+        "Apiver": "1.0",
+        "Baseapi": "rest/api/",
+        "Protocol": "http"
+      },
+      "Github": {
+        "Users": "xxxxxxxxxxxxxx",
+        "AccessToken": "xxxxxxxxxxxxxx",
+        "Organization": "sonar-demo",
+        "DevOps": "bitbucket_dc",
+        "Project": "",
+        "Repos": "",
+        "Branch": "",
+        "Url": "xxxxxxxxxxxxxx",
+        "Apiver": "1.0",
+        "Baseapi": "rest/api/",
+        "Protocol": "http"
+      },
+      "Gitlab": {
+        "Users": "xxxxxxxxxxxxxx",
+        "AccessToken": "xxxxxxxxxxxxxx",
+        "Organization": "sonar-demo",
+        "DevOps": "bitbucket_dc",
+        "Project": "",
+        "Repos": "",
+        "Branch": "",
+        "Url": "xxxxxxxxxxxxxx",
+        "Apiver": "1.0",
+        "Baseapi": "rest/api/",
+        "Protocol": "http"
+      },
+      "Azure": {
+        "Users": "xxxxxxxxxxxxxx",
+        "AccessToken": "xxxxxxxxxxxxxx",
+        "Organization": "sonar-demo",
+        "DevOps": "bitbucket_dc",
+        "Project": "",
+        "Repos": "",
+        "Branch": "",
+        "Url": "xxxxxxxxxxxxxx",
+        "Apiver": "1.0",
+        "Baseapi": "rest/api/",
+        "Protocol": "http"
+      },
+      "File": {
+        "Users": "xxxxxxxxxxxxxx",
+        "AccessToken": "xxxxxxxxxxxxxx",
+        "Organization": "sonar-demo",
+        "DevOps": "bitbucket_dc",
+        "Project": "",
+        "Repos": "",
+        "Branch": "",
+        "Url": "xxxxxxxxxxxxxx",
+        "Apiver": "1.0",
+        "Baseapi": "rest/api/",
+        "Protocol": "http"
+      }
+    }
+  }
+  
+
