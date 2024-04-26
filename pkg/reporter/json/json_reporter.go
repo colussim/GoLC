@@ -103,7 +103,7 @@ func (j JsonReporter) writeJson(jsonReport *report) error {
 		return err
 	}
 
-	fmt.Printf("json report exported to %s\n", path)
+	fmt.Printf("\n\t✅ json report exported to %s\n", path)
 
 	return nil
 }

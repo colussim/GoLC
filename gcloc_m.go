@@ -200,10 +200,15 @@ func AnalyseReposListB(DestinationResult string, user string, AccessToken string
 
 	fmt.Print("\n🔎 Analysis of Repos ...\n")
 
+	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
+	spin.Color("green", "bold")
+	messageF := ""
+	spin.FinalMSG = messageF
+
 	for _, project := range repolist {
 
 		pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s.git", Protocol, user, AccessToken, trimmedURL, project.ProjectKey, project.RepoSlug)
-		outputFileName := fmt.Sprintf("Result_%s_%s", project.ProjectKey, project.RepoSlug)
+		outputFileName := fmt.Sprintf("Result_%s_%s_%s", project.ProjectKey, project.RepoSlug, project.MainBranch)
 
 		params := gcloc.Params{
 			Path:              pathToScan,
@@ -223,13 +228,16 @@ func AnalyseReposListB(DestinationResult string, user string, AccessToken string
 			ReportFormats:     []string{"json"},
 			Branch:            project.MainBranch,
 		}
+		MessB := fmt.Sprintf("   Extracting files from repo : %s ", project.RepoSlug)
+		spin.Suffix = MessB
+		spin.Start()
 
 		gc, err := gcloc.NewGCloc(params, constants.Languages)
 		if err != nil {
 			fmt.Println("\nError Analyse Repositories: ", err)
 			os.Exit(1)
 		}
-
+		//fmt.Println("\r ")
 		gc.Run()
 		cpt++
 
@@ -240,6 +248,8 @@ func AnalyseReposListB(DestinationResult string, user string, AccessToken string
 			return
 		}
 
+		spin.Stop()
+		fmt.Printf("\t✅ The repository <%s> has been analyzed\n", project.RepoSlug)
 	}
 	return cpt
 }
@@ -538,9 +548,9 @@ func main() {
 			} */
 
 	}
-
+	fmt.Print("\n🔎 Analyse Report ...\n")
 	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
-	spin.Suffix = " \nAnalyse Report..."
+	spin.Suffix = " Analyse Report..."
 	spin.Color("green", "bold")
 	spin.Start()
 
@@ -597,14 +607,14 @@ func main() {
 	minutes := int(duration.Minutes()) % 60
 	seconds := int(duration.Seconds()) % 60
 
-	message0 := fmt.Sprintf("\n✅ Number of Repository analyzed in Organization '%s' is '%d' \n", platformConfig["Organization"].(string), NumberRepos)
-	message1 := fmt.Sprintf("\n✅ The repository with the largest line of code is in project <'%s'> the repo name is <'%s'> with <'%s'> lines of code\n", maxProject, maxRepo, maxTotalCodeLines1)
-	message2 := fmt.Sprintf("\n✅  The total sum of lines of code in Organization '%s' is : %s Lines of Code\n", platformConfig["Organization"].(string), totalCodeLinesSum1)
+	message0 := fmt.Sprintf("\n✅ Number of Repository analyzed in Organization <%s> is %d \n", platformConfig["Organization"].(string), NumberRepos)
+	message1 := fmt.Sprintf("✅ The repository with the largest line of code is in project <%s> the repo name is <%s> with <%s> lines of code\n", maxProject, maxRepo, maxTotalCodeLines1)
+	message2 := fmt.Sprintf("✅ The total sum of lines of code in Organization <%s> is : %s Lines of Code\n", platformConfig["Organization"].(string), totalCodeLinesSum1)
 	message3 := message0 + message1 + message2
 
 	fmt.Println(message3)
-	fmt.Println("\n\n✅ Reports are located in the <'Results'> directory")
-	fmt.Printf("\n\n✅ Time elapsed : %02d:%02d:%02d\n", hours, minutes, seconds)
+	fmt.Println("\n✅ Reports are located in the <'Results'> directory")
+	fmt.Printf("\n✅ Time elapsed : %02d:%02d:%02d\n", hours, minutes, seconds)
 
 	// Write message in Gobal Report File
 	_, err = file.WriteString(message3)

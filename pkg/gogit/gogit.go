@@ -6,18 +6,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
-	"github.com/briandowns/spinner"
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 )
 
 func Getrepos(src, branch string) (string, error) {
-	spinner := newSpinner(fmt.Sprintf(" Extracting files from %s", src))
-	spinner.Color("green", "bold")
-	spinner.Start()
-	defer spinner.Stop()
 
 	suffix, err := randomSuffix()
 	if err != nil {
@@ -31,8 +25,9 @@ func Getrepos(src, branch string) (string, error) {
 	}
 
 	_, err = git.PlainClone(dst, false, &git.CloneOptions{
-		URL:           src,
-		Progress:      os.Stdout,
+		URL: src,
+		// if you want the progress bar
+		//Progress:      os.Stdout,
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
 		SingleBranch:  true,
 	})
@@ -56,14 +51,6 @@ func Getrepos(src, branch string) (string, error) {
 	}
 
 	return dst, nil
-}
-
-func newSpinner(text string) *spinner.Spinner {
-	return spinner.New(
-		spinner.CharSets[35],
-		100*time.Millisecond,
-		spinner.WithSuffix(text),
-	)
 }
 
 func randomSuffix() (string, error) {

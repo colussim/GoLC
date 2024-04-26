@@ -6,14 +6,22 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/briandowns/spinner"
 	getter "github.com/hashicorp/go-getter"
 )
 
+func extractLastString(url string) string {
+	parts := strings.Split(url, "/")
+	return parts[len(parts)-1]
+}
+
 func Getter(src string) (string, error) {
-	spinner := newSpinner(fmt.Sprintf(" Extracting files from %s", src))
+	RepoString := extractLastString(src)
+
+	spinner := newSpinner(fmt.Sprintf(" Extracting files from %s \n", RepoString))
 	spinner.Color("green", "bold")
 	spinner.Start()
 	defer spinner.Stop()

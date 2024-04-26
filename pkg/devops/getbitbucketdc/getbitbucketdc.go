@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/briandowns/spinner"
@@ -18,6 +19,12 @@ type ProjectBranch struct {
 	RepoSlug    string
 	MainBranch  string
 	LargestSize int
+}
+
+type AnalysisResult struct {
+	NumProjects     int
+	NumRepositories int
+	ProjectBranches []ProjectBranch
 }
 
 type ProjectResponse struct {
@@ -169,6 +176,11 @@ func GetReposProject(projects []Project, url, baseapi, apiver, accessToken, bitb
 	var importantBranches []ProjectBranch
 	var message4 string
 	emptyRepo := 0
+	result := AnalysisResult{}
+
+	spin1 := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
+	spin1.Prefix = "Get Projects... "
+	spin1.Color("green", "bold")
 
 	spin.Start()
 	messageF := fmt.Sprintf("✅ The number of project(s) to analyze is %d\n", len(projects))
@@ -176,14 +188,12 @@ func GetReposProject(projects []Project, url, baseapi, apiver, accessToken, bitb
 	spin.Stop()
 
 	for _, project := range projects {
-		// Display Project Name
-		//	fmt.Printf("✅ Projet: %s - Key: %s\n", project.Name, project.Key)
+
+		fmt.Printf("\n\t🟢  Analyse Projet: %s \n", project.Name)
 		largestRepoSize = 0
 		largestRepoBranch = ""
 
 		urlrepos := fmt.Sprintf("%s%s%s/projects/%s/repos", url, baseapi, apiver, project.Key)
-
-		// Get Repos for each Project
 
 		repos, err := fetchAllRepos(urlrepos, accessToken, exclusionList)
 		if err != nil {
@@ -198,20 +208,17 @@ func GetReposProject(projects []Project, url, baseapi, apiver, accessToken, bitb
 		} else {
 			message4 = "Repositories"
 		}
-		fmt.Printf("✅ The number of %s to analyze is: %d\n", message4, len(projects))
 
-		// Get repo with largest branch size
-		spin.Prefix = "Analysis of repos Finds the largest branch size..."
-		spin.Start()
+		fmt.Printf("\t  ✅ The number of %s found is: %d\n", message4, len(repos))
 
 		for _, repo := range repos {
 
 			isEmpty, err := isRepositoryEmpty(project.Key, repo.Slug, accessToken, bitbucketURLBase, apiver)
 			if err != nil {
 				fmt.Printf("❌ Error when Testing if repo is empty %s: %v\n", repo.Name, err)
-				spin.Stop()
 				continue
 			}
+
 			if !isEmpty {
 
 				urlrepos := fmt.Sprintf("%s%s%s/projects/%s/repos/%s/branches", url, baseapi, apiver, project.Key, repo.Slug)
@@ -223,34 +230,26 @@ func GetReposProject(projects []Project, url, baseapi, apiver, accessToken, bitb
 					os.Exit(1)
 				}
 				// Display Number of branches by repo
-
-				messageF := fmt.Sprintf("✅ Repo: %s - Number of branches: %d\n", repo.Name, len(branches))
-				spin.FinalMSG = messageF
-				spin.Stop()
-
-				spin.Prefix = "Analysis branch size..."
-				spin.Start()
+				fmt.Printf("\n\t   ✅ Repo: <%s> - Number of branches: %d\n", repo.Name, len(branches))
 
 				// Finding the branch with the largest size
 
 				for _, branch := range branches {
-					messageB := fmt.Sprintf("\t Analysis branch %s size...", branch.Name)
-					spin.Prefix = messageB
-					spin.Start()
+					messageB := fmt.Sprintf("\t   Analysis branch <%s> size...", branch.Name)
+					spin1.Prefix = messageB
+					spin1.Start()
 
 					size, err := fetchBranchSize(project.Key, repo.Slug, branch.Name, accessToken, url, apiver)
+					messageF = ""
+					spin1.FinalMSG = messageF
 
-					messageF := fmt.Sprintf("\t\t✅ Analysis branch %s size : %s\n", branch.Name, formatSize(int64(size)))
-					spin.FinalMSG = messageF
-					spin.Stop()
+					spin1.Stop()
 
 					if err != nil {
 						fmt.Println("\n❌ Error retrieving branch size:", err)
 						spin.Stop()
 						os.Exit(1)
 					}
-					// Display size of branch
-					// fmt.Printf("\t\t\t✅ Size of branch: %s \n", sizemb)
 
 					if size > largestRepoSize {
 						largestRepoSize = size
@@ -259,24 +258,42 @@ func GetReposProject(projects []Project, url, baseapi, apiver, accessToken, bitb
 					}
 
 				}
-				spin.Stop()
-				os.Exit(1)
+
+				fmt.Printf("\t     ✅ The largest branch of the repo is <%s> of size : %s\n", largestRepoBranch, formatSize(int64(largestRepoSize)))
+
 				importantBranches = append(importantBranches, ProjectBranch{
 					ProjectKey:  project.Key,
 					RepoSlug:    repo.Slug,
 					MainBranch:  largestRepoBranch,
 					LargestSize: largestRepoSize,
 				})
+
 			} else {
 				emptyRepo++
 			}
+
 		}
-		spin.Stop()
 
 	}
-	spin.Stop()
 
-	//fmt.Printf("\n✅ The number of %s to analyze is: %d\n", message4, len(importantBranches))
+	result.NumProjects = len(projects)
+	result.NumRepositories = nbRepos
+	result.ProjectBranches = importantBranches
+
+	// Save Result of Analysis
+	file, err := os.Create("Results/analysis_repos.json")
+	if err != nil {
+		fmt.Println("❌ Error creating Analysis file:", err)
+		return importantBranches, nbRepos, emptyRepo
+	}
+	defer file.Close()
+	encoder := json.NewEncoder(file)
+
+	err = encoder.Encode(result)
+	if err != nil {
+		fmt.Println("Error encoding JSON file <Results/analysis_repos.json> :", err)
+		return importantBranches, nbRepos, emptyRepo
+	}
 
 	return importantBranches, nbRepos, emptyRepo
 }
@@ -288,9 +305,9 @@ func GetRepos(project string, repos []Repo, url, baseapi, apiver, accessToken, b
 	var importantBranches []ProjectBranch
 	emptyRepo := 0
 	nbRepos := 1
+	result := AnalysisResult{}
 
-	spin.Prefix = "Analysis of repos Finds the largest branch size..."
-	spin.Start()
+	fmt.Printf("\n🟢 Analyse Projet: %s \n", project)
 
 	isEmpty, err := isRepositoryEmpty(project, repos[0].Slug, accessToken, bitbucketURLBase, apiver)
 	if err != nil {
@@ -308,14 +325,16 @@ func GetRepos(project string, repos []Repo, url, baseapi, apiver, accessToken, b
 			spin.Stop()
 			os.Exit(1)
 		}
+
 		// Display Number of branches by repo
-		// fmt.Printf("\r\t✅ Repo: %s - Number of branches: %d\n", repos[0].Name, len(branches))
+		fmt.Printf("\n\t   ✅ Repo: <%s> - Number of branches: %d\n", repos[0].Name, len(branches))
 
 		// Finding the branch with the largest size
 
 		for _, branch := range branches {
-			// Display Branch name
-			// fmt.Printf("\t\t✅ Branche: %s\n", branch.Name)
+			messageB := fmt.Sprintf("\t   Analysis branch <%s> size...", branch.Name)
+			spin.Prefix = messageB
+			spin.Start()
 
 			size, err := fetchBranchSize(project, repos[0].Slug, branch.Name, accessToken, url, apiver)
 			if err != nil {
@@ -323,8 +342,10 @@ func GetRepos(project string, repos []Repo, url, baseapi, apiver, accessToken, b
 				spin.Stop()
 				continue
 			}
-			// Display size of branch
-			// fmt.Printf("\t\t\t✅ Size of branch: %s \n", sizemb)
+			messageF := ""
+			spin.FinalMSG = messageF
+
+			spin.Stop()
 
 			if size > largestRepoSize {
 				largestRepoSize = size
@@ -333,6 +354,8 @@ func GetRepos(project string, repos []Repo, url, baseapi, apiver, accessToken, b
 			}
 
 		}
+		fmt.Printf("\t     ✅ The largest branch of the repo is <%s> of size : %s\n", largestRepoBranch, formatSize(int64(largestRepoSize)))
+
 		importantBranches = append(importantBranches, ProjectBranch{
 			ProjectKey:  project,
 			RepoSlug:    repos[0].Slug,
@@ -344,7 +367,25 @@ func GetRepos(project string, repos []Repo, url, baseapi, apiver, accessToken, b
 		return importantBranches, nbRepos, emptyRepo
 	}
 
-	spin.Stop()
+	result.NumProjects = 1
+	result.NumRepositories = nbRepos
+	result.ProjectBranches = importantBranches
+
+	// Save Result of Analysis
+	file, err := os.Create("Results/analysis_repos.json")
+	if err != nil {
+		fmt.Println("❌ Error creating Analysis file:", err)
+		return importantBranches, nbRepos, emptyRepo
+	}
+	defer file.Close()
+	encoder := json.NewEncoder(file)
+
+	err = encoder.Encode(result)
+	if err != nil {
+		fmt.Println("Error encoding JSON file <Results/analysis_repos.json> :", err)
+		return importantBranches, nbRepos, emptyRepo
+	}
+
 	return importantBranches, nbRepos, emptyRepo
 
 }
@@ -353,7 +394,7 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile, pr
 
 	var largestRepoSize int
 	var totalSize int
-	var largestRepoProject, largestRepoBranch string
+	var largestRepoProject, largestRepoBranch, largesRepo string
 	var importantBranches []ProjectBranch
 	var exclusionList *ExclusionList
 	var err1 error
@@ -363,6 +404,8 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile, pr
 	emptyRepo := 0
 	bitbucketURLBase := url
 	bitbucketURL := fmt.Sprintf("%s%s%s/projects", url, baseapi, apiver)
+
+	fmt.Print("\n🔎 Analysis of devops platform objects ...\n")
 
 	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
 	spin.Prefix = "Get Projects... "
@@ -394,10 +437,6 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile, pr
 			spin.Stop()
 			return nil, err
 		}
-
-		//	messageF := fmt.Sprintf("\n✅ The number of project(s) to analyze is %d\n", len(projects))
-		//	spin.FinalMSG = messageF
-		//		spin.Stop()
 
 		importantBranches, nbRepos, emptyRepo = GetReposProject(projects, url, baseapi, apiver, accessToken, bitbucketURLBase, nbRepos, exclusionList, spin)
 
@@ -446,6 +485,7 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile, pr
 	largestRepoSize = 0
 	largestRepoBranch = ""
 	largestRepoProject = ""
+	largesRepo = ""
 
 	for _, branch := range importantBranches {
 		//	fmt.Printf("Projet: %s, Repo: %s, Branche: %s, Taille: %d\n", branch.ProjectKey, branch.RepoSlug, branch.MainBranch, branch.LargestSize)
@@ -454,13 +494,14 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile, pr
 			largestRepoSize = branch.LargestSize
 			largestRepoBranch = branch.MainBranch
 			largestRepoProject = branch.ProjectKey
+			largesRepo = branch.RepoSlug
 		}
 		totalSize += branch.LargestSize
 	}
 	totalSizeMB := formatSize(int64(totalSize))
 	largestRepoSizeMB := formatSize(int64(largestRepoSize))
 
-	fmt.Printf("\n✅ The largest repo is in the %s with the branch %s and a size of %s\n", largestRepoProject, largestRepoBranch, largestRepoSizeMB)
+	fmt.Printf("\n✅ The largest repo is <%s> in the project <%s> with the branch <%s> and a size of %s\n", largesRepo, largestRepoProject, largestRepoBranch, largestRepoSizeMB)
 	fmt.Printf("\r✅ Total size of your organization's repositories: %s\n", totalSizeMB)
 	fmt.Printf("\r✅ Total repositories analyzed: %d - Find empty : %d\n", nbRepos-emptyRepo, emptyRepo)
 
@@ -754,43 +795,6 @@ func fetchFiles(url string, accessToken string) (*FileResponse, error) {
 	return &filesResp, nil
 }
 
-/*func fetchBranchSize(projectKey string, repoSlug string, branchName string, accessToken string, bitbucketURLBase string, apiver string) (int, error) {
-	url := fmt.Sprintf("%srest/api/%s/projects/%s/repos/%s/browse?at=refs/heads/%s", bitbucketURLBase, apiver, projectKey, repoSlug, branchName)
-
-	fmt.Println("URL:", url)
-	os.Exit(1)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return 0, err
-	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return 0, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return 0, err
-	}
-
-	var filesResp FileResponse
-	err = json.Unmarshal(body, &filesResp)
-	if err != nil {
-		return 0, err
-	}
-
-	totalSize := 0
-	for _, file := range filesResp.Children.Values {
-		totalSize += file.Size
-	}
-
-	return totalSize, nil
-}*/
-
 func fetchBranchSize(projectKey string, repoSlug string, branchName string, accessToken string, bitbucketURLBase string, apiver string) (int, error) {
 	url := fmt.Sprintf("%srest/api/%s/projects/%s/repos/%s/browse?at=refs/heads/%s", bitbucketURLBase, apiver, projectKey, repoSlug, branchName)
 
@@ -811,32 +815,48 @@ func fetchBranchSize(projectKey string, repoSlug string, branchName string, acce
 	if err != nil {
 		return 0, err
 	}
-	//	fmt.Println("Response Body:", string(body))
+
 	var filesResp FileResponse
 	err = json.Unmarshal(body, &filesResp)
 	if err != nil {
 		return 0, err
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(len(filesResp.Children.Values))
+
 	totalSize := 0
+	resultCh := make(chan int)
+
 	for _, file := range filesResp.Children.Values {
-		if file.Type == "FILE" {
-			totalSize += file.Size
-		} else if file.Type == "DIRECTORY" {
-			// Call the recursive function to calculate size for each directory
-			dirSize, err := fetchDirectorySize(projectKey, repoSlug, branchName, file.Path.Components, accessToken, bitbucketURLBase, apiver)
-			if err != nil {
-				return 0, err
+		go func(fileInfo File) {
+			defer wg.Done()
+			if fileInfo.Type == "FILE" {
+				resultCh <- fileInfo.Size
+			} else if fileInfo.Type == "DIRECTORY" {
+				dirSize, err := fetchDirectorySize(projectKey, repoSlug, branchName, fileInfo.Path.Components, accessToken, bitbucketURLBase, apiver)
+				if err != nil {
+					fmt.Println("Error:", err)
+					return
+				}
+				resultCh <- dirSize
 			}
-			totalSize += dirSize
-		}
+		}(file)
 	}
-	fmt.Println("\nTotal size branch main:", totalSize)
+
+	go func() {
+		wg.Wait()
+		close(resultCh)
+	}()
+
+	for size := range resultCh {
+		totalSize += size
+	}
+
 	return totalSize, nil
 }
 
 func fetchDirectorySize(projectKey string, repoSlug string, branchName string, components []string, accessToken string, bitbucketURLBase string, apiver string) (int, error) {
-	// url := fmt.Sprintf("%srest/api/%s/projects/%s/repos/%s/browse?at=refs/heads/%s/%s", bitbucketURLBase, apiver, projectKey, repoSlug, branchName, pathJoin(components))
 	url := fmt.Sprintf("%srest/api/%s/projects/%s/repos/%s/browse/%s?at=refs/heads/%s", bitbucketURLBase, apiver, projectKey, repoSlug, strings.Join(components, "/"), branchName)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -856,8 +876,6 @@ func fetchDirectorySize(projectKey string, repoSlug string, branchName string, c
 	if err != nil {
 		return 0, err
 	}
-	//	fmt.Println("\nURL Directory", url)
-	//	fmt.Println("\nResponse Body:", string(body))
 
 	var filesResp FileResponse
 	err = json.Unmarshal(body, &filesResp)
@@ -865,26 +883,38 @@ func fetchDirectorySize(projectKey string, repoSlug string, branchName string, c
 		return 0, err
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(len(filesResp.Children.Values))
+
 	totalSize := 0
+	resultCh := make(chan int)
+
 	for _, file := range filesResp.Children.Values {
-		if file.Type == "FILE" {
-			totalSize += file.Size
-		} else if file.Type == "DIRECTORY" {
-			// Recursive call for subdirectories
-			subdirSize, err := fetchDirectorySize(projectKey, repoSlug, branchName, append(components, file.Path.Components...), accessToken, bitbucketURLBase, apiver)
-			if err != nil {
-				return 0, err
+		go func(fileInfo File) {
+			defer wg.Done()
+			if fileInfo.Type == "FILE" {
+				resultCh <- fileInfo.Size
+			} else if fileInfo.Type == "DIRECTORY" {
+				subdirSize, err := fetchDirectorySize(projectKey, repoSlug, branchName, append(components, fileInfo.Path.Components...), accessToken, bitbucketURLBase, apiver)
+				if err != nil {
+					fmt.Println("Error:", err)
+					return
+				}
+				resultCh <- subdirSize
 			}
-			totalSize += subdirSize
-		}
+		}(file)
+	}
+
+	go func() {
+		wg.Wait()
+		close(resultCh)
+	}()
+
+	for size := range resultCh {
+		totalSize += size
 	}
 
 	return totalSize, nil
-}
-
-// Helper function to join path components
-func pathJoin(components []string) string {
-	return fmt.Sprintf("/%s", (components))
 }
 
 func isRepositoryEmpty(projectKey, repoSlug, accessToken, bitbucketURLBase, apiver string) (bool, error) {

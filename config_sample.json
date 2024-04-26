@@ -19,6 +19,7 @@
         "AccessToken": "xxxxxxxxxxxxxx",
         "Organization": "sonar-demo",
         "DevOps": "bitbucket_dc",
+        "Workspace":"",
         "Project": "",
         "Repos": "",
         "Branch": "",
