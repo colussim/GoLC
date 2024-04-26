@@ -1,0 +1,17 @@
+{
+  "TotalFiles": 3,
+  "TotalLines": 216,
+  "TotalBlankLines": 38,
+  "TotalComments": 27,
+  "TotalCodeLines": 151,
+  "Results": [
+    {
+      "Language": "Golang",
+      "Files": 3,
+      "Lines": 216,
+      "BlankLines": 38,
+      "Comments": 27,
+      "CodeLines": 151
+    }
+  ]
+}

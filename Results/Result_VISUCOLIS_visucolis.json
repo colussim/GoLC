@@ -1,0 +1,73 @@
+{
+  "TotalFiles": 926,
+  "TotalLines": 73043,
+  "TotalBlankLines": 10860,
+  "TotalComments": 8237,
+  "TotalCodeLines": 53946,
+  "Results": [
+    {
+      "Language": "C#",
+      "Files": 622,
+      "Lines": 42304,
+      "BlankLines": 6118,
+      "Comments": 6841,
+      "CodeLines": 29345
+    },
+    {
+      "Language": "TypeScript",
+      "Files": 205,
+      "Lines": 23240,
+      "BlankLines": 3768,
+      "Comments": 1186,
+      "CodeLines": 18286
+    },
+    {
+      "Language": "HTML",
+      "Files": 67,
+      "Lines": 4296,
+      "BlankLines": 384,
+      "Comments": 64,
+      "CodeLines": 3848
+    },
+    {
+      "Language": "Scss",
+      "Files": 5,
+      "Lines": 1604,
+      "BlankLines": 316,
+      "Comments": 67,
+      "CodeLines": 1221
+    },
+    {
+      "Language": "JavaScript",
+      "Files": 18,
+      "Lines": 1028,
+      "BlankLines": 215,
+      "Comments": 71,
+      "CodeLines": 742
+    },
+    {
+      "Language": "SQL",
+      "Files": 7,
+      "Lines": 368,
+      "BlankLines": 37,
+      "Comments": 5,
+      "CodeLines": 326
+    },
+    {
+      "Language": "YAML",
+      "Files": 1,
+      "Lines": 196,
+      "BlankLines": 21,
+      "Comments": 2,
+      "CodeLines": 173
+    },
+    {
+      "Language": "XML",
+      "Files": 1,
+      "Lines": 7,
+      "BlankLines": 1,
+      "Comments": 1,
+      "CodeLines": 5
+    }
+  ]
+}

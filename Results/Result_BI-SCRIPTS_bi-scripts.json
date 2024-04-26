@@ -1,0 +1,25 @@
+{
+  "TotalFiles": 4,
+  "TotalLines": 134,
+  "TotalBlankLines": 18,
+  "TotalComments": 9,
+  "TotalCodeLines": 107,
+  "Results": [
+    {
+      "Language": "YAML",
+      "Files": 3,
+      "Lines": 126,
+      "BlankLines": 18,
+      "Comments": 9,
+      "CodeLines": 99
+    },
+    {
+      "Language": "XML",
+      "Files": 1,
+      "Lines": 8,
+      "BlankLines": 0,
+      "Comments": 0,
+      "CodeLines": 8
+    }
+  ]
+}

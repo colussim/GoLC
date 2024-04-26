@@ -1,0 +1,25 @@
+{
+  "TotalFiles": 51,
+  "TotalLines": 3792,
+  "TotalBlankLines": 622,
+  "TotalComments": 391,
+  "TotalCodeLines": 2779,
+  "Results": [
+    {
+      "Language": "Java",
+      "Files": 38,
+      "Lines": 3410,
+      "BlankLines": 600,
+      "Comments": 384,
+      "CodeLines": 2426
+    },
+    {
+      "Language": "XML",
+      "Files": 13,
+      "Lines": 382,
+      "BlankLines": 22,
+      "Comments": 7,
+      "CodeLines": 353
+    }
+  ]
+}

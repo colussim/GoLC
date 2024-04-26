@@ -1,0 +1,17 @@
+{
+  "TotalFiles": 30,
+  "TotalLines": 2713,
+  "TotalBlankLines": 361,
+  "TotalComments": 140,
+  "TotalCodeLines": 2212,
+  "Results": [
+    {
+      "Language": "C#",
+      "Files": 30,
+      "Lines": 2713,
+      "BlankLines": 361,
+      "Comments": 140,
+      "CodeLines": 2212
+    }
+  ]
+}

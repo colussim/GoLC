@@ -1,0 +1,49 @@
+{
+  "TotalFiles": 178,
+  "TotalLines": 11286,
+  "TotalBlankLines": 1681,
+  "TotalComments": 1455,
+  "TotalCodeLines": 8150,
+  "Results": [
+    {
+      "Language": "C#",
+      "Files": 171,
+      "Lines": 10895,
+      "BlankLines": 1631,
+      "Comments": 1453,
+      "CodeLines": 7811
+    },
+    {
+      "Language": "YAML",
+      "Files": 4,
+      "Lines": 154,
+      "BlankLines": 12,
+      "Comments": 0,
+      "CodeLines": 142
+    },
+    {
+      "Language": "JavaScript",
+      "Files": 1,
+      "Lines": 100,
+      "BlankLines": 9,
+      "Comments": 0,
+      "CodeLines": 91
+    },
+    {
+      "Language": "HTML",
+      "Files": 1,
+      "Lines": 110,
+      "BlankLines": 24,
+      "Comments": 2,
+      "CodeLines": 84
+    },
+    {
+      "Language": "CSS",
+      "Files": 1,
+      "Lines": 27,
+      "BlankLines": 5,
+      "Comments": 0,
+      "CodeLines": 22
+    }
+  ]
+}
