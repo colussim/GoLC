@@ -1,7 +1,0 @@
-
-✅ Number of Repository analyzed in Organization 'sonar-demo' is '39' 
-
-
-✅ In Organization 'sonar-demo' the largest number of line of code is <'1.58M'> in the repository <'pickuplogitics'> in Project :<'PICKUPLOGITICS'>
-
-✅ Reports are located in the <'Results'> directory
