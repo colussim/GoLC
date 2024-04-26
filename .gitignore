@@ -1,5 +1,5 @@
 **/.DS_Store
-Results
-tests/
+Results/*
+mod_tests/
 config.json
-.cloc_bitbucket_ignore 
+.cloc_*_ignore 
