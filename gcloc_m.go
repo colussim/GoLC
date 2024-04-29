@@ -1,9 +1,11 @@
 package main
 
 import (
+	"archive/zip"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -20,6 +22,14 @@ import (
 	"github.com/colussim/gcloc_m/pkg/gcloc"
 	"github.com/colussim/gcloc_m/pkg/utils"
 )
+
+type OrganizationData struct {
+	Organization           string `json:"Organization"`
+	TotalLinesOfCode       string `json:"TotalLinesOfCode"`
+	LargestRepository      string `json:"LargestRepository"`
+	LinesOfCodeLargestRepo string `json:"LinesOfCodeLargestRepo"`
+	DevOpsPlatform         string `json:"DevOpsPlatform"`
+}
 
 type Repository struct {
 	ID            int    `json:"id"`
@@ -158,6 +168,7 @@ func getFileNameIfExists(filePath string) string {
 	}
 }
 
+// Load Config File
 func LoadConfig(filename string) (Config, error) {
 	var config Config
 
@@ -190,6 +201,71 @@ func parseJSONFile(filePath, reponame string) int {
 	//fmt.Printf("\nTotal Lines Of Code : %d\n\n", report.TotalCodeLines)
 
 	return report.TotalCodeLines
+}
+
+// Create a Bakup File for Result directory
+func createBackup(sourceDir, pwd string) error {
+
+	backupDir := pwd + "/Saves"
+	backupFileName := fmt.Sprintf("%s_%s.zip", filepath.Base(sourceDir), time.Now().Format("2006-01-02_15-04-05"))
+	backupFilePath := filepath.Join(backupDir, backupFileName)
+
+	backupFile, err := os.Create(backupFilePath)
+	if err != nil {
+		return fmt.Errorf("error creating backup file: %s", err)
+	}
+	defer backupFile.Close()
+
+	// Create a new ZIP archive
+	zipWriter := zip.NewWriter(backupFile)
+	defer zipWriter.Close()
+
+	// Recursive function to add all files and directories to the ZIP
+	err = filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Ignore the directory itself
+		if path == sourceDir {
+			return nil
+		}
+
+		// Get the relative path of the file to the home directory
+		relPath, err := filepath.Rel(sourceDir, path)
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			relPath += string(os.PathSeparator)
+		}
+		zipFile, err := zipWriter.Create(relPath)
+		if err != nil {
+			return err
+		}
+
+		if !info.IsDir() {
+			file, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+
+			_, err = io.Copy(zipFile, file)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("error adding files to the backup: %s", err)
+	}
+
+	fmt.Println("✅ Backup created successfully:", backupFilePath)
+	return nil
 }
 
 // Analyse Repositories bitbucket DC
@@ -373,6 +449,8 @@ func main() {
 	var NumberRepos int
 	var startTime time.Time
 
+	// Test command line Flags
+
 	devopsFlag := flag.String("devops", "", "Specify the DevOps platform")
 	flag.Parse()
 
@@ -396,11 +474,14 @@ func main() {
 
 	fmt.Printf("\n✅ Using configuration for DevOps platform '%s'\n", *devopsFlag)
 
+	// Test whether to delete the Results directory and save it before deleting.
+
 	pwd, err := os.Getwd()
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
 	DestinationResult := pwd + "/Results"
+
 	_, err = os.Stat(DestinationResult)
 	if err == nil {
 
@@ -409,6 +490,20 @@ func main() {
 		fmt.Scanln(&response)
 
 		if response == "y" || response == "Y" {
+
+			fmt.Printf("❗️ Do you want to create a backup of the directory before deleting? (y/n): ")
+			var backupResponse string
+			fmt.Scanln(&backupResponse)
+
+			if backupResponse == "y" || backupResponse == "Y" {
+				// Créer la sauvegarde ZIP
+				err := createBackup(DestinationResult, pwd)
+				if err != nil {
+					fmt.Printf("❌ Error creating backup: %s\n", err)
+					os.Exit(1)
+				}
+			}
+
 			err := os.RemoveAll(DestinationResult)
 			if err != nil {
 				fmt.Printf("❌ Error deleting directory: %s\n", err)
@@ -433,14 +528,17 @@ func main() {
 	}
 	fmt.Printf("\n")
 
-	GlobalReport := DestinationResult + "/GlobalReport.txt"
 	// Create Global Report File
+
+	GlobalReport := DestinationResult + "/GlobalReport.txt"
 	file, err := os.Create(GlobalReport)
 	if err != nil {
 		fmt.Println("❌ Error creating file:", err)
 		return
 	}
 	defer file.Close()
+
+	// Select DevOps Platform
 
 	switch devops := platformConfig["DevOps"].(string); devops {
 	case "github":
@@ -552,6 +650,8 @@ func main() {
 			} */
 
 	}
+
+	// Begin of report file analysis
 	fmt.Print("\n🔎 Analyse Report ...\n")
 	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
 	spin.Suffix = " Analyse Report..."
@@ -568,6 +668,7 @@ func main() {
 	// Initialize the sum of TotalCodeLines
 	totalCodeLinesSum := 0
 
+	// Analyse All file
 	for _, file := range files {
 		// Check if the file is a JSON file
 		if !file.IsDir() && strings.HasSuffix(file.Name(), ".json") {
@@ -602,6 +703,35 @@ func main() {
 
 	maxTotalCodeLines1 := formatCodeLines(float64(maxTotalCodeLines))
 	totalCodeLinesSum1 := formatCodeLines(float64(totalCodeLinesSum))
+
+	// Global Result file
+	data := OrganizationData{
+		Organization:           platformConfig["Organization"].(string),
+		TotalLinesOfCode:       totalCodeLinesSum1,
+		LargestRepository:      maxRepo,
+		LinesOfCodeLargestRepo: maxTotalCodeLines1,
+		DevOpsPlatform:         platformConfig["DevOps"].(string),
+	}
+
+	jsonData, err := json.MarshalIndent(data, "", "    ")
+	if err != nil {
+		fmt.Println("\n❌ Error during JSON encoding in Gobal Report:", err)
+		return
+	}
+	// Created Global Result json file
+	file1, err := os.Create("Results/GlobalReport.json")
+	if err != nil {
+		fmt.Println("\n❌ Error during file creation Gobal Report:", err)
+		return
+	}
+	defer file.Close()
+
+	_, err = file1.Write(jsonData)
+	if err != nil {
+		fmt.Println("\n❌ Error writing to file:", err)
+		return
+	}
+
 	spin.Stop()
 
 	endTime := time.Now()
@@ -623,7 +753,7 @@ func main() {
 	// Write message in Gobal Report File
 	_, err = file.WriteString(message3)
 	if err != nil {
-		fmt.Println("Error writing to file:", err)
+		fmt.Println("\n❌ Error writing to file:", err)
 		return
 	}
 }
