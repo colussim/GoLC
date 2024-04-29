@@ -1,5 +1,6 @@
 **/.DS_Store
 Results/*
+Saves/*
 mod_tests/
 config.json
 .cloc_*_ignore 
