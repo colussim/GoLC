@@ -19,9 +19,8 @@ type LanguageData struct {
 
 func main() {
 
-	directory := "Results" // Remplacez ceci par le chemin de votre répertoire
+	directory := "Results"
 
-	// Dictionnaire pour stocker le nombre de lignes de code par langage
 	ligneDeCodeParLangage := make(map[string]int)
 
 	err := filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
@@ -29,7 +28,7 @@ func main() {
 			return err
 		}
 
-		// Si le fichier n'est pas un répertoire et son nom commence par "Result_"
+		// If the file is not a directory and its name starts with "Result_", then
 		if !info.IsDir() && strings.HasPrefix(info.Name(), "Result_") {
 			file, err := os.Open(path)
 			if err != nil {
@@ -38,20 +37,20 @@ func main() {
 			defer file.Close()
 
 			if filepath.Ext(path) == ".json" {
-				// Lecture du fichier JSON
+				// Reading the JSON file
 				fileData, err := os.ReadFile(path)
 				if err != nil {
 					return err
 				}
 
-				// Décodage des données JSON
+				// JSON data decoding
 				var data FileData
 				err = json.Unmarshal(fileData, &data)
 				if err != nil {
 					return err
 				}
 
-				// Parcours des résultats de chaque fichier
+				// Browse results for each file
 				for _, result := range data.Results {
 					language := result.Language
 					codeLines := result.CodeLines
@@ -62,11 +61,11 @@ func main() {
 		return nil
 	})
 	if err != nil {
-		fmt.Println("❌ Erreur lors de la lecture des fichiers :", err)
+		fmt.Println("❌ Error reading files :", err)
 		return
 	}
 
-	// Création de la structure de sortie
+	// Create output structure
 	var resultats []LanguageData
 	for lang, total := range ligneDeCodeParLangage {
 		resultats = append(resultats, LanguageData{
@@ -74,17 +73,16 @@ func main() {
 			CodeLines: total,
 		})
 	}
-
-	// Écriture des résultats dans un fichier JSON
+	// Writing results to a JSON file
 	outputData, err := json.MarshalIndent(resultats, "", "  ")
 	if err != nil {
-		fmt.Println("❌ Erreur lors de la création du fichier JSON de sortie :", err)
+		fmt.Println("❌ Error creating output JSON file :", err)
 		return
 	}
 	outputFile := "Results/code_lines_by_language.json"
 	err = os.WriteFile(outputFile, outputData, 0644)
 	if err != nil {
-		fmt.Println("❌ Erreur lors de l'écriture dans le fichier JSON de sortie :", err)
+		fmt.Println("❌ Error writing to output JSON file :", err)
 		return
 	}
 

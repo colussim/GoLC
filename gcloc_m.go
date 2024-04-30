@@ -15,7 +15,7 @@ import (
 	"github.com/briandowns/spinner"
 	"github.com/colussim/gcloc_m/internal/constants"
 
-	//	getbibucket "github.com/colussim/gcloc_m/pkg/devops/getbitbucket"
+	getbibucket "github.com/colussim/gcloc_m/pkg/devops/getbitbucket"
 	getbibucketdc "github.com/colussim/gcloc_m/pkg/devops/getbitbucketdc"
 	"github.com/colussim/gcloc_m/pkg/devops/getgithub"
 	"github.com/colussim/gcloc_m/pkg/devops/getgitlab"
@@ -632,22 +632,22 @@ func main() {
 		NumberRepos = AnalyseReposListB(DestinationResult, platformConfig["Users"].(string), platformConfig["AccessToken"].(string), platformConfig["Protocol"].(string), platformConfig["Url"].(string), platformConfig["DevOps"].(string), projects)
 
 	case "bitbucket":
-		//var fileexclusion = platformConfig["FileExclusion"].(string)
-		/*	fileexclusionEX := getFileNameIfExists(fileexclusion)
+		var fileexclusion = platformConfig["FileExclusion"].(string)
+		fileexclusionEX := getFileNameIfExists(fileexclusion)
 
-			startTime = time.Now()
+		startTime = time.Now()
 
-			projects1, err := getbibucket.GetProjectBitbucketListCloud(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["Apiver"].(string), platformConfig["AccessToken"].(string), platformConfig["Workspace"].(string), fileexclusionEX, platformConfig["Project"].(string), platformConfig["Repos"].(string))
-			if err != nil {
-				fmt.Printf("❌ Error Get Info Projects in Bitbucket server '%s' : ", err)
-				return
-			}
-			fmt.Println("Taille de pr", len(projects1))
-			for _, allproject := range projects1 {
+		projects1, err := getbibucket.GetProjectBitbucketListCloud(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["Apiver"].(string), platformConfig["AccessToken"].(string), platformConfig["Workspace"].(string), fileexclusionEX, platformConfig["Project"].(string), platformConfig["Repos"].(string))
+		if err != nil {
+			fmt.Printf("❌ Error Get Info Projects in Bitbucket server '%s' : ", err)
+			return
+		}
+		fmt.Println("Taille de pr", len(projects1))
+		/*for _, allproject := range projects1 {
 
-				fmt.Println("\n✅ Projet KEY: , Projet Name: \n", allproject.Key, allproject.Name)
-				fmt.Println()
-			} */
+			fmt.Println("\n✅ Projet KEY: , Projet Name: \n", allproject.Key, allproject.Name)
+			fmt.Println()
+		}*/
 
 	}
 

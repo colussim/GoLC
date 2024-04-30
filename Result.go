@@ -107,7 +107,7 @@ func main() {
 	})
 
 	// Start HTTP server
-	//fmt.Println("✅ Server started on http://localhost:8080")
+
 	http.Handle("/dist/", http.StripPrefix("/dist/", http.FileServer(http.Dir("dist"))))
 
 	if isPortOpen(8080) {
