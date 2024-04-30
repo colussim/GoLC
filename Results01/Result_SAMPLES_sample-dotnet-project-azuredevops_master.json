@@ -1,0 +1,25 @@
+{
+  "TotalFiles": 5,
+  "TotalLines": 205,
+  "TotalBlankLines": 28,
+  "TotalComments": 39,
+  "TotalCodeLines": 138,
+  "Results": [
+    {
+      "Language": "C#",
+      "Files": 4,
+      "Lines": 136,
+      "BlankLines": 16,
+      "Comments": 39,
+      "CodeLines": 81
+    },
+    {
+      "Language": "YAML",
+      "Files": 1,
+      "Lines": 69,
+      "BlankLines": 12,
+      "Comments": 0,
+      "CodeLines": 57
+    }
+  ]
+}

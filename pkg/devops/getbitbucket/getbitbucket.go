@@ -349,6 +349,98 @@ func GetReposProjectCloud(projects []Projectc, url, baseapi, apiver, accessToken
 	return importantBranches, nbRepos, emptyRepo
 }
 
+func GetRepos(project string, repos []Repo, url, baseapi, apiver, accessToken, bitbucketURLBase string, exclusionList *ExclusionList, spin *spinner.Spinner) ([]ProjectBranch, int, int) {
+
+	var largestRepoSize int
+	var largestRepoBranch string
+	var importantBranches []ProjectBranch
+	emptyRepo := 0
+	nbRepos := 1
+	result := AnalysisResult{}
+
+	fmt.Printf("\n🟢 Analyse Projet: %s \n", project)
+
+	isEmpty, err := isRepositoryEmpty(project, repos[0].Slug, accessToken, bitbucketURLBase, apiver)
+	if err != nil {
+		fmt.Printf("❌ Error when Testing if repo is empty %s: %v\n", repos[0].Name, err)
+		spin.Stop()
+		os.Exit(1)
+	}
+	if !isEmpty {
+
+		urlrepos := fmt.Sprintf("%s%s%s/projects/%s/repos/%s/branches", url, baseapi, apiver, project, repos[0].Slug)
+
+		branches, err := fetchAllBranches(urlrepos, accessToken)
+		if err != nil {
+			fmt.Printf("❌ Error when retrieving branches for repo %s: %v\n", repos[0].Name, err)
+			spin.Stop()
+			os.Exit(1)
+		}
+
+		// Display Number of branches by repo
+		fmt.Printf("\n\t   ✅ Repo: <%s> - Number of branches: %d\n", repos[0].Name, len(branches))
+
+		// Finding the branch with the largest size
+
+		for _, branch := range branches {
+			messageB := fmt.Sprintf("\t   Analysis branch <%s> size...", branch.Name)
+			spin.Prefix = messageB
+			spin.Start()
+
+			size, err := fetchBranchSize(project, repos[0].Slug, branch.Name, accessToken, url, apiver)
+			if err != nil {
+				fmt.Println("❌ Error retrieving branch size:", err)
+				spin.Stop()
+				continue
+			}
+			messageF := ""
+			spin.FinalMSG = messageF
+
+			spin.Stop()
+
+			if size > largestRepoSize {
+				largestRepoSize = size
+				//largestRepoProject = project.Name
+				largestRepoBranch = branch.Name
+			}
+
+		}
+		fmt.Printf("\t     ✅ The largest branch of the repo is <%s> of size : %s\n", largestRepoBranch, formatSize(int64(largestRepoSize)))
+
+		importantBranches = append(importantBranches, ProjectBranch{
+			ProjectKey:  project,
+			RepoSlug:    repos[0].Slug,
+			MainBranch:  largestRepoBranch,
+			LargestSize: largestRepoSize,
+		})
+	} else {
+		fmt.Println("❌ Repo is empty:", repos[0].Name)
+		return importantBranches, nbRepos, emptyRepo
+	}
+
+	result.NumProjects = 1
+	result.NumRepositories = nbRepos
+	result.ProjectBranches = importantBranches
+
+	// Save Result of Analysis
+	file, err := os.Create("Results/config/analysis_repos.json")
+	if err != nil {
+		fmt.Println("❌ Error creating Analysis file:", err)
+		return importantBranches, nbRepos, emptyRepo
+	}
+	defer file.Close()
+	encoder := json.NewEncoder(file)
+
+	err = encoder.Encode(result)
+	if err != nil {
+		fmt.Println("Error encoding JSON file <Results/config/analysis_repos.json> :", err)
+		return importantBranches, nbRepos, emptyRepo
+	}
+
+	return importantBranches, nbRepos, emptyRepo
+
+}
+
 // func GetProjectBitbucketListCloud(url, baseapi, apiver, accessToken, workspace, exlusionfile, project, repo string) ([]Projectc, error) {
 func GetProjectBitbucketListCloud(url, baseapi, apiver, accessToken, workspace, exlusionfile, project, repo string) ([]ProjectBranch, error) {
 
@@ -401,14 +493,10 @@ func GetProjectBitbucketListCloud(url, baseapi, apiver, accessToken, workspace, 
 
 		importantBranches, nbRepos, emptyRepo = GetReposProjectCloud(projects, url, baseapi, apiver, accessToken, bitbucketURLBase, workspace, nbRepos, exclusionList, spin)
 
-		//importantBranches, nbRepos, emptyRepo = GetReposProject(projects, url, baseapi, apiver, accessToken, url,workspace, nbRepos, exclusionList, spin)
-
-		//func GetReposProjectCloud(projects []Projectc, url, baseapi, apiver, accessToken, bitbucketURLBase,workspace string, nbRepos int, exclusionList *ExclusionList, spin *spinner.Spinner) ([]ProjectBranch, int, int) {
-
 	} else if len(project) > 0 && len(repo) == 0 {
 
 		spin.Start()
-		bitbucketURLProject := fmt.Sprintf("%s/%s", bitbucketURL, project)
+		bitbucketURLProject := fmt.Sprintf("%s%s/workspaces/%s/projects/%s", url, apiver, workspace, project)
 
 		projects, err := CloudOnelProjects(bitbucketURLProject, accessToken, exclusionList)
 		if err != nil {
