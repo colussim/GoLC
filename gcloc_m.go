@@ -210,6 +210,16 @@ func createBackup(sourceDir, pwd string) error {
 	backupFileName := fmt.Sprintf("%s_%s.zip", filepath.Base(sourceDir), time.Now().Format("2006-01-02_15-04-05"))
 	backupFilePath := filepath.Join(backupDir, backupFileName)
 
+	if _, err := os.Stat(backupDir); os.IsNotExist(err) {
+		// Si le répertoire n'existe pas, le créer
+		err := os.Mkdir(backupDir, 0755) // 0755 pour les autorisations par défaut
+		if err != nil {
+			fmt.Println("❌ Error creating directory::", err)
+			os.Exit(1)
+		}
+
+	}
+
 	backupFile, err := os.Create(backupFilePath)
 	if err != nil {
 		return fmt.Errorf("error creating backup file: %s", err)
@@ -269,10 +279,10 @@ func createBackup(sourceDir, pwd string) error {
 }
 
 // Analyse Repositories bitbucket DC
-func AnalyseReposListB(DestinationResult string, user string, AccessToken string, Protocol string, URL string, DevOps string, repolist []getbibucketdc.ProjectBranch) (cpt int) {
+func AnalyseReposListBitSRV(DestinationResult string, user string, AccessToken string, Protocol string, URL string, DevOps string, repolist []getbibucketdc.ProjectBranch) (cpt int) {
 
-	//var pathBranches string
-	trimmedURL := strings.TrimPrefix(URL, "http://")
+	URLcut := Protocol + "://"
+	trimmedURL := strings.TrimPrefix(URL, URLcut)
 
 	fmt.Print("\n🔎 Analysis of Repos ...\n")
 
@@ -284,6 +294,65 @@ func AnalyseReposListB(DestinationResult string, user string, AccessToken string
 	for _, project := range repolist {
 
 		pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s.git", Protocol, user, AccessToken, trimmedURL, project.ProjectKey, project.RepoSlug)
+		outputFileName := fmt.Sprintf("Result_%s_%s_%s", project.ProjectKey, project.RepoSlug, project.MainBranch)
+
+		params := gcloc.Params{
+			Path:              pathToScan,
+			ByFile:            false,
+			ExcludePaths:      []string{},
+			ExcludeExtensions: []string{},
+			IncludeExtensions: []string{},
+			OrderByLang:       false,
+			OrderByFile:       false,
+			OrderByCode:       false,
+			OrderByLine:       false,
+			OrderByBlank:      false,
+			OrderByComment:    false,
+			Order:             "DESC",
+			OutputName:        outputFileName,
+			OutputPath:        DestinationResult,
+			ReportFormats:     []string{"json"},
+			Branch:            project.MainBranch,
+		}
+		MessB := fmt.Sprintf("   Extracting files from repo : %s ", project.RepoSlug)
+		spin.Suffix = MessB
+		spin.Start()
+
+		gc, err := gcloc.NewGCloc(params, constants.Languages)
+		if err != nil {
+			fmt.Println("\nError Analyse Repositories: ", err)
+			os.Exit(1)
+		}
+		//fmt.Println("\r ")
+		gc.Run()
+		cpt++
+
+		// Remove Repository Directory
+		err1 := os.RemoveAll(gc.Repopath)
+		if err != nil {
+			fmt.Printf("❌ Error deleting Repository Directory: %v\n", err1)
+			return
+		}
+
+		spin.Stop()
+		fmt.Printf("\t✅ The repository <%s> has been analyzed\n", project.RepoSlug)
+	}
+	return cpt
+}
+
+// Analyse Repositories bitbucket Cl;oud
+func AnalyseReposListBitC(DestinationResult, user, AccessToken, Protocol, Baseurl, workspace, DevOps string, repolist []getbibucket.ProjectBranch) (cpt int) {
+
+	fmt.Print("\n🔎 Analysis of Repos ...\n")
+
+	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
+	spin.Color("green", "bold")
+	messageF := ""
+	spin.FinalMSG = messageF
+
+	for _, project := range repolist {
+
+		pathToScan := fmt.Sprintf("%s://x-token-auth:%s@%s/%s/%s.git", Protocol, AccessToken, Baseurl, workspace, project.RepoSlug)
 		outputFileName := fmt.Sprintf("Result_%s_%s_%s", project.ProjectKey, project.RepoSlug, project.MainBranch)
 
 		params := gcloc.Params{
@@ -629,7 +698,7 @@ func main() {
 		}
 
 		// Run scanning repositories
-		NumberRepos = AnalyseReposListB(DestinationResult, platformConfig["Users"].(string), platformConfig["AccessToken"].(string), platformConfig["Protocol"].(string), platformConfig["Url"].(string), platformConfig["DevOps"].(string), projects)
+		NumberRepos = AnalyseReposListBitSRV(DestinationResult, platformConfig["Users"].(string), platformConfig["AccessToken"].(string), platformConfig["Protocol"].(string), platformConfig["Url"].(string), platformConfig["DevOps"].(string), projects)
 
 	case "bitbucket":
 		var fileexclusion = platformConfig["FileExclusion"].(string)
@@ -639,10 +708,13 @@ func main() {
 
 		projects1, err := getbibucket.GetProjectBitbucketListCloud(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["Apiver"].(string), platformConfig["AccessToken"].(string), platformConfig["Workspace"].(string), fileexclusionEX, platformConfig["Project"].(string), platformConfig["Repos"].(string))
 		if err != nil {
-			fmt.Printf("❌ Error Get Info Projects in Bitbucket server '%s' : ", err)
+			fmt.Printf("❌ Error Get Info Projects in Bitbucket cloud '%s' : ", err)
 			return
 		}
-		fmt.Println("Taille de pr", len(projects1))
+
+		// Run scanning repositories
+		NumberRepos = AnalyseReposListBitC(DestinationResult, platformConfig["Users"].(string), platformConfig["AccessToken"].(string), platformConfig["Protocol"].(string), platformConfig["Baseapi"].(string), platformConfig["Workspace"].(string), platformConfig["DevOps"].(string), projects1)
+
 		/*for _, allproject := range projects1 {
 
 			fmt.Println("\n✅ Projet KEY: , Projet Name: \n", allproject.Key, allproject.Name)

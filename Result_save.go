@@ -63,7 +63,7 @@ func isPortOpen(port int) bool {
 	return true
 }
 
-func generatePDF2(pageData PageData) error {
+func generatePDF(pageData PageData) error {
 	// Créer un nouveau document PDF
 	pdf := gofpdf.New("P", "mm", "A4", "")
 
@@ -104,58 +104,60 @@ func generatePDF2(pageData PageData) error {
 }
 
 func main() {
-	var pageData PageData
-
-	// Reading data from the GlobalReport JSON file
-	data0, err := os.ReadFile("Results/GlobalReport.json")
-	if err != nil {
-		fmt.Println("❌ Error reading data0", http.StatusInternalServerError)
-		return
-	}
-
-	// JSON data decoding
-	var Ginfo Globalinfo
-
-	err = json.Unmarshal(data0, &Ginfo)
-	if err != nil {
-		fmt.Println("❌ Error decoding JSON data0", http.StatusInternalServerError)
-		return
-	}
-
-	// Reading data from the Resultanalyse JSON file
-	data, err := os.ReadFile("Results/code_lines_by_language.json")
-	if err != nil {
-		fmt.Println("❌ Error reading data", http.StatusInternalServerError)
-		return
-	}
-
-	// JSON data decoding
-	var languages []LanguageData
-	err = json.Unmarshal(data, &languages)
-	if err != nil {
-		fmt.Println("❌ Error decoding JSON data", http.StatusInternalServerError)
-		return
-	}
-
-	// Calculating percentages
-	total := 0
-	for _, lang := range languages {
-		total += lang.CodeLines
-	}
-	for i := range languages {
-		languages[i].Percentage = float64(languages[i].CodeLines) / float64(total) * 100
-		languages[i].FormatCodeLines()
-	}
-
-	// Load HTML template
-	tmpl := template.Must(template.New("index").Parse(htmlTemplate))
-
-	pageData = PageData{
-		Languages:    languages,
-		GlobalReport: Ginfo,
-	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+
+		var pageData PageData
+
+		// Reading data from the GlobalReport JSON file
+		data0, err := os.ReadFile("Results/GlobalReport.json")
+		if err != nil {
+			http.Error(w, "❌ Error reading data0", http.StatusInternalServerError)
+			return
+		}
+
+		// JSON data decoding
+		var Ginfo Globalinfo
+
+		err = json.Unmarshal(data0, &Ginfo)
+		if err != nil {
+			http.Error(w, "❌ Error decoding JSON data0", http.StatusInternalServerError)
+			return
+		}
+
+		// Reading data from the Resultanalyse JSON file
+		data, err := os.ReadFile("Results/code_lines_by_language.json")
+		if err != nil {
+			http.Error(w, "❌ Error reading data", http.StatusInternalServerError)
+			return
+		}
+
+		// JSON data decoding
+		var languages []LanguageData
+		err = json.Unmarshal(data, &languages)
+		if err != nil {
+			http.Error(w, "❌ Error decoding JSON data", http.StatusInternalServerError)
+			return
+		}
+
+		// Calculating percentages
+		total := 0
+		for _, lang := range languages {
+			total += lang.CodeLines
+		}
+		for i := range languages {
+			languages[i].Percentage = float64(languages[i].CodeLines) / float64(total) * 100
+			languages[i].FormatCodeLines()
+		}
+		//languages.FormatCodeLines()
+
+		// Load HTML template
+		tmpl := template.Must(template.New("index").Parse(htmlTemplate))
+
+		pageData = PageData{
+			Languages:    languages,
+			GlobalReport: Ginfo,
+		}
 
 		// Run Template
 		err = tmpl.Execute(w, pageData)
@@ -165,6 +167,11 @@ func main() {
 		}
 	})
 
+	err := generatePDF(pageData)
+	if err != nil {
+		fmt.Println("❌ Error generating PDF:", err)
+		return
+	}
 	// Start HTTP server
 
 	http.Handle("/dist/", http.StripPrefix("/dist/", http.FileServer(http.Dir("dist"))))
@@ -222,8 +229,7 @@ func main() {
 		}
 	}
 
-	//select {}
-
+	select {}
 }
 
 // HTML template
