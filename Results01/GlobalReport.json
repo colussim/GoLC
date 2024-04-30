@@ -1,7 +1,0 @@
-{
-    "Organization": "sonar-demo",
-    "TotalLinesOfCode": "2.06M",
-    "LargestRepository": "gcloc",
-    "LinesOfCodeLargestRepo": "2.05M",
-    "DevOpsPlatform": "bitbucket"
-}

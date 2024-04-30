@@ -1,4 +1,0 @@
-
-✅ Number of Repository analyzed in Organization <sonar-demo> is 11 
-✅ The repository with the largest line of code is in project <CLOC> the repo name is <gcloc> with <2.05M> lines of code
-✅ The total sum of lines of code in Organization <sonar-demo> is : 2.06M Lines of Code
