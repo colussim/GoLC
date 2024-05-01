@@ -1,4 +1,4 @@
-package gcloc
+package golc
 
 import (
 	"fmt"
