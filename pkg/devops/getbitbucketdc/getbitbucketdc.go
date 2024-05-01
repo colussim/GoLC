@@ -443,25 +443,30 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile, pr
 		importantBranches, nbRepos, emptyRepo = GetReposProject(projects, url, baseapi, apiver, accessToken, bitbucketURLBase, nbRepos, exclusionList, spin)
 
 	} else if len(project) > 0 && len(repo) == 0 {
-
-		spin.Start()
-		bitbucketURLProject := fmt.Sprintf("%s/%s", bitbucketURL, project)
-
-		projects, err := fetchOnelProjects(bitbucketURLProject, accessToken, exclusionList)
-		if err != nil {
-			fmt.Printf("\n❌ Error Get Project:%s - %v", project, err)
-			spin.Stop()
-			return nil, err
-		}
-		spin.Stop()
-
-		if len(projects) == 0 {
-			fmt.Printf("\n❌ Error Project:%s not exist - %v", project, err)
-			spin.Stop()
-			return nil, err
+		if isProjectExcluded1(project, *exclusionList) {
+			fmt.Println("\n❌ Projet", project, "is excluded from the analysis... edit <.cloc_bitbucket_ignore> file")
+			os.Exit(1)
 		} else {
-			importantBranches, nbRepos, emptyRepo = GetReposProject(projects, url, baseapi, apiver, accessToken, bitbucketURLBase, nbRepos, exclusionList, spin)
 
+			spin.Start()
+			bitbucketURLProject := fmt.Sprintf("%s/%s", bitbucketURL, project)
+
+			projects, err := fetchOnelProjects(bitbucketURLProject, accessToken, exclusionList)
+			if err != nil {
+				fmt.Printf("\n❌ Error Get Project:%s - %v", project, err)
+				spin.Stop()
+				return nil, err
+			}
+			spin.Stop()
+
+			if len(projects) == 0 {
+				fmt.Printf("\n❌ Error Project:%s not exist - %v", project, err)
+				spin.Stop()
+				return nil, err
+			} else {
+				importantBranches, nbRepos, emptyRepo = GetReposProject(projects, url, baseapi, apiver, accessToken, bitbucketURLBase, nbRepos, exclusionList, spin)
+
+			}
 		}
 	} else if len(project) > 0 && len(repo) > 0 {
 
@@ -625,7 +630,10 @@ func fetchProjects(url string, accessToken string, isProjectResponse bool) (inte
 	return projectsResp, nil
 
 }
-
+func isProjectExcluded1(projectName string, exclusionList ExclusionList) bool {
+	_, found := exclusionList.Projects[projectName]
+	return found
+}
 func isProjectExcluded(exclusionList *ExclusionList, project string) bool {
 	_, excluded := exclusionList.Projects[project]
 	return excluded

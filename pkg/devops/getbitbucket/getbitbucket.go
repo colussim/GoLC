@@ -147,6 +147,18 @@ type ParamsReposProjectCloud struct {
 	Spin             *spinner.Spinner
 }
 
+type ParamsReposCloud struct {
+	Projects         string
+	Repos            []Reposc
+	URL              string
+	BaseAPI          string
+	APIVersion       string
+	AccessToken      string
+	BitbucketURLBase string
+	Workspace        string
+	ExclusionList    *ExclusionList
+}
+
 const PrefixMsg = "Get Projects..."
 
 func formatSize(size int64) string {
@@ -201,7 +213,16 @@ func loadExclusionList(filename string) (*ExclusionList, error) {
 	return exclusionList, nil
 }
 
-// func GetReposProjectCloud(projects []Projectc, url, baseapi, apiver, accessToken, bitbucketURLBase, workspace string, nbRepos int, exclusionList *ExclusionList, spin *spinner.Spinner) ([]ProjectBranch, int, int) {
+func isProjectAndRepoExcluded(repoName string, exclusionList ExclusionList) bool {
+
+	excluded, repoExcluded := exclusionList.Repos[repoName]
+	return repoExcluded && excluded
+}
+func isProjectExcluded1(projectName string, exclusionList ExclusionList) bool {
+	_, found := exclusionList.Projectcs[projectName]
+	return found
+}
+
 func GetReposProjectCloud(parms ParamsReposProjectCloud) ([]ProjectBranch, int, int) {
 
 	var largestRepoSize int
@@ -329,7 +350,8 @@ func GetReposProjectCloud(parms ParamsReposProjectCloud) ([]ProjectBranch, int, 
 	return importantBranches, parms.NBRepos, emptyRepo
 }
 
-func GetRepos(project string, repos []Reposc, url, baseapi, apiver, accessToken, bitbucketURLBase, workspace string, exclusionList *ExclusionList) ([]ProjectBranch, int, int) {
+// func GetRepos(project string, repos []Reposc, url, baseapi, apiver, accessToken, bitbucketURLBase, workspace string, exclusionList *ExclusionList) ([]ProjectBranch, int, int) {
+func GetRepos(parms ParamsReposCloud) ([]ProjectBranch, int, int) {
 
 	var largestRepoSize int
 	var largestRepoBranch string
@@ -342,28 +364,28 @@ func GetRepos(project string, repos []Reposc, url, baseapi, apiver, accessToken,
 	spin1.Prefix = PrefixMsg
 	spin1.Color("green", "bold")
 
-	fmt.Printf("\n🟢 Analyse Projet: %s \n", project)
+	fmt.Printf("\n🟢 Analyse Projet: %s \n", parms.Projects)
 
-	isEmpty, err := isRepositoryEmpty(workspace, repos[0].Slug, accessToken, bitbucketURLBase)
+	isEmpty, err := isRepositoryEmpty(parms.Workspace, parms.Repos[0].Slug, parms.AccessToken, parms.BitbucketURLBase)
 	if err != nil {
-		fmt.Printf("❌ Error when Testing if repo is empty %s: %v\n", repos[0].Name, err)
+		fmt.Printf("❌ Error when Testing if repo is empty %s: %v\n", parms.Repos[0].Name, err)
 		spin1.Stop()
 		os.Exit(1)
 	}
 
 	if !isEmpty {
 
-		urlrepos := fmt.Sprintf("%s%s/repositories/%s/%s/refs/branches/?pagelen=100", url, apiver, workspace, repos[0].Slug)
+		urlrepos := fmt.Sprintf("%s%s/repositories/%s/%s/refs/branches/?pagelen=100", parms.URL, parms.APIVersion, parms.Workspace, parms.Repos[0].Slug)
 
-		branches, err := CloudAllBranches(urlrepos, accessToken)
+		branches, err := CloudAllBranches(urlrepos, parms.AccessToken)
 		if err != nil {
-			fmt.Printf("❌ Error when retrieving branches for repo %s: %v\n", repos[0].Name, err)
+			fmt.Printf("❌ Error when retrieving branches for repo %s: %v\n", parms.Repos[0].Name, err)
 			spin1.Stop()
 			os.Exit(1)
 		}
 
 		// Display Number of branches by repo
-		fmt.Printf("\n\t   ✅ Repo: <%s> - Number of branches: %d\n", repos[0].Name, len(branches))
+		fmt.Printf("\n\t   ✅ Repo: <%s> - Number of branches: %d\n", parms.Repos[0].Name, len(branches))
 
 		// Finding the branch with the largest size
 
@@ -372,7 +394,7 @@ func GetRepos(project string, repos []Reposc, url, baseapi, apiver, accessToken,
 			spin1.Prefix = messageB
 			spin1.Start()
 
-			size, err := fetchBranchSize(workspace, repos[0].Slug, branch.Name, accessToken, url, apiver)
+			size, err := fetchBranchSize(parms.Workspace, parms.Repos[0].Slug, branch.Name, parms.AccessToken, parms.URL, parms.APIVersion)
 			messageF := ""
 			spin1.FinalMSG = messageF
 
@@ -394,13 +416,13 @@ func GetRepos(project string, repos []Reposc, url, baseapi, apiver, accessToken,
 		//fmt.Printf("\n\t     ✅ The largest branch of the repo is <%s> of size : %s\n", largestRepoBranch, formatSize(int64(largestRepoSize)))
 
 		importantBranches = append(importantBranches, ProjectBranch{
-			ProjectKey:  project,
-			RepoSlug:    repos[0].Slug,
+			ProjectKey:  parms.Projects,
+			RepoSlug:    parms.Repos[0].Slug,
 			MainBranch:  largestRepoBranch,
 			LargestSize: largestRepoSize,
 		})
 	} else {
-		fmt.Println("❌ Repo is empty:", repos[0].Name)
+		fmt.Println("❌ Repo is empty:", parms.Repos[0].Name)
 		return importantBranches, nbRepos, emptyRepo
 	}
 
@@ -492,37 +514,72 @@ func GetProjectBitbucketListCloud(url, baseapi, apiver, accessToken, workspace, 
 
 	} else if len(project) > 0 && len(repo) == 0 {
 
-		spin.Start()
-		bitbucketURLProject := fmt.Sprintf("%s%s/workspaces/%s/projects/%s", url, apiver, workspace, project)
-
-		projects, err := CloudOnelProjects(bitbucketURLProject, accessToken, exclusionList)
-		if err != nil {
-			fmt.Printf("\n❌ Error Get Project:%s - %v", project, err)
-			spin.Stop()
-			return nil, err
-		}
-		spin.Stop()
-
-		if len(projects) == 0 {
-			fmt.Printf("\n❌ Error Project:%s not exist - %v", project, err)
-			spin.Stop()
-			return nil, err
+		if isProjectExcluded1(project, *exclusionList) {
+			fmt.Println("\n❌ Projet", project, "is excluded from the analysis... edit <.cloc_bitbucket_ignore> file")
+			os.Exit(1)
 		} else {
-			importantBranches, nbRepos, emptyRepo = GetReposProjectCloud(projects, url, baseapi, apiver, accessToken, bitbucketURLBase, workspace, nbRepos, exclusionList, spin)
+			spin.Start()
+			bitbucketURLProject := fmt.Sprintf("%s%s/workspaces/%s/projects/%s", url, apiver, workspace, project)
 
+			projects, err := CloudOnelProjects(bitbucketURLProject, accessToken, exclusionList)
+			if err != nil {
+				fmt.Printf("\n❌ Error Get Project:%s - %v", project, err)
+				spin.Stop()
+				return nil, err
+			}
+			spin.Stop()
+
+			if len(projects) == 0 {
+				fmt.Printf("\n❌ Error Project:%s not exist - %v", project, err)
+				spin.Stop()
+				os.Exit(1)
+				//return nil, err
+			} else {
+				parms := ParamsReposProjectCloud{
+					Projects:         projects,
+					URL:              url,
+					BaseAPI:          baseapi,
+					APIVersion:       apiver,
+					AccessToken:      accessToken,
+					BitbucketURLBase: bitbucketURLBase,
+					Workspace:        workspace,
+					NBRepos:          nbRepos,
+					ExclusionList:    exclusionList,
+					Spin:             spin,
+				}
+				importantBranches, nbRepos, emptyRepo = GetReposProjectCloud(parms)
+
+			}
 		}
 	} else if len(project) > 0 && len(repo) > 0 {
 
-		bitbucketURLProject := fmt.Sprintf("%s%s/repositories/%s/%s?q=project.key=\"%s\"", url, apiver, workspace, repo, project)
-		Repos, err := fetchOneRepos(bitbucketURLProject, accessToken, exclusionList)
-		if err != nil {
-			fmt.Printf("\n❌ Error Get Repo:%s/%s - %v", project, repo, err)
-			spin.Stop()
-			return nil, err
+		Texclude := project + "/" + repo
+		if isProjectAndRepoExcluded(Texclude, *exclusionList) {
+			fmt.Println("\n❌ Projet ", project, "and the repository ", repo, "are excluded from the analysis...edit <.cloc_bitbucket_ignore> file")
+			os.Exit(1)
+		} else {
+
+			bitbucketURLProject := fmt.Sprintf("%s%s/repositories/%s/%s?q=project.key=\"%s\"", url, apiver, workspace, repo, project)
+			Repos, err := fetchOneRepos(bitbucketURLProject, accessToken, exclusionList)
+			if err != nil {
+				fmt.Printf("\n❌ Error Get Repo:%s/%s - %v", project, repo, err)
+				spin.Stop()
+				return nil, err
+			}
+			parms := ParamsReposCloud{
+				Projects:         project,
+				Repos:            Repos,
+				URL:              url,
+				BaseAPI:          baseapi,
+				APIVersion:       apiver,
+				AccessToken:      accessToken,
+				BitbucketURLBase: bitbucketURLBase,
+				Workspace:        workspace,
+				ExclusionList:    exclusionList,
+			}
+
+			importantBranches, nbRepos, emptyRepo = GetRepos(parms)
 		}
-
-		importantBranches, nbRepos, emptyRepo = GetRepos(project, Repos, url, baseapi, apiver, accessToken, bitbucketURLBase, workspace, exclusionList)
-
 	} else {
 		spin.Stop()
 		fmt.Println("❌ Error Project name is empty")
@@ -803,25 +860,6 @@ func isRepositoryEmpty(workspace, repoSlug, accessToken, bitbucketURLBase string
 	}
 
 	return false, nil
-}
-
-func fetchAllFiles(url string, accessToken string) ([]FileInfo, error) {
-	var allFiles []FileInfo
-
-	for url != "" {
-		filesResp, err := fetchFiles(url, accessToken)
-		if err != nil {
-			return nil, err
-		}
-
-		allFiles = append(allFiles, filesResp.Values...)
-		//if filesResp.IsLastPage {
-		//	break
-		//}
-		//url = fmt.Sprintf("%s?start=%d", url, filesResp.Next)
-		url = filesResp.Next
-	}
-	return allFiles, nil
 }
 
 func fetchFiles(url string, accessToken string) (*Response1, error) {
