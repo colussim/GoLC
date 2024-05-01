@@ -1,6 +1,6 @@
 package reporter
 
-import "github.com/colussim/gcloc_m/pkg/sorter"
+import "github.com/colussim/GoLC/pkg/sorter"
 
 type Reporter interface {
 	GenerateReportByLanguage(summary *sorter.SortedSummary) error

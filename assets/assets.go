@@ -1,4 +1,4 @@
-package constants
+package assets
 
 const (
 	ByFileFlag            = "by-file"

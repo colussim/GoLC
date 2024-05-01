@@ -13,14 +13,14 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
-	"github.com/colussim/gcloc_m/internal/constants"
+	"github.com/colussim/GoLC/assets/assets"
 
-	getbibucket "github.com/colussim/gcloc_m/pkg/devops/getbitbucket"
-	getbibucketdc "github.com/colussim/gcloc_m/pkg/devops/getbitbucketdc"
-	"github.com/colussim/gcloc_m/pkg/devops/getgithub"
-	"github.com/colussim/gcloc_m/pkg/devops/getgitlab"
-	"github.com/colussim/gcloc_m/pkg/gcloc"
-	"github.com/colussim/gcloc_m/pkg/utils"
+	getbibucket "github.com/colussim/GoLC/pkg/devops/getbitbucket"
+	getbibucketdc "github.com/colussim/GoLC/pkg/devops/getbitbucketdc"
+	"github.com/colussim/GoLC/pkg/devops/getgithub"
+	"github.com/colussim/GoLC/pkg/devops/getgitlab"
+	"github.com/colussim/GoLC/pkg/gcloc"
+	"github.com/colussim/GoLC/pkg/utils"
 )
 
 type OrganizationData struct {
@@ -318,7 +318,7 @@ func AnalyseReposListBitSRV(DestinationResult string, user string, AccessToken s
 		spin.Suffix = MessB
 		spin.Start()
 
-		gc, err := gcloc.NewGCloc(params, constants.Languages)
+		gc, err := gcloc.NewGCloc(params, assets.Languages)
 		if err != nil {
 			fmt.Println("\nError Analyse Repositories: ", err)
 			os.Exit(1)
@@ -377,7 +377,7 @@ func AnalyseReposListBitC(DestinationResult, user, AccessToken, Protocol, Baseur
 		spin.Suffix = MessB
 		spin.Start()
 
-		gc, err := gcloc.NewGCloc(params, constants.Languages)
+		gc, err := gcloc.NewGCloc(params, assets.Languages)
 		if err != nil {
 			fmt.Println("\nError Analyse Repositories: ", err)
 			os.Exit(1)
@@ -438,7 +438,7 @@ func AnalyseReposList(DestinationResult string, Users string, AccessToken string
 				ReportFormats:     []string{"json"},
 			}
 
-			gc, err := gcloc.NewGCloc(params, constants.Languages)
+			gc, err := gcloc.NewGCloc(params, assets.Languages)
 			if err != nil {
 				fmt.Println("\nError Analyse Repositories: ", err)
 				os.Exit(1)
@@ -460,7 +460,7 @@ func AnalyseReposList(DestinationResult string, Users string, AccessToken string
 }
 
 func AnalyseRun(params gcloc.Params, reponame string) {
-	gc, err := gcloc.NewGCloc(params, constants.Languages)
+	gc, err := gcloc.NewGCloc(params, assets.Languages)
 	if err != nil {
 		fmt.Println("\n❌ Error Analyse Repositories: ", err)
 		os.Exit(1)
@@ -492,7 +492,7 @@ func AnalyseRepo(DestinationResult string, Users string, AccessToken string, Dev
 		OutputPath:        DestinationResult,
 		ReportFormats:     []string{"json"},
 	}
-	gc, err := gcloc.NewGCloc(params, constants.Languages)
+	gc, err := gcloc.NewGCloc(params, assets.Languages)
 	if err != nil {
 		fmt.Println("\nError Analyse Repositories: ", err)
 		os.Exit(1)
@@ -525,7 +525,7 @@ func main() {
 
 	if *devopsFlag == "" {
 		fmt.Println("\n❌ Please specify the DevOps platform using the --devops flag : <BitBucketSRV>||<BitBucket>||<Github>||<Gitlab>||<Azure>||<File>")
-		fmt.Println("✅ Example for BitBucket server : gcloc_m.go --devops BitBucketSRV")
+		fmt.Println("✅ Example for BitBucket server : GoLC.go --devops BitBucketSRV")
 		os.Exit(1)
 	}
 	AppConfig, err := LoadConfig("config.json")

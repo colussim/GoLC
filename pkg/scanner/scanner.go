@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/colussim/gcloc_m/pkg/analyzer"
-	"github.com/colussim/gcloc_m/pkg/gcloc/language"
+	"github.com/colussim/GoLC/pkg/analyzer"
+	"github.com/colussim/GoLC/pkg/gcloc/language"
 	"github.com/schollz/progressbar/v3"
 )
 

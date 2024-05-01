@@ -1,6 +1,6 @@
-package constants
+package assets
 
-import "github.com/colussim/gcloc_m/pkg/gcloc/language"
+import "github.com/colussim/GoLC/pkg/golc/language"
 
 var Languages = language.Languages{
 	"ActionScript": {
