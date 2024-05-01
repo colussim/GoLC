@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/colussim/GoLC/pkg/utils"
 	"github.com/jung-kurt/gofpdf"
 )
 
@@ -21,6 +22,7 @@ type Globalinfo struct {
 	LinesOfCodeLargestRepo string `json:"LinesOfCodeLargestRepo"`
 	DevOpsPlatform         string `json:"DevOpsPlatform"`
 }
+
 type LanguageData struct {
 	Language   string  `json:"Language"`
 	CodeLines  int     `json:"CodeLines"`
@@ -50,7 +52,7 @@ func formatCodeLines(numLines float64) string {
 }
 
 func (l *LanguageData) FormatCodeLines() {
-	l.CodeLinesF = formatCodeLines(float64(l.CodeLines))
+	l.CodeLinesF = utils.FormatCodeLines(float64(l.CodeLines))
 }
 
 func isPortOpen(port int) bool {

@@ -97,6 +97,9 @@ type Project1 interface {
 	GetName() string
 }
 
+const errorMessageRepo = "\n❌ Error Analyse Repositories: "
+const errorMessageDi = "❌ Error deleting Repository Directory: %v\n"
+
 func (p Project) GetName() string {
 	return p.Name
 }
@@ -140,16 +143,6 @@ func (r GitlabRepository) GetPath() string {
 }
 func (r GitlabRepository) GetID() int {
 	return r.ID
-}
-
-func formatCodeLines(numLines float64) string {
-	if numLines >= 1000000 {
-		return fmt.Sprintf("%.2fM", numLines/1000000)
-	} else if numLines >= 1000 {
-		return fmt.Sprintf("%.2fK", numLines/1000)
-	} else {
-		return fmt.Sprintf("%.0f", numLines)
-	}
 }
 
 func getFileNameIfExists(filePath string) string {
@@ -198,26 +191,16 @@ func parseJSONFile(filePath, reponame string) int {
 		fmt.Println("❌ Error parsing JSON:", err)
 	}
 
-	//fmt.Printf("\nTotal Lines Of Code : %d\n\n", report.TotalCodeLines)
-
 	return report.TotalCodeLines
 }
 
 // Create a Bakup File for Result directory
 func createBackup(sourceDir, pwd string) error {
+	backupDir := filepath.Join(pwd, "Saves")
+	backupFilePath := generateBackupFilePath(sourceDir, backupDir)
 
-	backupDir := pwd + "/Saves"
-	backupFileName := fmt.Sprintf("%s_%s.zip", filepath.Base(sourceDir), time.Now().Format("2006-01-02_15-04-05"))
-	backupFilePath := filepath.Join(backupDir, backupFileName)
-
-	if _, err := os.Stat(backupDir); os.IsNotExist(err) {
-		// Si le répertoire n'existe pas, le créer
-		err := os.Mkdir(backupDir, 0755) // 0755 pour les autorisations par défaut
-		if err != nil {
-			fmt.Println("❌ Error creating directory::", err)
-			os.Exit(1)
-		}
-
+	if err := createBackupDirectory(backupDir); err != nil {
+		return err
 	}
 
 	backupFile, err := os.Create(backupFilePath)
@@ -226,55 +209,66 @@ func createBackup(sourceDir, pwd string) error {
 	}
 	defer backupFile.Close()
 
-	// Create a new ZIP archive
 	zipWriter := zip.NewWriter(backupFile)
 	defer zipWriter.Close()
 
-	// Recursive function to add all files and directories to the ZIP
-	err = filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
+	if err := addFilesToBackup(sourceDir, zipWriter); err != nil {
+		return err
+	}
+
+	fmt.Println("✅ Backup created successfully:", backupFilePath)
+	return nil
+}
+
+func generateBackupFilePath(sourceDir, backupDir string) string {
+	backupFileName := fmt.Sprintf("%s_%s.zip", filepath.Base(sourceDir), time.Now().Format("2006-01-02_15-04-05"))
+	return filepath.Join(backupDir, backupFileName)
+}
+
+func createBackupDirectory(backupDir string) error {
+	if _, err := os.Stat(backupDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(backupDir, 0755); err != nil {
+			return fmt.Errorf("error creating backup directory: %s", err)
+		}
+	}
+	return nil
+}
+
+func addFilesToBackup(sourceDir string, zipWriter *zip.Writer) error {
+	return filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-
-		// Ignore the directory itself
 		if path == sourceDir {
 			return nil
 		}
-
-		// Get the relative path of the file to the home directory
 		relPath, err := filepath.Rel(sourceDir, path)
 		if err != nil {
 			return err
 		}
-
-		if info.IsDir() {
-			relPath += string(os.PathSeparator)
+		if err := addFileToZip(path, relPath, info, zipWriter); err != nil {
+			return err
 		}
-		zipFile, err := zipWriter.Create(relPath)
+		return nil
+	})
+}
+
+func addFileToZip(filePath, relPath string, fileInfo os.FileInfo, zipWriter *zip.Writer) error {
+	zipFile, err := zipWriter.Create(relPath)
+	if err != nil {
+		return err
+	}
+	if !fileInfo.IsDir() {
+		file, err := os.Open(filePath)
 		if err != nil {
 			return err
 		}
-
-		if !info.IsDir() {
-			file, err := os.Open(path)
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-
-			_, err = io.Copy(zipFile, file)
-			if err != nil {
-				return err
-			}
+		defer file.Close()
+		_, err = io.Copy(zipFile, file)
+		if err != nil {
+			return err
 		}
-
-		return nil
-	})
-	if err != nil {
-		return fmt.Errorf("error adding files to the backup: %s", err)
 	}
-
-	fmt.Println("✅ Backup created successfully:", backupFilePath)
 	return nil
 }
 
@@ -320,7 +314,7 @@ func AnalyseReposListBitSRV(DestinationResult string, user string, AccessToken s
 
 		gc, err := goloc.NewGCloc(params, assets.Languages)
 		if err != nil {
-			fmt.Println("\nError Analyse Repositories: ", err)
+			fmt.Println(errorMessageRepo, err)
 			os.Exit(1)
 		}
 		//fmt.Println("\r ")
@@ -330,7 +324,7 @@ func AnalyseReposListBitSRV(DestinationResult string, user string, AccessToken s
 		// Remove Repository Directory
 		err1 := os.RemoveAll(gc.Repopath)
 		if err != nil {
-			fmt.Printf("❌ Error deleting Repository Directory: %v\n", err1)
+			fmt.Printf(errorMessageDi, err1)
 			return
 		}
 
@@ -341,7 +335,7 @@ func AnalyseReposListBitSRV(DestinationResult string, user string, AccessToken s
 }
 
 // Analyse Repositories bitbucket Cl;oud
-func AnalyseReposListBitC(DestinationResult, user, AccessToken, Protocol, Baseurl, workspace, DevOps string, repolist []getbibucket.ProjectBranch) (cpt int) {
+func AnalyseReposListBitC(DestinationResult, AccessToken, Protocol, Baseurl, workspace, DevOps string, repolist []getbibucket.ProjectBranch) (cpt int) {
 
 	fmt.Print("\n🔎 Analysis of Repos ...\n")
 
@@ -379,7 +373,7 @@ func AnalyseReposListBitC(DestinationResult, user, AccessToken, Protocol, Baseur
 
 		gc, err := goloc.NewGCloc(params, assets.Languages)
 		if err != nil {
-			fmt.Println("\nError Analyse Repositories: ", err)
+			fmt.Println(errorMessageRepo, err)
 			os.Exit(1)
 		}
 		//fmt.Println("\r ")
@@ -389,7 +383,7 @@ func AnalyseReposListBitC(DestinationResult, user, AccessToken, Protocol, Baseur
 		// Remove Repository Directory
 		err1 := os.RemoveAll(gc.Repopath)
 		if err != nil {
-			fmt.Printf("❌ Error deleting Repository Directory: %v\n", err1)
+			fmt.Printf(errorMessageDi, err1)
 			return
 		}
 
@@ -440,7 +434,7 @@ func AnalyseReposList(DestinationResult string, Users string, AccessToken string
 
 			gc, err := goloc.NewGCloc(params, assets.Languages)
 			if err != nil {
-				fmt.Println("\nError Analyse Repositories: ", err)
+				fmt.Println(errorMessageRepo, err)
 				os.Exit(1)
 			}
 
@@ -450,7 +444,7 @@ func AnalyseReposList(DestinationResult string, Users string, AccessToken string
 			// Remove Repository Directory
 			err1 := os.RemoveAll(gc.Repopath)
 			if err != nil {
-				fmt.Printf("Error deleting Repository Directory: %v\n", err1)
+				fmt.Printf(errorMessageDi, err1)
 				return
 			}
 
@@ -462,7 +456,7 @@ func AnalyseReposList(DestinationResult string, Users string, AccessToken string
 func AnalyseRun(params goloc.Params, reponame string) {
 	gc, err := goloc.NewGCloc(params, assets.Languages)
 	if err != nil {
-		fmt.Println("\n❌ Error Analyse Repositories: ", err)
+		fmt.Println(errorMessageRepo, err)
 		os.Exit(1)
 	}
 
@@ -494,7 +488,7 @@ func AnalyseRepo(DestinationResult string, Users string, AccessToken string, Dev
 	}
 	gc, err := goloc.NewGCloc(params, assets.Languages)
 	if err != nil {
-		fmt.Println("\nError Analyse Repositories: ", err)
+		fmt.Println(errorMessageRepo, err)
 		os.Exit(1)
 	}
 
@@ -504,7 +498,7 @@ func AnalyseRepo(DestinationResult string, Users string, AccessToken string, Dev
 	// Remove Repository Directory
 	err1 := os.RemoveAll(gc.Repopath)
 	if err != nil {
-		fmt.Printf("❌ Error deleting Repository Directory: %v\n", err1)
+		fmt.Printf(errorMessageDi, err1)
 		return
 	}
 
@@ -521,11 +515,20 @@ func main() {
 	// Test command line Flags
 
 	devopsFlag := flag.String("devops", "", "Specify the DevOps platform")
+	helpFlag := flag.Bool("help", false, "Show help message")
+
 	flag.Parse()
 
+	if *helpFlag {
+		fmt.Println("Usage: golc.go -devops [OPTIONS]")
+		fmt.Println("Options:  <BitBucketSRV>||<BitBucket>||<Github>||<Gitlab>||<Azure>||<File>")
+		flag.PrintDefaults()
+		os.Exit(0)
+	}
+
 	if *devopsFlag == "" {
-		fmt.Println("\n❌ Please specify the DevOps platform using the --devops flag : <BitBucketSRV>||<BitBucket>||<Github>||<Gitlab>||<Azure>||<File>")
-		fmt.Println("✅ Example for BitBucket server : GoLC.go --devops BitBucketSRV")
+		fmt.Println("\n❌ Please specify the DevOps platform using the -devops flag : <BitBucketSRV>||<BitBucket>||<Github>||<Gitlab>||<Azure>||<File>")
+		fmt.Println("✅ Example for BitBucket server : golc.go -devops BitBucketSRV")
 		os.Exit(1)
 	}
 	AppConfig, err := LoadConfig("config.json")
@@ -543,7 +546,7 @@ func main() {
 	platformConfig, ok := AppConfig.Platforms[*devopsFlag].(map[string]interface{})
 	if !ok {
 		fmt.Printf("\n❌ Configuration for DevOps platform '%s' not found\n", *devopsFlag)
-		fmt.Println("✅ the --devops flag is : <BitBucketSRV>||<BitBucket>||<Github>||<Gitlab>||<Azure>||<File>")
+		fmt.Println("✅ the -devops flag is : <BitBucketSRV>||<BitBucket>||<Github>||<Gitlab>||<Azure>||<File>")
 		os.Exit(1)
 	}
 
@@ -721,13 +724,7 @@ func main() {
 		}
 
 		// Run scanning repositories
-		NumberRepos = AnalyseReposListBitC(DestinationResult, platformConfig["Users"].(string), platformConfig["AccessToken"].(string), platformConfig["Protocol"].(string), platformConfig["Baseapi"].(string), platformConfig["Workspace"].(string), platformConfig["DevOps"].(string), projects1)
-
-	/*for _, allproject := range projects1 {
-
-		fmt.Println("\n✅ Projet KEY: , Projet Name: \n", allproject.Key, allproject.Name)
-		fmt.Println()
-	}*/
+		NumberRepos = AnalyseReposListBitC(DestinationResult, platformConfig["AccessToken"].(string), platformConfig["Protocol"].(string), platformConfig["Baseapi"].(string), platformConfig["Workspace"].(string), platformConfig["DevOps"].(string), projects1)
 
 	case "file":
 
@@ -783,8 +780,8 @@ func main() {
 		}
 	}
 
-	maxTotalCodeLines1 := formatCodeLines(float64(maxTotalCodeLines))
-	totalCodeLinesSum1 := formatCodeLines(float64(totalCodeLinesSum))
+	maxTotalCodeLines1 := utils.FormatCodeLines(float64(maxTotalCodeLines))
+	totalCodeLinesSum1 := utils.FormatCodeLines(float64(totalCodeLinesSum))
 
 	// Global Result file
 	data := OrganizationData{

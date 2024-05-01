@@ -9,10 +9,10 @@ import (
 )
 
 type FileData struct {
-	Results []LanguageData `json:"Results"`
+	Results []LanguageData1 `json:"Results"`
 }
 
-type LanguageData struct {
+type LanguageData1 struct {
 	Language  string `json:"Language"`
 	CodeLines int    `json:"CodeLines"`
 }
@@ -66,9 +66,9 @@ func main() {
 	}
 
 	// Create output structure
-	var resultats []LanguageData
+	var resultats []LanguageData1
 	for lang, total := range ligneDeCodeParLangage {
-		resultats = append(resultats, LanguageData{
+		resultats = append(resultats, LanguageData1{
 			Language:  lang,
 			CodeLines: total,
 		})

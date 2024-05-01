@@ -134,6 +134,21 @@ type ExclusionList struct {
 	Repos     map[string]bool `json:"repos"`
 }
 
+type ParamsReposProjectCloud struct {
+	Projects         []Projectc
+	URL              string
+	BaseAPI          string
+	APIVersion       string
+	AccessToken      string
+	BitbucketURLBase string
+	Workspace        string
+	NBRepos          int
+	ExclusionList    *ExclusionList
+	Spin             *spinner.Spinner
+}
+
+const PrefixMsg = "Get Projects..."
+
 func formatSize(size int64) string {
 	const (
 		byteSize = 1.0
@@ -186,7 +201,8 @@ func loadExclusionList(filename string) (*ExclusionList, error) {
 	return exclusionList, nil
 }
 
-func GetReposProjectCloud(projects []Projectc, url, baseapi, apiver, accessToken, bitbucketURLBase, workspace string, nbRepos int, exclusionList *ExclusionList, spin *spinner.Spinner) ([]ProjectBranch, int, int) {
+// func GetReposProjectCloud(projects []Projectc, url, baseapi, apiver, accessToken, bitbucketURLBase, workspace string, nbRepos int, exclusionList *ExclusionList, spin *spinner.Spinner) ([]ProjectBranch, int, int) {
+func GetReposProjectCloud(parms ParamsReposProjectCloud) ([]ProjectBranch, int, int) {
 
 	var largestRepoSize int
 	var largestRepoBranch string
@@ -196,34 +212,34 @@ func GetReposProjectCloud(projects []Projectc, url, baseapi, apiver, accessToken
 	result := AnalysisResult{}
 
 	spin1 := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
-	spin1.Prefix = "Get Projects... "
+	spin1.Prefix = PrefixMsg
 	spin1.Color("green", "bold")
 
-	spin.Start()
-	messageF := fmt.Sprintf("✅ The number of project(s) to analyze is %d\n", len(projects))
-	spin.FinalMSG = messageF
-	spin.Stop()
+	parms.Spin.Start()
+	messageF := fmt.Sprintf("✅ The number of project(s) to analyze is %d\n", len(parms.Projects))
+	parms.Spin.FinalMSG = messageF
+	parms.Spin.Stop()
 
-	for _, project := range projects {
+	for _, project := range parms.Projects {
 
 		fmt.Printf("\n\t🟢  Analyse Projet: %s \n", project.Name)
 		largestRepoSize = 0
 		largestRepoBranch = ""
 
-		urlrepos := fmt.Sprintf("%s%s/repositories/%s?q=project.key=\"%s\"&pagelen=100", url, apiver, workspace, project.Key)
+		urlrepos := fmt.Sprintf("%s%s/repositories/%s?q=project.key=\"%s\"&pagelen=100", parms.URL, parms.APIVersion, parms.Workspace, project.Key)
 
 		// Get Repos for each Project
 
-		repos, err := CloudAllRepos(urlrepos, accessToken, exclusionList)
+		repos, err := CloudAllRepos(urlrepos, parms.AccessToken, parms.ExclusionList)
 		if err != nil {
 			fmt.Println("\r❌ Get Repos for each Project:", err)
 			spin1.Stop()
 			continue
 		}
-		spin.Stop()
+		parms.Spin.Stop()
 
-		nbRepos += len(repos)
-		if nbRepos > 1 {
+		parms.NBRepos += len(repos)
+		if parms.NBRepos > 1 {
 			message4 = "Repository"
 		} else {
 			message4 = "Repositories"
@@ -235,7 +251,7 @@ func GetReposProjectCloud(projects []Projectc, url, baseapi, apiver, accessToken
 			largestRepoSize = 0
 			largestRepoBranch = ""
 
-			isEmpty, err := isRepositoryEmpty(workspace, repo.Slug, accessToken, bitbucketURLBase)
+			isEmpty, err := isRepositoryEmpty(parms.Workspace, repo.Slug, parms.AccessToken, parms.BitbucketURLBase)
 			if err != nil {
 				fmt.Printf("❌ Error when Testing if repo is empty %s: %v\n", repo.Name, err)
 				spin1.Stop()
@@ -244,9 +260,9 @@ func GetReposProjectCloud(projects []Projectc, url, baseapi, apiver, accessToken
 
 			if !isEmpty {
 
-				urlrepos := fmt.Sprintf("%s%s/repositories/%s/%s/refs/branches/?pagelen=100", url, apiver, workspace, repo.Slug)
+				urlrepos := fmt.Sprintf("%s%s/repositories/%s/%s/refs/branches/?pagelen=100", parms.URL, parms.APIVersion, parms.Workspace, repo.Slug)
 
-				branches, err := CloudAllBranches(urlrepos, accessToken)
+				branches, err := CloudAllBranches(urlrepos, parms.AccessToken)
 				if err != nil {
 					fmt.Printf("❌ Error when retrieving branches for repo %s: %v\n", repo.Name, err)
 					spin1.Stop()
@@ -262,7 +278,7 @@ func GetReposProjectCloud(projects []Projectc, url, baseapi, apiver, accessToken
 					spin1.Prefix = messageB
 					spin1.Start()
 
-					size, err := fetchBranchSize(workspace, repo.Slug, branch.Name, accessToken, url, apiver)
+					size, err := fetchBranchSize(parms.Workspace, repo.Slug, branch.Name, parms.AccessToken, parms.URL, parms.APIVersion)
 					messageF = ""
 					spin1.FinalMSG = messageF
 
@@ -292,15 +308,15 @@ func GetReposProjectCloud(projects []Projectc, url, baseapi, apiver, accessToken
 		}
 
 	}
-	result.NumProjects = len(projects)
-	result.NumRepositories = nbRepos
+	result.NumProjects = len(parms.Projects)
+	result.NumRepositories = parms.NBRepos
 	result.ProjectBranches = importantBranches
 
 	// Save Result of Analysis
 	file, err := os.Create("Results/config/analysis_repos.json")
 	if err != nil {
 		fmt.Println("❌ Error creating Analysis file:", err)
-		return importantBranches, nbRepos, emptyRepo
+		return importantBranches, parms.NBRepos, emptyRepo
 	}
 	defer file.Close()
 	encoder := json.NewEncoder(file)
@@ -308,9 +324,9 @@ func GetReposProjectCloud(projects []Projectc, url, baseapi, apiver, accessToken
 	err = encoder.Encode(result)
 	if err != nil {
 		fmt.Println("Error encoding JSON file <Results/config/analysis_repos.json> :", err)
-		return importantBranches, nbRepos, emptyRepo
+		return importantBranches, parms.NBRepos, emptyRepo
 	}
-	return importantBranches, nbRepos, emptyRepo
+	return importantBranches, parms.NBRepos, emptyRepo
 }
 
 func GetRepos(project string, repos []Reposc, url, baseapi, apiver, accessToken, bitbucketURLBase, workspace string, exclusionList *ExclusionList) ([]ProjectBranch, int, int) {
@@ -323,7 +339,7 @@ func GetRepos(project string, repos []Reposc, url, baseapi, apiver, accessToken,
 	result := AnalysisResult{}
 
 	spin1 := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
-	spin1.Prefix = "Get Projects... "
+	spin1.Prefix = PrefixMsg
 	spin1.Color("green", "bold")
 
 	fmt.Printf("\n🟢 Analyse Projet: %s \n", project)
@@ -422,16 +438,15 @@ func GetProjectBitbucketListCloud(url, baseapi, apiver, accessToken, workspace, 
 	var err1 error
 	var emptyRepo int
 
-	//totalSize = 0
 	nbRepos := 0
-	//emptyRepo := 0
+
 	bitbucketURLBase := fmt.Sprintf("%s%s/", url, apiver)
 	bitbucketURL := fmt.Sprintf("%s%s/workspaces/%s/projects/?pagelen=100", url, apiver, workspace)
 
 	fmt.Print("\n🔎 Analysis of devops platform objects ...\n")
 
 	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
-	spin.Prefix = "Get Projects... "
+	spin.Prefix = PrefixMsg
 	spin.Color("green", "bold")
 
 	if exlusionfile == "0" {
@@ -460,7 +475,20 @@ func GetProjectBitbucketListCloud(url, baseapi, apiver, accessToken, workspace, 
 		}
 		spin.Stop()
 
-		importantBranches, nbRepos, emptyRepo = GetReposProjectCloud(projects, url, baseapi, apiver, accessToken, bitbucketURLBase, workspace, nbRepos, exclusionList, spin)
+		parms := ParamsReposProjectCloud{
+			Projects:         projects,
+			URL:              url,
+			BaseAPI:          baseapi,
+			APIVersion:       apiver,
+			AccessToken:      accessToken,
+			BitbucketURLBase: bitbucketURLBase,
+			Workspace:        workspace,
+			NBRepos:          nbRepos,
+			ExclusionList:    exclusionList,
+			Spin:             spin,
+		}
+
+		importantBranches, nbRepos, emptyRepo = GetReposProjectCloud(parms)
 
 	} else if len(project) > 0 && len(repo) == 0 {
 
