@@ -1,0 +1,25 @@
+{
+  "TotalFiles": 3,
+  "TotalLines": 437,
+  "TotalBlankLines": 97,
+  "TotalComments": 21,
+  "TotalCodeLines": 319,
+  "Results": [
+    {
+      "Language": "Python",
+      "Files": 1,
+      "Lines": 361,
+      "BlankLines": 92,
+      "Comments": 21,
+      "CodeLines": 248
+    },
+    {
+      "Language": "YAML",
+      "Files": 2,
+      "Lines": 76,
+      "BlankLines": 5,
+      "Comments": 0,
+      "CodeLines": 71
+    }
+  ]
+}

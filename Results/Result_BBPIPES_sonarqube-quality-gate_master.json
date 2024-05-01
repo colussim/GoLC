@@ -1,0 +1,17 @@
+{
+  "TotalFiles": 2,
+  "TotalLines": 71,
+  "TotalBlankLines": 5,
+  "TotalComments": 0,
+  "TotalCodeLines": 66,
+  "Results": [
+    {
+      "Language": "YAML",
+      "Files": 2,
+      "Lines": 71,
+      "BlankLines": 5,
+      "Comments": 0,
+      "CodeLines": 66
+    }
+  ]
+}

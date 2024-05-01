@@ -1,0 +1,92 @@
+{
+    "platforms": {
+      "BitBucketSRV": {
+        "Users": "mcolussi",
+        "AccessToken": "OTU0NTk2ODM4NzU5Olfp6bsKkIMp9QbL1qq01gZRA6Ez",
+        "Organization": "sonar-demo",
+        "DevOps": "bitbucket_dc",
+        "Project": "TEN",
+        "Repos": "",
+        "Branch": "",
+        "Url": "http://ec2-18-194-139-24.eu-central-1.compute.amazonaws.com:7990/",
+        "Apiver": "1.0",
+        "Baseapi": "rest/api/",
+        "Protocol": "http",
+        "FileExclusion":".cloc_bitbucketdc_ignore"
+      },
+      "BitBucket": {
+        "Users": "emmanuelcolussi",
+        "AccessToken": "ATCTT3xFfGN0SyCALJHM63oqlXa0p6njf1jUHrI5wA3lKb27F_gbd2EKYWfKPbqHYWdO-_GC7zEeHS6OWsIjOueiIFidTY7zbOPIDZ2W6VvUJck7Y0i_T0m9s1Xh--zLI9_2kOfRlbfkQodlpqlt1rw9ww7Ty9FKOkBR9Yqn9A3gGB4kJJiMUAA=F81077F0",
+        "Organization": "sonar-demo",
+        "DevOps": "bitbucket",
+        "Workspace":"sonarsource",
+        "Project": "BBPIPES",
+        "Repos": "",
+        "Branch": "",
+        "Url": "https://api.bitbucket.org/",
+        "Apiver": "2.0",
+        "Baseapi": "bitbucket.org",
+        "Protocol": "https",
+        "FileExclusion":".cloc_bitbucket_ignore"
+      },
+      
+      "Github": {
+        "Users": "mcolussi",
+        "AccessToken": "OTU0NTk2ODM4NzU5Olfp6bsKkIMp9QbL1qq01gZRA6Ez",
+        "Organization": "sonar-demo",
+        "DevOps": "github",
+        "Project": "",
+        "Repos": "",
+        "Branch": "",
+        "Url": "http://ec2-18-194-139-24.eu-central-1.compute.amazonaws.com:7990/",
+        "Apiver": "1.0",
+        "Baseapi": "rest/api/",
+        "Protocol": "http",
+        "FileExclusion":".cloc_github_ignore"
+      },
+      "Gitlab": {
+        "Users": "mcolussi",
+        "AccessToken": "OTU0NTk2ODM4NzU5Olfp6bsKkIMp9QbL1qq01gZRA6Ez",
+        "Organization": "sonar-demo",
+        "DevOps": "gitlab",
+        "Project": "",
+        "Repos": "",
+        "Branch": "",
+        "Url": "http://ec2-18-194-139-24.eu-central-1.compute.amazonaws.com:7990/",
+        "Apiver": "1.0",
+        "Baseapi": "rest/api/",
+        "Protocol": "http",
+        "FileExclusion":".cloc_gitlab_ignore"
+      },
+      "Azure": {
+        "Users": "mcolussi",
+        "AccessToken": "OTU0NTk2ODM4NzU5Olfp6bsKkIMp9QbL1qq01gZRA6Ez",
+        "Organization": "sonar-demo",
+        "DevOps": "azure",
+        "Project": "",
+        "Repos": "",
+        "Branch": "",
+        "Url": "http://ec2-18-194-139-24.eu-central-1.compute.amazonaws.com:7990/",
+        "Apiver": "1.0",
+        "Baseapi": "rest/api/",
+        "Protocol": "http",
+        "FileExclusion":".cloc_azure_ignore"
+      },
+      "File": {
+        "Users": "mcolussi",
+        "AccessToken": "OTU0NTk2ODM4NzU5Olfp6bsKkIMp9QbL1qq01gZRA6Ez",
+        "Organization": "sonar-demo",
+        "DevOps": "file",
+        "Project": "",
+        "Repos": "",
+        "Branch": "",
+        "Url": "http://ec2-18-194-139-24.eu-central-1.compute.amazonaws.com:7990/",
+        "Apiver": "1.0",
+        "Baseapi": "rest/api/",
+        "Protocol": "http",
+        "FileExclusion":".cloc_file_ignore"
+      }
+    }
+  }
+  
+
