@@ -5,8 +5,8 @@ import (
 
 	"github.com/colussim/GoLC/pkg/analyzer"
 	"github.com/colussim/GoLC/pkg/filesystem"
-	"github.com/colussim/GoLC/pkg/gcloc/language"
 	"github.com/colussim/GoLC/pkg/gogit"
+	"github.com/colussim/GoLC/pkg/golc/language"
 	"github.com/colussim/GoLC/pkg/reporter"
 	"github.com/colussim/GoLC/pkg/reporter/json"
 	"github.com/colussim/GoLC/pkg/reporter/prompt"
