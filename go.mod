@@ -1,4 +1,4 @@
-module github.com/colussim/gcloc_m
+module github.com/colussim/GoLC
 
 go 1.21
 

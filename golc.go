@@ -14,12 +14,12 @@ import (
 
 	"github.com/briandowns/spinner"
 	"github.com/colussim/GoLC/assets/assets"
+	"github.com/colussim/GoLC/pkg/goloc/goloc"
 
 	getbibucket "github.com/colussim/GoLC/pkg/devops/getbitbucket"
 	getbibucketdc "github.com/colussim/GoLC/pkg/devops/getbitbucketdc"
 	"github.com/colussim/GoLC/pkg/devops/getgithub"
 	"github.com/colussim/GoLC/pkg/devops/getgitlab"
-	"github.com/colussim/GoLC/pkg/gcloc"
 	"github.com/colussim/GoLC/pkg/utils"
 )
 
@@ -296,7 +296,7 @@ func AnalyseReposListBitSRV(DestinationResult string, user string, AccessToken s
 		pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s.git", Protocol, user, AccessToken, trimmedURL, project.ProjectKey, project.RepoSlug)
 		outputFileName := fmt.Sprintf("Result_%s_%s_%s", project.ProjectKey, project.RepoSlug, project.MainBranch)
 
-		params := gcloc.Params{
+		params := goloc.Params{
 			Path:              pathToScan,
 			ByFile:            false,
 			ExcludePaths:      []string{},
@@ -318,7 +318,7 @@ func AnalyseReposListBitSRV(DestinationResult string, user string, AccessToken s
 		spin.Suffix = MessB
 		spin.Start()
 
-		gc, err := gcloc.NewGCloc(params, assets.Languages)
+		gc, err := goloc.NewGCloc(params, assets.Languages)
 		if err != nil {
 			fmt.Println("\nError Analyse Repositories: ", err)
 			os.Exit(1)
@@ -355,7 +355,7 @@ func AnalyseReposListBitC(DestinationResult, user, AccessToken, Protocol, Baseur
 		pathToScan := fmt.Sprintf("%s://x-token-auth:%s@%s/%s/%s.git", Protocol, AccessToken, Baseurl, workspace, project.RepoSlug)
 		outputFileName := fmt.Sprintf("Result_%s_%s_%s", project.ProjectKey, project.RepoSlug, project.MainBranch)
 
-		params := gcloc.Params{
+		params := goloc.Params{
 			Path:              pathToScan,
 			ByFile:            false,
 			ExcludePaths:      []string{},
@@ -377,7 +377,7 @@ func AnalyseReposListBitC(DestinationResult, user, AccessToken, Protocol, Baseur
 		spin.Suffix = MessB
 		spin.Start()
 
-		gc, err := gcloc.NewGCloc(params, assets.Languages)
+		gc, err := goloc.NewGCloc(params, assets.Languages)
 		if err != nil {
 			fmt.Println("\nError Analyse Repositories: ", err)
 			os.Exit(1)
@@ -420,7 +420,7 @@ func AnalyseReposList(DestinationResult string, Users string, AccessToken string
 			fmt.Println("Scan PATH :", pathToScan)
 			outputFileName := fmt.Sprintf("Result_%s", repo.GetName())
 
-			params := gcloc.Params{
+			params := goloc.Params{
 				Path:              pathToScan,
 				ByFile:            false,
 				ExcludePaths:      []string{},
@@ -438,7 +438,7 @@ func AnalyseReposList(DestinationResult string, Users string, AccessToken string
 				ReportFormats:     []string{"json"},
 			}
 
-			gc, err := gcloc.NewGCloc(params, assets.Languages)
+			gc, err := goloc.NewGCloc(params, assets.Languages)
 			if err != nil {
 				fmt.Println("\nError Analyse Repositories: ", err)
 				os.Exit(1)
@@ -459,8 +459,8 @@ func AnalyseReposList(DestinationResult string, Users string, AccessToken string
 	return cpt
 }
 
-func AnalyseRun(params gcloc.Params, reponame string) {
-	gc, err := gcloc.NewGCloc(params, assets.Languages)
+func AnalyseRun(params goloc.Params, reponame string) {
+	gc, err := goloc.NewGCloc(params, assets.Languages)
 	if err != nil {
 		fmt.Println("\n❌ Error Analyse Repositories: ", err)
 		os.Exit(1)
@@ -475,7 +475,7 @@ func AnalyseRepo(DestinationResult string, Users string, AccessToken string, Dev
 	pathToScan := fmt.Sprintf("https://%s:%s@%s.com/%s/%s", Users, AccessToken, DevOps, Organization, reponame)
 
 	outputFileName := fmt.Sprintf("Result_%s", reponame)
-	params := gcloc.Params{
+	params := goloc.Params{
 		Path:              pathToScan,
 		ByFile:            false,
 		ExcludePaths:      []string{},
@@ -492,7 +492,7 @@ func AnalyseRepo(DestinationResult string, Users string, AccessToken string, Dev
 		OutputPath:        DestinationResult,
 		ReportFormats:     []string{"json"},
 	}
-	gc, err := gcloc.NewGCloc(params, assets.Languages)
+	gc, err := goloc.NewGCloc(params, assets.Languages)
 	if err != nil {
 		fmt.Println("\nError Analyse Repositories: ", err)
 		os.Exit(1)

@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/colussim/GoLC/pkg/analyzer"
-	"github.com/colussim/GoLC/pkg/gcloc/language"
+	"github.com/colussim/GoLC/pkg/goloc/language"
 	"github.com/schollz/progressbar/v3"
 )
 
