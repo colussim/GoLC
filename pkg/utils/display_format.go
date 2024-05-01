@@ -21,3 +21,13 @@ func FormatSize(size int64) string {
 		return fmt.Sprintf("%.2f GB", float64(size)/gigaSize)
 	}
 }
+
+func FormatCodeLines(numLines float64) string {
+	if numLines >= 1000000 {
+		return fmt.Sprintf("%.2fM", numLines/1000000)
+	} else if numLines >= 1000 {
+		return fmt.Sprintf("%.2fK", numLines/1000)
+	} else {
+		return fmt.Sprintf("%.0f", numLines)
+	}
+}
