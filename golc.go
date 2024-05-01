@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
-	"github.com/colussim/GoLC/assets/assets"
-	"github.com/colussim/GoLC/pkg/goloc/goloc"
+	"github.com/colussim/GoLC/assets"
+	"github.com/colussim/GoLC/pkg/goloc"
 
 	getbibucket "github.com/colussim/GoLC/pkg/devops/getbitbucket"
 	getbibucketdc "github.com/colussim/GoLC/pkg/devops/getbitbucketdc"
