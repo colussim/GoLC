@@ -25,11 +25,155 @@ You can install from the stable release by clicking here
 
  ## Usage
 
+ ✅ Environment Configuration
+
+ Before running GoLC, you need to configure your environment by initializing the various values in the config.json file.
+
+ ```json
+{
+    "platforms": {
+      "BitBucketSRV": {
+        "Users": "xxxxxxxxxxxxxx",
+        "AccessToken": "xxxxxxxxxxxxxx",
+        "Organization": "xxxxxx",
+        "DevOps": "bitbucket_dc",
+        "Project": "",
+        "Repos": "",
+        "Branch": "",
+        "Url": "http://X.X.X.X/",
+        "Apiver": "1.0",
+        "Baseapi": "rest/api/",
+        "Protocol": "http",
+        "FileExclusion":".cloc_bitbucketdc_ignore"
+      },
+      "BitBucket": {
+        "Users": "xxxxxxxxxxxxxx",
+        "AccessToken": "xxxxxxxxxxxxxx",
+        "Organization": "xxxxx",
+        "DevOps": "bitbucket",
+        "Workspace":"sonarsource",
+        "Project": "",
+        "Repos": "",
+        "Branch": "",
+        "Url": "https://api.bitbucket.org/",
+        "Apiver": "2.0",
+        "Baseapi": "bitbucket.org",
+        "Protocol": "http",
+        "FileExclusion":".cloc_bitbucket_ignore"
+      },
+      "Github": {
+        "Users": "xxxxxxxxxxxxxx",
+        "AccessToken": "xxxxxxxxxxxxxx",
+        "Organization": "xxxxxxxxxx",
+        "DevOps": "github",
+        "Project": "",
+        "Repos": "",
+        "Branch": "",
+        "Url": "https://api.github.com/",
+        "Apiver": "",
+        "Baseapi": "api.github.com/",
+        "Protocol": "https",
+        "FileExclusion":".cloc_github_ignore"
+      },
+      "Gitlab": {
+        "Users": "xxxxxxxxxxxxxx",
+        "AccessToken": "xxxxxxxxxxxxxx",
+        "Organization": "xxxxxxxx",
+        "DevOps": "gitlab",
+        "Project": "",
+        "Repos": "",
+        "Branch": "",
+        "Url": "https://gitlab.com/",
+        "Apiver": "v4",
+        "Baseapi": "api/",
+        "Protocol": "https",
+        "FileExclusion":".cloc_gitlab_ignore"
+      },
+      "Azure": {
+        "Users": "xxxxxxxxxxxxxx",
+        "AccessToken": "xxxxxxxxxxxxxx",
+        "Organization": "xxxxxxxx",
+        "DevOps": "azure",
+        "Project": "",
+        "Repos": "",
+        "Branch": "",
+        "Url": "https://dev.azure.com/",
+        "Apiver": "7.1",
+        "Baseapi": "_apis/git/",
+        "Protocol": "https",
+        "FileExclusion":".cloc_azure_ignore"
+      },
+      "File": {
+        "Users": "",
+        "AccessToken": "",
+        "Organization": "xxxxxxxxx",
+        "DevOps": "file",
+        "Project": "",
+        "Repos": "",
+        "Branch": "",
+        "Url": "",
+        "Apiver": "",
+        "Baseapi": "",
+        "Protocol": "",
+        "FileExclusion":".cloc_file_ignore"
+      }
+    }
+  }
+  
+ ```
+This file represents the 6 supported platforms for analysis: BitBucketSRV (Bitbucket DC), BitBucket (cloud), GitHub, GitLab, Azure (Azure DevOps), and File. Depending on your platform, for example, Bitbucket DC (enter BitBucketSRV), specify the parameters:
+
+ ```json
+"Users": "xxxxxxxxxxxxxx" : Your User login
+"AccessToken": "xxxxxxxxxxxxxx" : Your Token
+"Organization": "xxxxxx": Your organization
+ ```
+
+If '**Projects**' and '**Repos**' are not specified, the analysis will be conducted on all repositories. You can specify a project name in '**Projects**', and the analysis will be limited to the specified project. If you specify '**Repos**', the analysis will be limited to the specified repositories.
+```json
+"Project": "",
+"Repos": "",
+```
+For Bitbucket DC, you must provide the URL with your server address and change the '**Protocol**' entry if you are using an https connection , ending with '**/**'. The '**Branch**' entry is not used at the moment.
+```json
+ "Url": "http://X.X.X.X/"
+ ```
+You can create a **.cloc_'your_platform'_ignore** file to ignore projects or repositories in the analysis. 
+```json
+   "FileExclusion":".cloc_bitbucketdc_ignore"
+```
+The syntax of this file is as follows:
+
+```
+REPO_KEY
+PROJECT_KEY 
+PROJECT_KEY/REPO_KEY
+```
+
+```
+- REPO_KEY = for one Repository
+- PROJECT_KEY = for one Project
+- PROJECT_KEY/REPO_KEY For un Repository in one Project
+```
+
+ ✅ Run GoLC
+
+ To launch GoLC with the following command, you must specify your DevOps platform. In this example, we analyze repositories hosted on Bitbucket Cloud. The supported flags for --devops are :
+ ```bash
+flag : <BitBucketSRV>||<BitBucket>||<Github>||<Gitlab>||<Azure>||<File>
+
+ ```
+ ❗️ And for now, only the **BitBucketSRV** and **BitBucket** flags are supported...
+
+```bash
+
+If the Results directory exists, GoLC will prompt you to delete it before starting a new analysis and will also offer to save the previous analysis. If you respond 'y', a Saves directory will be created containing a zip file, which will be a compressed version of the Results directory.
+
+$:> golc --devops BitBucket
 
 ✅ Using configuration for DevOps platform 'BitBucket'
 
 ❗️ Directory <'Results'> already exists. Do you want to delete it? (y/n): y
-
 ❗️ Do you want to create a backup of the directory before deleting? (y/n): n
 
 
@@ -75,7 +219,6 @@ You can install from the stable release by clicking here
 ✅ The largest repo is <sample-nodejs-project> in the project <SAMPLES> with the branch <demo-app-week> and a size of 425.45 KB
 
 ✅ Total size of your organization's repositories: 877.65 KB
-
 ✅ Total repositories analyzed: 11 - Find empty : 1
 
 🔎 Analysis of Repos ...
@@ -97,18 +240,17 @@ Extracting files from repo : testempty
 🔎 Analyse Report ...
 
 ✅ Number of Repository analyzed in Organization <sonar-demo> is 11 
-
 ✅ The repository with the largest line of code is in project <CLOC> the repo name is <gcloc> with <2.05M> lines of code
-
 ✅ The total sum of lines of code in Organization <sonar-demo> is : 2.06M Lines of Code
 
 
 ✅ Reports are located in the <'Results'> directory
-
 ✅ Time elapsed : 00:01:01
 
 ℹ️  To generate and visualize results on a web interface, follow these steps: 
 
         ✅ run Analysis
-
         ✅ run Results
+
+```
+$:>

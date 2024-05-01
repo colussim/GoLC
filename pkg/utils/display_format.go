@@ -2,7 +2,7 @@ package utils
 
 import "fmt"
 
-func formatSize(size int64) string {
+func FormatSize(size int64) string {
 	const (
 		byteSize = 1.0
 		kiloSize = 1024.0
