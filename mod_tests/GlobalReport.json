@@ -1,7 +1,0 @@
-{
-    "Organization": "sonar-demo",
-    "TotalLinesOfCode": "6.26M",
-    "LargestRepository": "tensorflow",
-    "LinesOfCodeLargestRepo": "3.87M",
-    "DevOpsPlatform": "bitbucket_dc"
-}
