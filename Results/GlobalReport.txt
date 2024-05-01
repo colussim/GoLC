@@ -1,4 +1,4 @@
 
 ✅ Number of Repository analyzed in Organization <sonar-demo> is 5 
-✅ The repository with the largest line of code is in project <BBPIPES> the repo name is <official-pipes> with <1.97K> lines of code
-✅ The total sum of lines of code in Organization <sonar-demo> is : 2.51K Lines of Code
+✅ The repository with the largest line of code is in project <CLOC> the repo name is <gcloc> with <2.05M> lines of code
+✅ The total sum of lines of code in Organization <sonar-demo> is : 2.05M Lines of Code

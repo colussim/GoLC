@@ -26,6 +26,7 @@ require (
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.4.1 // indirect
+	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
@@ -53,16 +54,19 @@ require (
 	github.com/skeema/knownhosts v1.2.0 // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
+	github.com/wcharczuk/go-chart v2.0.1+incompatible // indirect
+	github.com/wcharczuk/go-chart/v2 v2.1.1 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/crypto v0.11.0 // indirect
+	golang.org/x/image v0.11.0 // indirect
 	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/net v0.12.0 // indirect
 	golang.org/x/oauth2 v0.6.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/term v0.10.0 // indirect
-	golang.org/x/text v0.11.0 // indirect
+	golang.org/x/text v0.12.0 // indirect
 	golang.org/x/tools v0.6.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/api v0.100.0 // indirect

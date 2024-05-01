@@ -212,6 +212,8 @@ func GetReposProject(projects []Project, url, baseapi, apiver, accessToken, bitb
 		fmt.Printf("\t  ✅ The number of %s found is: %d\n", message4, len(repos))
 
 		for _, repo := range repos {
+			largestRepoSize = 0
+			largestRepoBranch = ""
 
 			isEmpty, err := isRepositoryEmpty(project.Key, repo.Slug, accessToken, bitbucketURLBase, apiver)
 			if err != nil {

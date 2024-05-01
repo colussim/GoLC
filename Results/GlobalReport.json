@@ -1,7 +1,7 @@
 {
     "Organization": "sonar-demo",
-    "TotalLinesOfCode": "2.51K",
-    "LargestRepository": "official-pipes",
-    "LinesOfCodeLargestRepo": "1.97K",
+    "TotalLinesOfCode": "2.05M",
+    "LargestRepository": "gcloc",
+    "LinesOfCodeLargestRepo": "2.05M",
     "DevOpsPlatform": "bitbucket"
 }

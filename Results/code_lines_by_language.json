@@ -1,14 +1,50 @@
 [
   {
-    "Language": "YAML",
-    "CodeLines": 692
-  },
-  {
     "Language": "JavaScript",
-    "CodeLines": 4
+    "CodeLines": 452553
   },
   {
-    "Language": "Python",
-    "CodeLines": 1816
+    "Language": "C#",
+    "CodeLines": 70006
+  },
+  {
+    "Language": "TypeScript",
+    "CodeLines": 13193
+  },
+  {
+    "Language": "SQL",
+    "CodeLines": 10249
+  },
+  {
+    "Language": "HTML",
+    "CodeLines": 9569
+  },
+  {
+    "Language": "Java",
+    "CodeLines": 38
+  },
+  {
+    "Language": "PHP",
+    "CodeLines": 1260768
+  },
+  {
+    "Language": "CSS",
+    "CodeLines": 183125
+  },
+  {
+    "Language": "Scss",
+    "CodeLines": 29494
+  },
+  {
+    "Language": "XML",
+    "CodeLines": 16106
+  },
+  {
+    "Language": "YAML",
+    "CodeLines": 4900
+  },
+  {
+    "Language": "XHTML",
+    "CodeLines": 2503
   }
 ]

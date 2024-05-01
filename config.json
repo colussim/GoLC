@@ -20,7 +20,7 @@
         "Organization": "sonar-demo",
         "DevOps": "bitbucket",
         "Workspace":"sonarsource",
-        "Project": "BBPIPES",
+        "Project": "",
         "Repos": "",
         "Branch": "",
         "Url": "https://api.bitbucket.org/",

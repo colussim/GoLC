@@ -534,6 +534,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Temporary function for future functionality
+	if *devopsFlag == "Github" || *devopsFlag == "Gitlab" || *devopsFlag == "Azure" || *devopsFlag == "File" {
+		fmt.Println("❗️ Functionality coming soon...")
+		os.Exit(0)
+	}
+
 	platformConfig, ok := AppConfig.Platforms[*devopsFlag].(map[string]interface{})
 	if !ok {
 		fmt.Printf("\n❌ Configuration for DevOps platform '%s' not found\n", *devopsFlag)
@@ -611,6 +617,7 @@ func main() {
 
 	switch devops := platformConfig["DevOps"].(string); devops {
 	case "github":
+
 		var EmptyR = 0
 		var fileexclusion = ".clocignore"
 		repositories, err := getgithub.GetRepoGithubList(platformConfig["AccessToken"].(string), platformConfig["Organization"].(string))
@@ -649,6 +656,7 @@ func main() {
 		NumberRepos = AnalyseReposList(DestinationResult, platformConfig["Users"].(string), platformConfig["AccessToken"].(string), platformConfig["DevOps"].(string), platformConfig["Organization"].(string), repoList)
 
 	case "gitlab":
+
 		var EmptyR = 0
 		var fileexclusion = ".clocignore"
 		repositories, err := getgitlab.GetRepoGitlabList(platformConfig["AccessToken"].(string), platformConfig["Organization"].(string))
@@ -715,11 +723,13 @@ func main() {
 		// Run scanning repositories
 		NumberRepos = AnalyseReposListBitC(DestinationResult, platformConfig["Users"].(string), platformConfig["AccessToken"].(string), platformConfig["Protocol"].(string), platformConfig["Baseapi"].(string), platformConfig["Workspace"].(string), platformConfig["DevOps"].(string), projects1)
 
-		/*for _, allproject := range projects1 {
+	/*for _, allproject := range projects1 {
 
-			fmt.Println("\n✅ Projet KEY: , Projet Name: \n", allproject.Key, allproject.Name)
-			fmt.Println()
-		}*/
+		fmt.Println("\n✅ Projet KEY: , Projet Name: \n", allproject.Key, allproject.Name)
+		fmt.Println()
+	}*/
+
+	case "file":
 
 	}
 
@@ -821,6 +831,10 @@ func main() {
 	fmt.Println(message3)
 	fmt.Println("\n✅ Reports are located in the <'Results'> directory")
 	fmt.Printf("\n✅ Time elapsed : %02d:%02d:%02d\n", hours, minutes, seconds)
+
+	fmt.Println("\nℹ️  To generate and visualize results on a web interface, follow these steps: ")
+	fmt.Println("\t✅ run Analysis")
+	fmt.Println("\t✅ run Results")
 
 	// Write message in Gobal Report File
 	_, err = file.WriteString(message3)
