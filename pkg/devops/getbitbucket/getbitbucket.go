@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
+	"github.com/colussim/GoLC/pkg/utils"
 )
 
 type ProjectBranch struct {
@@ -160,26 +161,6 @@ type ParamsReposCloud struct {
 }
 
 const PrefixMsg = "Get Projects..."
-
-func formatSize(size int64) string {
-	const (
-		byteSize = 1.0
-		kiloSize = 1024.0
-		megaSize = 1024.0 * kiloSize
-		gigaSize = 1024.0 * megaSize
-	)
-
-	switch {
-	case size < kiloSize:
-		return fmt.Sprintf("%d B", size)
-	case size < megaSize:
-		return fmt.Sprintf("%.2f KB", float64(size)/kiloSize)
-	case size < gigaSize:
-		return fmt.Sprintf("%.2f MB", float64(size)/megaSize)
-	default:
-		return fmt.Sprintf("%.2f GB", float64(size)/gigaSize)
-	}
-}
 
 func loadExclusionList(filename string) (*ExclusionList, error) {
 	file, err := os.Open(filename)
@@ -413,7 +394,7 @@ func GetRepos(parms ParamsReposCloud) ([]ProjectBranch, int, int) {
 
 		}
 
-		//fmt.Printf("\n\t     ✅ The largest branch of the repo is <%s> of size : %s\n", largestRepoBranch, formatSize(int64(largestRepoSize)))
+		//fmt.Printf("\n\t     ✅ The largest branch of the repo is <%s> of size : %s\n", largestRepoBranch, utils.FormatSize(int64(largestRepoSize)))
 
 		importantBranches = append(importantBranches, ProjectBranch{
 			ProjectKey:  parms.Projects,
@@ -600,8 +581,8 @@ func GetProjectBitbucketListCloud(url, baseapi, apiver, accessToken, workspace, 
 		}
 		totalSize += branch.LargestSize
 	}
-	totalSizeMB := formatSize(int64(totalSize))
-	largestRepoSizeMB := formatSize(int64(largestRepoSize))
+	totalSizeMB := utils.FormatSize(int64(totalSize))
+	largestRepoSizeMB := utils.FormatSize(int64(largestRepoSize))
 
 	fmt.Printf("\n✅ The largest repo is <%s> in the project <%s> with the branch <%s> and a size of %s\n", largesRepo, largestRepoProject, largestRepoBranch, largestRepoSizeMB)
 	fmt.Printf("\r✅ Total size of your organization's repositories: %s\n", totalSizeMB)

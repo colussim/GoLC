@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
+	"github.com/colussim/GoLC/pkg/utils"
 )
 
 type ProjectBranch struct {
@@ -149,26 +150,6 @@ func loadExclusionList(filename string) (*ExclusionList, error) {
 	return exclusionList, nil
 }
 
-func formatSize(size int64) string {
-	const (
-		byteSize = 1.0
-		kiloSize = 1024.0
-		megaSize = 1024.0 * kiloSize
-		gigaSize = 1024.0 * megaSize
-	)
-
-	switch {
-	case size < kiloSize:
-		return fmt.Sprintf("%d B", size)
-	case size < megaSize:
-		return fmt.Sprintf("%.2f KB", float64(size)/kiloSize)
-	case size < gigaSize:
-		return fmt.Sprintf("%.2f MB", float64(size)/megaSize)
-	default:
-		return fmt.Sprintf("%.2f GB", float64(size)/gigaSize)
-	}
-}
-
 func GetReposProject(projects []Project, url, baseapi, apiver, accessToken, bitbucketURLBase string, nbRepos int, exclusionList *ExclusionList, spin *spinner.Spinner) ([]ProjectBranch, int, int) {
 
 	var largestRepoSize int
@@ -261,7 +242,7 @@ func GetReposProject(projects []Project, url, baseapi, apiver, accessToken, bitb
 
 				}
 
-				fmt.Printf("\t     ✅ The largest branch of the repo is <%s> of size : %s\n", largestRepoBranch, formatSize(int64(largestRepoSize)))
+				fmt.Printf("\t     ✅ The largest branch of the repo is <%s> of size : %s\n", largestRepoBranch, utils.FormatSize(int64(largestRepoSize)))
 
 				importantBranches = append(importantBranches, ProjectBranch{
 					ProjectKey:  project.Key,
@@ -356,7 +337,7 @@ func GetRepos(project string, repos []Repo, url, baseapi, apiver, accessToken, b
 			}
 
 		}
-		fmt.Printf("\t     ✅ The largest branch of the repo is <%s> of size : %s\n", largestRepoBranch, formatSize(int64(largestRepoSize)))
+		fmt.Printf("\t     ✅ The largest branch of the repo is <%s> of size : %s\n", largestRepoBranch, utils.FormatSize(int64(largestRepoSize)))
 
 		importantBranches = append(importantBranches, ProjectBranch{
 			ProjectKey:  project,
@@ -469,20 +450,25 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile, pr
 			}
 		}
 	} else if len(project) > 0 && len(repo) > 0 {
+		Texclude := project + "/" + repo
+		if isProjectAndRepoExcluded(Texclude, *exclusionList) {
+			fmt.Println("\n❌ Projet ", project, "and the repository ", repo, "are excluded from the analysis...edit <.cloc_bitbucket_ignore> file")
+			os.Exit(1)
+		} else {
 
-		spin.Start()
-		bitbucketURLProject := fmt.Sprintf("%s/%s/repos/%s", bitbucketURL, project, repo)
-		Repos, err := fetchOneRepos(bitbucketURLProject, accessToken, exclusionList)
-		if err != nil {
-			fmt.Printf("\n❌ Error Get Repo:%s/%s - %v", project, repo, err)
+			spin.Start()
+			bitbucketURLProject := fmt.Sprintf("%s/%s/repos/%s", bitbucketURL, project, repo)
+			Repos, err := fetchOneRepos(bitbucketURLProject, accessToken, exclusionList)
+			if err != nil {
+				fmt.Printf("\n❌ Error Get Repo:%s/%s - %v", project, repo, err)
+				spin.Stop()
+				return nil, err
+			}
+			fmt.Printf("Taille : %d", len(Repos))
 			spin.Stop()
-			return nil, err
+
+			importantBranches, nbRepos, emptyRepo = GetRepos(project, Repos, url, baseapi, apiver, accessToken, bitbucketURLBase, exclusionList, spin)
 		}
-		fmt.Printf("Taille : %d", len(Repos))
-		spin.Stop()
-
-		importantBranches, nbRepos, emptyRepo = GetRepos(project, Repos, url, baseapi, apiver, accessToken, bitbucketURLBase, exclusionList, spin)
-
 	} else {
 		spin.Stop()
 		fmt.Println("❌ Error Project name is empty")
@@ -495,7 +481,6 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile, pr
 	largesRepo = ""
 
 	for _, branch := range importantBranches {
-		//	fmt.Printf("Projet: %s, Repo: %s, Branche: %s, Taille: %d\n", branch.ProjectKey, branch.RepoSlug, branch.MainBranch, branch.LargestSize)
 
 		if branch.LargestSize > largestRepoSize {
 			largestRepoSize = branch.LargestSize
@@ -505,8 +490,8 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile, pr
 		}
 		totalSize += branch.LargestSize
 	}
-	totalSizeMB := formatSize(int64(totalSize))
-	largestRepoSizeMB := formatSize(int64(largestRepoSize))
+	totalSizeMB := utils.FormatSize(int64(totalSize))
+	largestRepoSizeMB := utils.FormatSize(int64(largestRepoSize))
 
 	fmt.Printf("\n✅ The largest repo is <%s> in the project <%s> with the branch <%s> and a size of %s\n", largesRepo, largestRepoProject, largestRepoBranch, largestRepoSizeMB)
 	fmt.Printf("\r✅ Total size of your organization's repositories: %s\n", totalSizeMB)
@@ -523,7 +508,7 @@ func fetchAllProjects(url string, accessToken string, exclusionList *ExclusionLi
 			return nil, err
 		}
 		projectResponse := projectsResp.(*ProjectResponse)
-		//allProjects = append(allProjects, projectsResp.Values...)
+
 		for _, project := range projectResponse.Values {
 
 			if len(exclusionList.Projects) == 0 && len(exclusionList.Repos) == 0 {
@@ -630,6 +615,13 @@ func fetchProjects(url string, accessToken string, isProjectResponse bool) (inte
 	return projectsResp, nil
 
 }
+
+func isProjectAndRepoExcluded(repoName string, exclusionList ExclusionList) bool {
+
+	excluded, repoExcluded := exclusionList.Repos[repoName]
+	return repoExcluded && excluded
+}
+
 func isProjectExcluded1(projectName string, exclusionList ExclusionList) bool {
 	_, found := exclusionList.Projects[projectName]
 	return found
@@ -673,7 +665,6 @@ func fetchAllRepos(url string, accessToken string, exclusionList *ExclusionList)
 	return allRepos, nil
 }
 
-// func fetchRepos(url string, accessToken string,isProjectResponse bool) (*RepoResponse, error) {
 func fetchRepos(url string, accessToken string, isProjectResponse bool) (interface{}, error) {
 	var reposResp interface{}
 

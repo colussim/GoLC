@@ -53,20 +53,21 @@ require (
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/skeema/knownhosts v1.2.0 // indirect
-	github.com/stretchr/testify v1.8.4 // indirect
+	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
+	github.com/unidoc/unipdf/v3 v3.58.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	golang.org/x/crypto v0.11.0 // indirect
-	golang.org/x/image v0.11.0 // indirect
+	golang.org/x/crypto v0.22.0 // indirect
+	golang.org/x/image v0.15.0 // indirect
 	golang.org/x/mod v0.8.0 // indirect
-	golang.org/x/net v0.12.0 // indirect
+	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/oauth2 v0.6.0 // indirect
-	golang.org/x/sys v0.10.0 // indirect
-	golang.org/x/term v0.10.0 // indirect
-	golang.org/x/text v0.12.0 // indirect
+	golang.org/x/sys v0.19.0 // indirect
+	golang.org/x/term v0.19.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.6.0 // indirect
-	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
+	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	google.golang.org/api v0.100.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20221025140454-527a21cfbd71 // indirect

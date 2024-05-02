@@ -163,7 +163,7 @@ PROJECT_KEY/REPO_KEY
 flag : <BitBucketSRV>||<BitBucket>||<Github>||<Gitlab>||<Azure>||<File>
 
  ```
- ❗️ And for now, only the **BitBucketSRV** and **BitBucket** flags are supported...
+ ❗️ Now, only the **BitBucketSRV** and **BitBucket** flags are supported...
 
 ```bash
 

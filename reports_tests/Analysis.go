@@ -19,7 +19,7 @@ type LanguageData1 struct {
 
 func main() {
 
-	directory := "Results"
+	directory := "../Results"
 
 	ligneDeCodeParLangage := make(map[string]int)
 
@@ -79,7 +79,7 @@ func main() {
 		fmt.Println("❌ Error creating output JSON file :", err)
 		return
 	}
-	outputFile := "Results/code_lines_by_language.json"
+	outputFile := "../Results/code_lines_by_language.json"
 	err = os.WriteFile(outputFile, outputData, 0644)
 	if err != nil {
 		fmt.Println("❌ Error writing to output JSON file :", err)
