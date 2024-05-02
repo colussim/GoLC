@@ -22,6 +22,7 @@ type Globalinfo struct {
 	LargestRepository      string `json:"LargestRepository"`
 	LinesOfCodeLargestRepo string `json:"LinesOfCodeLargestRepo"`
 	DevOpsPlatform         string `json:"DevOpsPlatform"`
+	NumberRepos            int    `json:"NumberRepos"`
 }
 
 type LanguageData struct {
@@ -75,49 +76,10 @@ func isPortOpen(port int) bool {
 	return true
 }
 
-func generatePDF2(pageData PageData) error {
-	// Créer un nouveau document PDF
-	pdf := gofpdf.New("P", "mm", "A4", "")
-
-	// Ajouter une page au document
-	pdf.AddPage()
-
-	// Définir une police pour le document
-	pdf.SetFont("Arial", "B", 16)
-
-	// Ajouter un titre au document
-	pdf.Cell(40, 10, "Results PDF")
-
-	// Ajouter les données au document
-	pdf.SetFont("Arial", "", 12)
-	pdf.Cell(0, 10, fmt.Sprintf("Organization: %s", pageData.GlobalReport.Organization))
-	pdf.Ln(-1)
-	pdf.Cell(0, 10, fmt.Sprintf("Total lines Of code: %s", pageData.GlobalReport.TotalLinesOfCode))
-	pdf.Ln(-1)
-	pdf.Cell(0, 10, fmt.Sprintf("Largest Repository: %s", pageData.GlobalReport.LargestRepository))
-	pdf.Ln(-1)
-	pdf.Cell(0, 10, fmt.Sprintf("Lines of code largest Repository: %s", pageData.GlobalReport.LinesOfCodeLargestRepo))
-	pdf.Ln(-1)
-	pdf.Cell(0, 10, "Languages:")
-	pdf.Ln(-1)
-	for _, lang := range pageData.Languages {
-		pdf.Cell(0, 10, fmt.Sprintf("%s: %.2f%% - %s LOC", lang.Language, lang.Percentage, lang.CodeLinesF))
-		pdf.Ln(-1)
-	}
-
-	// Sauvegarder le document en tant que fichier PDF
-	err := pdf.OutputFileAndClose("output.pdf")
-	if err != nil {
-		return fmt.Errorf("error generating PDF: %v", err)
-	}
-
-	fmt.Println("✅ PDF generated successfully.")
-	return nil
-}
-
 func main() {
 	var pageData PageData
 	directory := "Results"
+	var unit string = "%"
 
 	ligneDeCodeParLangage := make(map[string]int)
 
@@ -194,7 +156,7 @@ func main() {
 	// Reading data from the GlobalReport JSON file
 	data0, err := os.ReadFile("Results/GlobalReport.json")
 	if err != nil {
-		fmt.Println("❌ Error reading data0", http.StatusInternalServerError)
+		fmt.Println("❌ Error reading GlobalReport.json file", http.StatusInternalServerError)
 		return
 	}
 
@@ -203,9 +165,14 @@ func main() {
 
 	err = json.Unmarshal(data0, &Ginfo)
 	if err != nil {
-		fmt.Println("❌ Error decoding JSON data0", http.StatusInternalServerError)
+		fmt.Println("❌ Error decoding JSON GlobalReport.json file", http.StatusInternalServerError)
 		return
 	}
+	Org := "Organization : " + Ginfo.Organization
+	Tloc := "Total lines Of code : " + Ginfo.TotalLinesOfCode
+	Lrepos := "Largest Repository : " + Ginfo.LargestRepository
+	Lrepoloc := "Lines of code largest Repository : " + Ginfo.LinesOfCodeLargestRepo
+	NBrepos := fmt.Sprintf("Number of Repositories analyzed : %d", Ginfo.NumberRepos)
 
 	// JSON data decoding
 	var languages []LanguageData
@@ -215,6 +182,41 @@ func main() {
 		return
 	}
 
+	// Create a PDF
+
+	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf.AddPage()
+
+	pdf.Image("imgs/bg2.jpg", 0, 0, 210, 297, false, "", 0, "")
+	logoPath := "imgs/Logo.png"
+
+	pdf.Image(logoPath, 10, 10, 50, 0, false, "", 0, "")
+	pdf.Ln(10)
+	pdf.Ln(10)
+	pdf.Ln(10)
+
+	pdf.SetFont("Arial", "B", 16)
+	pdf.SetTextColor(255, 255, 255)
+	pdf.Cell(0, 10, "Results")
+	pdf.Ln(10)
+
+	pdf.SetFont("Arial", "B", 14)
+	pdf.SetFillColor(51, 153, 255)
+	pdf.CellFormat(100, 10, Org, "0", 1, "", true, 0, "")
+	pdf.SetFont("Arial", "", 12)
+	pdf.SetFillColor(102, 178, 255)
+	pdf.CellFormat(100, 10, Tloc, "0", 1, "", true, 0, "")
+	pdf.CellFormat(100, 10, Lrepos, "0", 1, "", true, 0, "")
+	pdf.CellFormat(100, 10, Lrepoloc, "0", 1, "", true, 0, "")
+	pdf.CellFormat(100, 10, NBrepos, "0", 1, "", true, 0, "")
+	pdf.Ln(10) // Aller à la ligne
+
+	pdf.SetFont("Arial", "B", 14)
+	pdf.SetFillColor(51, 153, 255)
+	pdf.CellFormat(100, 10, "Languages :", "0", 1, "", true, 0, "")
+	pdf.SetFont("Arial", "", 12)
+	pdf.SetFillColor(102, 178, 255)
+
 	// Calculating percentages
 	total := 0
 	for _, lang := range languages {
@@ -223,6 +225,8 @@ func main() {
 	for i := range languages {
 		languages[i].Percentage = float64(languages[i].CodeLines) / float64(total) * 100
 		languages[i].FormatCodeLines()
+		pdflang := fmt.Sprintf("%s : %.2f %s - %s LOC", languages[i].Language, languages[i].Percentage, unit, languages[i].CodeLinesF)
+		pdf.CellFormat(100, 10, pdflang, "0", 1, "", true, 0, "")
 	}
 
 	// Load HTML template
@@ -242,6 +246,16 @@ func main() {
 			return
 		}
 	})
+
+	// Create a PDF
+
+	err = pdf.OutputFileAndClose("Results/GlobalReport.pdf")
+	if err != nil {
+		fmt.Println("❌ Error saving PDF file:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("✅ PDF generated successfully!")
 
 	fmt.Println("Would you like to launch web visualization? (Y/N)")
 	var launchWeb string
@@ -388,6 +402,7 @@ const htmlTemplate = `
                    <p class="card-text"><i class="fas fa-code-branch"></i> Total lines Of code : {{.GlobalReport.TotalLinesOfCode}}</p>
                    <p class="card-text"><i class="fas fa-folder"></i> Largest Repository : {{.GlobalReport.LargestRepository}}</p>
                    <p class="card-text"><i class="fas fa-code-branch"></i> Lines of code largest Repository : {{.GlobalReport.LinesOfCodeLargestRepo}}</p>
+				   <p class="card-text"><i class="fas fa-code-branch"></i> Number of Repositories analyzed : {{.GlobalReport.NumberRepos}}</p>
                  </div>
                </div>
                <div class="chart-container">

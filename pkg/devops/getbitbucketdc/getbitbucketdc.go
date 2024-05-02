@@ -184,11 +184,7 @@ func GetReposProject(projects []Project, url, baseapi, apiver, accessToken, bitb
 		}
 
 		nbRepos += len(repos)
-		if nbRepos > 1 {
-			message4 = "Repository"
-		} else {
-			message4 = "Repositories"
-		}
+		message4 = "Repo(s)"
 
 		fmt.Printf("\t  ✅ The number of %s found is: %d\n", message4, len(repos))
 

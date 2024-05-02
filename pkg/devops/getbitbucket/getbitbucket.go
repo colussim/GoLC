@@ -241,11 +241,7 @@ func GetReposProjectCloud(parms ParamsReposProjectCloud) ([]ProjectBranch, int, 
 		parms.Spin.Stop()
 
 		parms.NBRepos += len(repos)
-		if parms.NBRepos > 1 {
-			message4 = "Repository"
-		} else {
-			message4 = "Repositories"
-		}
+		message4 = "Repo(s)"
 
 		fmt.Printf("\t  ✅ The number of %s found is: %d\n", message4, len(repos))
 
@@ -331,7 +327,6 @@ func GetReposProjectCloud(parms ParamsReposProjectCloud) ([]ProjectBranch, int, 
 	return importantBranches, parms.NBRepos, emptyRepo
 }
 
-// func GetRepos(project string, repos []Reposc, url, baseapi, apiver, accessToken, bitbucketURLBase, workspace string, exclusionList *ExclusionList) ([]ProjectBranch, int, int) {
 func GetRepos(parms ParamsReposCloud) ([]ProjectBranch, int, int) {
 
 	var largestRepoSize int

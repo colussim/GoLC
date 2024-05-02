@@ -29,6 +29,7 @@ type OrganizationData struct {
 	LargestRepository      string `json:"LargestRepository"`
 	LinesOfCodeLargestRepo string `json:"LinesOfCodeLargestRepo"`
 	DevOpsPlatform         string `json:"DevOpsPlatform"`
+	NumberRepos            int    `json:"NumberRepos"`
 }
 
 type Repository struct {
@@ -273,7 +274,7 @@ func addFileToZip(filePath, relPath string, fileInfo os.FileInfo, zipWriter *zip
 }
 
 // Analyse Repositories bitbucket DC
-func AnalyseReposListBitSRV(DestinationResult string, user string, AccessToken string, Protocol string, URL string, DevOps string, repolist []getbibucketdc.ProjectBranch) (cpt int) {
+/*func AnalyseReposListBitSRV(DestinationResult string, user string, AccessToken string, Protocol string, URL string, DevOps string, repolist []getbibucketdc.ProjectBranch) (cpt int) {
 
 	URLcut := Protocol + "://"
 	trimmedURL := strings.TrimPrefix(URL, URLcut)
@@ -332,10 +333,86 @@ func AnalyseReposListBitSRV(DestinationResult string, user string, AccessToken s
 		fmt.Printf("\t✅ The repository <%s> has been analyzed\n", project.RepoSlug)
 	}
 	return cpt
+}*/
+
+// Parallelize processing
+// Analyse Repositories bitbucket DC
+
+func AnalyseReposListBitSRV(DestinationResult string, user string, AccessToken string, Protocol string, URL string, DevOps string, repolist []getbibucketdc.ProjectBranch) (cpt int) {
+	URLcut := Protocol + "://"
+	trimmedURL := strings.TrimPrefix(URL, URLcut)
+
+	fmt.Print("\n🔎 Analysis of Repos ...\n")
+
+	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
+	spin.Color("green", "bold")
+	messageF := ""
+	spin.FinalMSG = messageF
+
+	// Create a channel to receive results
+	results := make(chan int)
+
+	for _, project := range repolist {
+		go func(project getbibucketdc.ProjectBranch) {
+			pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s.git", Protocol, user, AccessToken, trimmedURL, project.ProjectKey, project.RepoSlug)
+			outputFileName := fmt.Sprintf("Result_%s_%s_%s", project.ProjectKey, project.RepoSlug, project.MainBranch)
+
+			params := goloc.Params{
+				Path:              pathToScan,
+				ByFile:            false,
+				ExcludePaths:      []string{},
+				ExcludeExtensions: []string{},
+				IncludeExtensions: []string{},
+				OrderByLang:       false,
+				OrderByFile:       false,
+				OrderByCode:       false,
+				OrderByLine:       false,
+				OrderByBlank:      false,
+				OrderByComment:    false,
+				Order:             "DESC",
+				OutputName:        outputFileName,
+				OutputPath:        DestinationResult,
+				ReportFormats:     []string{"json"},
+				Branch:            project.MainBranch,
+			}
+			MessB := fmt.Sprintf("   Extracting files from repo : %s ", project.RepoSlug)
+			spin.Suffix = MessB
+			spin.Start()
+
+			gc, err := goloc.NewGCloc(params, assets.Languages)
+			if err != nil {
+				fmt.Println(errorMessageRepo, err)
+				os.Exit(1)
+			}
+
+			gc.Run()
+			cpt++
+
+			// Remove Repository Directory
+			err1 := os.RemoveAll(gc.Repopath)
+			if err != nil {
+				fmt.Printf(errorMessageDi, err1)
+				return
+			}
+
+			spin.Stop()
+			fmt.Printf("\t✅ The repository <%s> has been analyzed\n", project.RepoSlug)
+
+			// Send result through channel
+			results <- 1
+		}(project)
+	}
+
+	// Wait for all goroutines to complete
+	for i := 0; i < len(repolist); i++ {
+		<-results
+	}
+
+	return cpt
 }
 
-// Analyse Repositories bitbucket Cl;oud
-func AnalyseReposListBitC(DestinationResult, AccessToken, Protocol, Baseurl, workspace, DevOps string, repolist []getbibucket.ProjectBranch) (cpt int) {
+// Analyse Repositories bitbucket Cloud
+/*func AnalyseReposListBitC(DestinationResult, AccessToken, Protocol, Baseurl, workspace, DevOps string, repolist []getbibucket.ProjectBranch) (cpt int) {
 
 	fmt.Print("\n🔎 Analysis of Repos ...\n")
 
@@ -390,6 +467,79 @@ func AnalyseReposListBitC(DestinationResult, AccessToken, Protocol, Baseurl, wor
 		spin.Stop()
 		fmt.Printf("\t✅ The repository <%s> has been analyzed\n", project.RepoSlug)
 	}
+	return cpt
+}*/
+
+// Parallelize processing
+// Analyse Repositories bitbucket Cloud
+
+func AnalyseReposListBitC(DestinationResult, AccessToken, Protocol, Baseurl, workspace, DevOps string, repolist []getbibucket.ProjectBranch) (cpt int) {
+	fmt.Print("\n🔎 Analysis of Repos ...\n")
+
+	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
+	spin.Color("green", "bold")
+	messageF := ""
+	spin.FinalMSG = messageF
+
+	// Create a channel to receive results
+	results := make(chan int)
+
+	for _, project := range repolist {
+		go func(project getbibucket.ProjectBranch) {
+			pathToScan := fmt.Sprintf("%s://x-token-auth:%s@%s/%s/%s.git", Protocol, AccessToken, Baseurl, workspace, project.RepoSlug)
+			outputFileName := fmt.Sprintf("Result_%s_%s_%s", project.ProjectKey, project.RepoSlug, project.MainBranch)
+
+			params := goloc.Params{
+				Path:              pathToScan,
+				ByFile:            false,
+				ExcludePaths:      []string{},
+				ExcludeExtensions: []string{},
+				IncludeExtensions: []string{},
+				OrderByLang:       false,
+				OrderByFile:       false,
+				OrderByCode:       false,
+				OrderByLine:       false,
+				OrderByBlank:      false,
+				OrderByComment:    false,
+				Order:             "DESC",
+				OutputName:        outputFileName,
+				OutputPath:        DestinationResult,
+				ReportFormats:     []string{"json"},
+				Branch:            project.MainBranch,
+			}
+			MessB := fmt.Sprintf("   Extracting files from repo : %s ", project.RepoSlug)
+			spin.Suffix = MessB
+			spin.Start()
+
+			gc, err := goloc.NewGCloc(params, assets.Languages)
+			if err != nil {
+				fmt.Println(errorMessageRepo, err)
+				os.Exit(1)
+			}
+			//fmt.Println("\r ")
+			gc.Run()
+			cpt++
+
+			// Remove Repository Directory
+			err1 := os.RemoveAll(gc.Repopath)
+			if err != nil {
+				fmt.Printf(errorMessageDi, err1)
+				return
+			}
+
+			spin.Stop()
+			fmt.Printf("\t✅ The repository <%s> has been analyzed\n", project.RepoSlug)
+
+			//Send result through channel
+			results <- 1
+		}(project)
+	}
+
+	// Wait for all goroutines to complete
+	for i := 0; i < len(repolist); i++ {
+		<-results
+	}
+
 	return cpt
 }
 
@@ -790,6 +940,7 @@ func main() {
 		LargestRepository:      maxRepo,
 		LinesOfCodeLargestRepo: maxTotalCodeLines1,
 		DevOpsPlatform:         platformConfig["DevOps"].(string),
+		NumberRepos:            NumberRepos,
 	}
 
 	jsonData, err := json.MarshalIndent(data, "", "    ")
@@ -830,8 +981,7 @@ func main() {
 	fmt.Printf("\n✅ Time elapsed : %02d:%02d:%02d\n", hours, minutes, seconds)
 
 	fmt.Println("\nℹ️  To generate and visualize results on a web interface, follow these steps: ")
-	fmt.Println("\t✅ run Analysis")
-	fmt.Println("\t✅ run Results")
+	fmt.Println("\t✅ run ResultsAll")
 
 	// Write message in Gobal Report File
 	_, err = file.WriteString(message3)
