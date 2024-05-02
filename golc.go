@@ -752,6 +752,10 @@ func main() {
 		if err := os.MkdirAll(DestinationResult, os.ModePerm); err != nil {
 			panic(err)
 		}
+		ConfigDirectory := DestinationResult + "/config"
+		if err := os.MkdirAll(ConfigDirectory, os.ModePerm); err != nil {
+			panic(err)
+		}
 
 	}
 	fmt.Printf("\n")

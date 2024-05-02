@@ -2,7 +2,7 @@
 
 ## Introduction
 
-![architecture](imgs/Logo.png)
+![logo](imgs/Logo.png)
 
 **GoLC** is a clever abbreviation for "Go Line Counter," drawing inspiration from [CLOC](https://github.com/AlDanial/cloc "AlDanial") and various other line-counting tools in Go like [GCloc](https://github.com/JoaoDanielRufino/gcloc "João Daniel Rufino").
 
@@ -158,18 +158,18 @@ PROJECT_KEY/REPO_KEY
 
  ✅ Run GoLC
 
- To launch GoLC with the following command, you must specify your DevOps platform. In this example, we analyze repositories hosted on Bitbucket Cloud. The supported flags for --devops are :
+ To launch GoLC with the following command, you must specify your DevOps platform. In this example, we analyze repositories hosted on Bitbucket Cloud. The supported flags for -devops are :
  ```bash
 flag : <BitBucketSRV>||<BitBucket>||<Github>||<Gitlab>||<Azure>||<File>
 
  ```
- ❗️ Now, only the **BitBucketSRV** and **BitBucket** flags are supported...
+ ❗️ And for now, only the **BitBucketSRV** and **BitBucket** flags are supported...
 
 ```bash
 
 If the Results directory exists, GoLC will prompt you to delete it before starting a new analysis and will also offer to save the previous analysis. If you respond 'y', a Saves directory will be created containing a zip file, which will be a compressed version of the Results directory.
 
-$:> golc --devops BitBucket
+$:> golc -devops BitBucket
 
 ✅ Using configuration for DevOps platform 'BitBucket'
 
@@ -249,8 +249,38 @@ Extracting files from repo : testempty
 
 ℹ️  To generate and visualize results on a web interface, follow these steps: 
 
-        ✅ run Analysis
-        ✅ run Results
+        ✅ run ResultsAll
+$:>        
 
 ```
-$:>
+
+✅ Run Report
+
+To generate a comprehensive PDF report and view the results on a web interface, you need to launch the '**ResultsAll**' program.
+
+The '**ResultsAll**' program generates a 'GlobalReport.pdf' file in the 'Results' directory. It prompts you if you want to view the results on a web interface; it starts an HTTP service on the default port 8080. If this port is in use, you can choose another port.
+To stop the local HTTP service, press the Ctrl+C keys
+
+
+```bash
+$:> ./ResultsAll
+
+✅ Results analysis recorded in Results/code_lines_by_language.json
+✅ PDF generated successfully!
+Would you like to launch web visualization? (Y/N)
+✅ Launching web visualization...
+❗️ Port 8080 is already in use.
+✅ Please enter the port you wish to use :  9090
+✅ Server started on http://localhost:9090
+✅ please type < control c > to stop the server
+$:> 
+```
+
+✅  Web UI
+
+![webui](imgs/webui.png)
+
+✅  Report sample
+
+![report](imgs/report.png)
+
