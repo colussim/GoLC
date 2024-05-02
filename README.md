@@ -249,7 +249,7 @@ Extracting files from repo : testempty
 
 ℹ️  To generate and visualize results on a web interface, follow these steps: 
 
-        ✅ run ResultsAll
+        ✅ run : ResultsAll
 $:>        
 
 ```
@@ -272,7 +272,7 @@ Would you like to launch web visualization? (Y/N)
 ❗️ Port 8080 is already in use.
 ✅ Please enter the port you wish to use :  9090
 ✅ Server started on http://localhost:9090
-✅ please type < control c > to stop the server
+✅ please type < Ctrl+C > to stop the server
 $:> 
 ```
 
@@ -280,7 +280,7 @@ $:>
 
 ![webui](imgs/webui.png)
 
-✅  Report sample
+✅  Report example
 
 ![report](imgs/report.png)
 

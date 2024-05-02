@@ -48,7 +48,7 @@ type LanguageData1 struct {
 
 func startServer(port int) {
 	fmt.Printf("✅ Server started on http://localhost:%d\n", port)
-	fmt.Println("✅ please type < control c > to stop the server")
+	fmt.Println("✅ please type < Ctrl+C> to stop the server")
 	http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 }
 

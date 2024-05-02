@@ -670,7 +670,7 @@ func main() {
 	flag.Parse()
 
 	if *helpFlag {
-		fmt.Println("Usage: golc.go -devops [OPTIONS]")
+		fmt.Println("Usage: golc -devops [OPTIONS]")
 		fmt.Println("Options:  <BitBucketSRV>||<BitBucket>||<Github>||<Gitlab>||<Azure>||<File>")
 		flag.PrintDefaults()
 		os.Exit(0)
@@ -678,7 +678,7 @@ func main() {
 
 	if *devopsFlag == "" {
 		fmt.Println("\n❌ Please specify the DevOps platform using the -devops flag : <BitBucketSRV>||<BitBucket>||<Github>||<Gitlab>||<Azure>||<File>")
-		fmt.Println("✅ Example for BitBucket server : golc.go -devops BitBucketSRV")
+		fmt.Println("✅ Example for BitBucket server : golc -devops BitBucketSRV")
 		os.Exit(1)
 	}
 	AppConfig, err := LoadConfig("config.json")
@@ -985,7 +985,7 @@ func main() {
 	fmt.Printf("\n✅ Time elapsed : %02d:%02d:%02d\n", hours, minutes, seconds)
 
 	fmt.Println("\nℹ️  To generate and visualize results on a web interface, follow these steps: ")
-	fmt.Println("\t✅ run ResultsAll")
+	fmt.Println("\t✅ run : ResultsAll")
 
 	// Write message in Gobal Report File
 	_, err = file.WriteString(message3)
