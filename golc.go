@@ -405,8 +405,10 @@ func AnalyseReposListBitSRV(DestinationResult string, user string, AccessToken s
 
 	// Wait for all goroutines to complete
 	for i := 0; i < len(repolist); i++ {
+		fmt.Printf("\r Waiting for workers...")
 		<-results
 	}
+	//spinWaiting.Stop()
 
 	return cpt
 }
@@ -537,6 +539,7 @@ func AnalyseReposListBitC(DestinationResult, AccessToken, Protocol, Baseurl, wor
 
 	// Wait for all goroutines to complete
 	for i := 0; i < len(repolist); i++ {
+		fmt.Printf("\r Waiting for workers...")
 		<-results
 	}
 
@@ -871,7 +874,7 @@ func main() {
 
 		startTime = time.Now()
 
-		projects1, err := getbibucket.GetProjectBitbucketListCloud(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["Apiver"].(string), platformConfig["AccessToken"].(string), platformConfig["Workspace"].(string), fileexclusionEX, platformConfig["Project"].(string), platformConfig["Repos"].(string))
+		projects1, err := getbibucket.GetProjectBitbucketListCloud(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["Apiver"].(string), platformConfig["AccessToken"].(string), platformConfig["Workspace"].(string), fileexclusionEX, platformConfig["Project"].(string), platformConfig["Repos"].(string), platformConfig["Branch"].(string))
 		if err != nil {
 			fmt.Printf("❌ Error Get Info Projects in Bitbucket cloud '%s' : ", err)
 			return
