@@ -21,6 +21,9 @@ You can install from the stable release by clicking here
 ## Prerequisites 
 
 * A personal access tokens for : Bitbucket Cloud,Bitbucket DC,GitHub, GitLab and Azure DevOps.The token must have repo scope.
+  * For Bitbucket DC :
+       - Perform pull request actions
+     - Push, pull and clone repositories
 * [Go language installed](https://go.dev/) : If you want to use the sources...
 
  ## Usage
@@ -134,7 +137,7 @@ If '**Projects**' and '**Repos**' are not specified, the analysis will be conduc
 "Project": "",
 "Repos": "",
 ```
-For Bitbucket DC, you must provide the URL with your server address and change the '**Protocol**' entry if you are using an https connection , ending with '**/**'. The '**branch**' input allows you to select a specific branch for all repositories within an organization or project, or for a single repository. For example, if you only want all branches to be "main", '**"Branch":"main"**' .
+For Bitbucket DC, you must provide the URL with your server address and change the '**Protocol**' entry if you are using an https connection , ending with '**/**'. The '**Branch**' input allows you to select a specific branch for all repositories within an organization or project, or for a single repository. For example, if you only want all branches to be "main", '**"Branch":"main"**' .
 ```json
  "Url": "http://X.X.X.X/"
  ```
