@@ -486,7 +486,7 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile, pr
 
 	} else if len(project) > 0 && len(repo) == 0 {
 		if isProjectExcluded1(project, *exclusionList) {
-			fmt.Println("\n❌ Projet", project, "is excluded from the analysis... edit <.cloc_bitbucket_ignore> file")
+			fmt.Println("\n❌ Projet", project, "is excluded from the analysis... edit <.cloc_bitbucketdc_ignore> file")
 			os.Exit(1)
 		} else {
 
@@ -513,7 +513,7 @@ func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile, pr
 	} else if len(project) > 0 && len(repo) > 0 {
 		Texclude := project + "/" + repo
 		if isProjectAndRepoExcluded(Texclude, *exclusionList) {
-			fmt.Println("\n❌ Projet ", project, "and the repository ", repo, "are excluded from the analysis...edit <.cloc_bitbucket_ignore> file")
+			fmt.Println("\n❌ Projet ", project, "and the repository ", repo, "are excluded from the analysis...edit <.cloc_bitbucketdc_ignore> file")
 			os.Exit(1)
 		} else {
 
