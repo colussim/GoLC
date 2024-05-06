@@ -928,7 +928,6 @@ func isRepositoryEmpty(workspace, repoSlug, accessToken, bitbucketURLBase string
 		return false, fmt.Errorf("❌ Error when testing if repo: %s is empty - Function: %s - %v", repoSlug, "getbibucket-isRepositoryEmpty", err)
 	}
 
-	// Si la réponse est nulle, essayer avec la branche "master"
 	if filesResp == nil {
 		urlMaster := fmt.Sprintf("%srepositories/%s/%s/src/master/?pagelen=100", bitbucketURLBase, workspace, repoSlug)
 		filesResp, err = fetchFiles(urlMaster, accessToken)
@@ -937,7 +936,6 @@ func isRepositoryEmpty(workspace, repoSlug, accessToken, bitbucketURLBase string
 		}
 	}
 
-	// Vérifier si la liste de fichiers est vide
 	if len(filesResp.Values) == 0 {
 		return true, nil
 	}

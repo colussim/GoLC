@@ -691,7 +691,7 @@ func main() {
 	}
 
 	// Temporary function for future functionality
-	if *devopsFlag == "Github" || *devopsFlag == "Gitlab" || *devopsFlag == "Azure" || *devopsFlag == "File" {
+	if *devopsFlag == "Gitlab" || *devopsFlag == "Azure" || *devopsFlag == "File" {
 		fmt.Println("❗️ Functionality coming soon...")
 		os.Exit(0)
 	}
@@ -779,8 +779,11 @@ func main() {
 	case "github":
 
 		var EmptyR = 0
-		var fileexclusion = ".clocignore"
-		repositories, err := getgithub.GetRepoGithubList(platformConfig["AccessToken"].(string), platformConfig["Organization"].(string))
+		var fileexclusion = ".cloc_github_ignore"
+		fileexclusionEX := getFileNameIfExists(fileexclusion)
+
+		startTime = time.Now()
+		repositories, err := getgithub.GetRepoGithubList(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["AccessToken"].(string), platformConfig["Organization"].(string), fileexclusionEX, platformConfig["Repos"].(string), platformConfig["Branch"].(string))
 		if err != nil {
 			fmt.Printf("Error Get Info Repositories in organization '%s' : '%s'", platformConfig["Organization"].(string), err)
 			return
@@ -811,7 +814,7 @@ func main() {
 		}
 
 		NumberRepos1 := int(uintptr(len(repositories))) - EmptyR
-		fmt.Printf("\nAnalyse '%s' Repositories('%d') in Organization: '%s'\n", platformConfig["DevOps"].(string), NumberRepos1, platformConfig["Organization"].(string))
+		fmt.Printf("\nAnalyse '%s' Repositories('%d') in Organization: '%s'\n", platformConfig["DevOps"].(string), NumberRepos1, platformConfig["Organization"].(string), platformConfig["Repos"].(string))
 
 		NumberRepos = AnalyseReposList(DestinationResult, platformConfig["Users"].(string), platformConfig["AccessToken"].(string), platformConfig["DevOps"].(string), platformConfig["Organization"].(string), repoList)
 
