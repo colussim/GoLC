@@ -162,6 +162,10 @@ type ParamsReposCloud struct {
 	Branch           string
 }
 
+type SizeResponse struct {
+	Size int `json:"size"`
+}
+
 const PrefixMsg = "Get Projects..."
 
 func loadExclusionList(filename string) (*ExclusionList, error) {
@@ -288,36 +292,49 @@ func GetReposProjectCloud(parms ParamsReposProjectCloud) ([]ProjectBranch, int, 
 					fmt.Printf("\r\t✅ Repo: %s - Number of branches: %d\n", repo.Name, len(branches))
 
 					// Finding the branch with the largest size
+					if len(branches) > 1 {
+						for _, branch := range branches {
+							messageB := fmt.Sprintf("\t   Analysis branch <%s> size...", branch.Name)
+							spin1.Prefix = messageB
+							spin1.Start()
 
-					for _, branch := range branches {
-						messageB := fmt.Sprintf("\t   Analysis branch <%s> size...", branch.Name)
-						spin1.Prefix = messageB
-						spin1.Start()
+							size, err := fetchBranchSize(parms.Workspace, repo.Slug, branch.Name, parms.AccessToken, parms.URL, parms.APIVersion)
+							messageF = ""
+							spin1.FinalMSG = messageF
 
-						size, err := fetchBranchSize(parms.Workspace, repo.Slug, branch.Name, parms.AccessToken, parms.URL, parms.APIVersion)
-						messageF = ""
-						spin1.FinalMSG = messageF
+							spin1.Stop()
+							if err != nil {
+								fmt.Println("❌ Error retrieving branch size:", err)
+								spin1.Stop()
+								os.Exit(1)
+							}
 
-						spin1.Stop()
-						if err != nil {
-							fmt.Println("❌ Error retrieving branch size:", err)
+							if size > largestRepoSize {
+								largestRepoSize = size
+								//largestRepoProject = project.Name
+								largestRepoBranch = branch.Name
+							}
+
+						}
+					} else {
+						size1, err1 := fetchBranchSize1(parms.Workspace, repo.Slug, parms.AccessToken, parms.URL, parms.APIVersion)
+
+						if err1 != nil {
+							fmt.Println("\n❌ Error retrieving branch size:", err1)
 							spin1.Stop()
 							os.Exit(1)
 						}
-
-						if size > largestRepoSize {
-							largestRepoSize = size
-							//largestRepoProject = project.Name
-							largestRepoBranch = branch.Name
-						}
-
+						largestRepoSize = size1
+						largestRepoBranch = branches[0].Name
 					}
+
 					importantBranches = append(importantBranches, ProjectBranch{
 						ProjectKey:  project.Key,
 						RepoSlug:    repo.Slug,
 						MainBranch:  largestRepoBranch,
 						LargestSize: largestRepoSize,
 					})
+					Nobranch = 0
 				}
 			} else {
 				emptyRepo++
@@ -400,28 +417,40 @@ func GetRepos(parms ParamsReposCloud) ([]ProjectBranch, int, int) {
 		}
 		// Finding the branch with the largest size
 		if Nobranch == 0 {
-			for _, branch := range branches {
-				messageB := fmt.Sprintf("\t   Analysis branch <%s> size...", branch.Name)
-				spin1.Prefix = messageB
-				spin1.Start()
+			if len(branches) > 1 {
+				for _, branch := range branches {
+					messageB := fmt.Sprintf("\t   Analysis branch <%s> size...", branch.Name)
+					spin1.Prefix = messageB
+					spin1.Start()
 
-				size, err := fetchBranchSize(parms.Workspace, parms.Repos[0].Slug, branch.Name, parms.AccessToken, parms.URL, parms.APIVersion)
-				messageF := ""
-				spin1.FinalMSG = messageF
+					size, err := fetchBranchSize(parms.Workspace, parms.Repos[0].Slug, branch.Name, parms.AccessToken, parms.URL, parms.APIVersion)
+					messageF := ""
+					spin1.FinalMSG = messageF
 
-				spin1.Stop()
-				if err != nil {
-					fmt.Println("❌ Error retrieving branch size:", err)
 					spin1.Stop()
-					continue
-				}
+					if err != nil {
+						fmt.Println("❌ Error retrieving branch size:", err)
+						spin1.Stop()
+						continue
+					}
 
-				if size > largestRepoSize {
-					largestRepoSize = size
-					//largestRepoProject = project.Name
-					largestRepoBranch = branch.Name
-				}
+					if size > largestRepoSize {
+						largestRepoSize = size
+						//largestRepoProject = project.Name
+						largestRepoBranch = branch.Name
+					}
 
+				}
+			} else {
+				size1, err1 := fetchBranchSize1(parms.Workspace, parms.Repos[0].Slug, parms.AccessToken, parms.URL, parms.APIVersion)
+
+				if err1 != nil {
+					fmt.Println("\n❌ Error retrieving branch size:", err1)
+					spin1.Stop()
+					os.Exit(1)
+				}
+				largestRepoSize = size1
+				largestRepoBranch = branches[0].Name
 			}
 		}
 		Nobranch = 0
@@ -1008,6 +1037,41 @@ func fetchBranchSize(workspace, repoSlug, branchName, accessToken, url, apiver s
 	}
 
 	return totalSize, nil
+}
+
+func fetchBranchSize1(workspace, repoSlug, accessToken, url, apiver string) (int, error) {
+
+	url1 := fmt.Sprintf("%s%s/repositories/%s/%s/?fields=size", url, apiver, workspace, repoSlug)
+
+	req, err := http.NewRequest("GET", url1, nil)
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return 0, err
+	}
+
+	var data SizeResponse
+
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		return 0, err
+	}
+
+	totalSize := data.Size
+
+	return totalSize, nil
+
 }
 
 func fetchDirectorySize(workspace string, repoSlug string, branchName string, components string, accessToken string, url string, apiver string) (int, error) {

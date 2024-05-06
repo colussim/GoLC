@@ -859,14 +859,22 @@ func main() {
 		fileexclusionEX := getFileNameIfExists(fileexclusion)
 
 		startTime = time.Now()
-		projects, err := getbibucketdc.GetProjectBitbucketList(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["Apiver"].(string), platformConfig["AccessToken"].(string), fileexclusionEX, platformConfig["Project"].(string), platformConfig["Repos"].(string))
+		projects, err := getbibucketdc.GetProjectBitbucketList(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["Apiver"].(string), platformConfig["AccessToken"].(string), fileexclusionEX, platformConfig["Project"].(string), platformConfig["Repos"].(string), platformConfig["Branch"].(string))
 		if err != nil {
 			fmt.Printf("❌ Error Get Info Projects in Bitbucket server '%s' : ", err)
 			os.Exit(1)
 		}
 
-		// Run scanning repositories
-		NumberRepos = AnalyseReposListBitSRV(DestinationResult, platformConfig["Users"].(string), platformConfig["AccessToken"].(string), platformConfig["Protocol"].(string), platformConfig["Url"].(string), platformConfig["DevOps"].(string), projects)
+		if len(projects) == 0 {
+			fmt.Printf("❌ No Analysis performed...")
+			os.Exit(1)
+
+		} else {
+
+			// Run scanning repositories
+			NumberRepos = AnalyseReposListBitSRV(DestinationResult, platformConfig["Users"].(string), platformConfig["AccessToken"].(string), platformConfig["Protocol"].(string), platformConfig["Url"].(string), platformConfig["DevOps"].(string), projects)
+
+		}
 
 	case "bitbucket":
 		var fileexclusion = platformConfig["FileExclusion"].(string)
@@ -879,9 +887,15 @@ func main() {
 			fmt.Printf("❌ Error Get Info Projects in Bitbucket cloud '%s' : ", err)
 			return
 		}
+		if len(projects1) == 0 {
+			fmt.Printf("❌ No Analysis performed...")
+			os.Exit(1)
 
-		// Run scanning repositories
-		NumberRepos = AnalyseReposListBitC(DestinationResult, platformConfig["AccessToken"].(string), platformConfig["Protocol"].(string), platformConfig["Baseapi"].(string), platformConfig["Workspace"].(string), platformConfig["DevOps"].(string), projects1)
+		} else {
+
+			// Run scanning repositories
+			NumberRepos = AnalyseReposListBitC(DestinationResult, platformConfig["AccessToken"].(string), platformConfig["Protocol"].(string), platformConfig["Baseapi"].(string), platformConfig["Workspace"].(string), platformConfig["DevOps"].(string), projects1)
+		}
 
 	case "file":
 
