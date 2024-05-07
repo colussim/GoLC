@@ -4,3 +4,5 @@ Saves/*
 mod_tests/*
 config.json
 .cloc_*_ignore 
+Release/*
+createrelease.sh 
