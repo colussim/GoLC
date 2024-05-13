@@ -28,8 +28,10 @@ func Getrepos(src, branch string) (string, error) {
 		URL: src,
 		// if you want the progress bar
 		//Progress:      os.Stdout,
-		ReferenceName: plumbing.NewBranchReferenceName(branch),
+		//ReferenceName: plumbing.NewBranchReferenceName(branch),
+		ReferenceName: plumbing.ReferenceName(branch),
 		SingleBranch:  true,
+		Depth:         1,
 	})
 
 	if err != nil {

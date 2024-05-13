@@ -473,7 +473,7 @@ func GetRepos(parms ParamsReposCloud) ([]ProjectBranch, int, int) {
 	result.ProjectBranches = importantBranches
 
 	// Save Result of Analysis
-	file, err := os.Create("Results/config/analysis_repos.json")
+	file, err := os.Create("Results/config/analysis_repos_bitbucket.json")
 	if err != nil {
 		fmt.Println("❌ Error creating Analysis file:", err)
 		return importantBranches, nbRepos, emptyRepo
@@ -483,7 +483,7 @@ func GetRepos(parms ParamsReposCloud) ([]ProjectBranch, int, int) {
 
 	err = encoder.Encode(result)
 	if err != nil {
-		fmt.Println("Error encoding JSON file <Results/config/analysis_repos.json> :", err)
+		fmt.Println("Error encoding JSON file <Results/config/analysis_repos_bitbucket.json> :", err)
 		return importantBranches, nbRepos, emptyRepo
 	}
 

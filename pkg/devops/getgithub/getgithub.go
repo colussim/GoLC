@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/briandowns/spinner"
+	"github.com/colussim/GoLC/pkg/utils"
 )
 
 type ExclusionList struct {
@@ -36,6 +38,8 @@ type Repository struct {
 	SizeR         int64  `json:"size"`
 	Language      string `json:"language"`
 	DefaultBranch string `json:"default_branch"`
+	Archived      bool   `json:"archived"`
+	LOC           map[string]int
 }
 
 type ProjectBranch struct {
@@ -76,7 +80,8 @@ type CommitInfo struct {
 	URL string `json:"url"`
 }
 
-//const apigit = "X-GitHub-Api-Version"
+// const apigit = "X-GitHub-Api-Version"
+const PrefixMsg = "Get Repo(s)..."
 
 func loadExclusionList(filename string) (*ExclusionList, error) {
 	file, err := os.Open(filename)
@@ -103,16 +108,21 @@ func loadExclusionList(filename string) (*ExclusionList, error) {
 	return exclusionList, nil
 }
 
-func GetReposGithub(parms ParamsReposGithub) ([]ProjectBranch, int) {
+func GetReposGithub(parms ParamsReposGithub) ([]ProjectBranch, int, int) {
 
 	var largestRepoSize int
 	var largestRepoBranch string
 	var importantBranches []ProjectBranch
 	var message4 string
+	cpt := 1
 	emptyRepo := 0
 	result := AnalysisResult{}
 
 	parms.Spin.Stop()
+
+	spin1 := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
+	//spin1.Prefix = PrefixMsg
+	spin1.Color("green", "bold")
 
 	message4 = "Repo(s)"
 
@@ -143,20 +153,20 @@ func GetReposGithub(parms ParamsReposGithub) ([]ProjectBranch, int) {
 					//spin1.Stop()
 					continue
 				}
-			} else {
-				urlrepos := fmt.Sprintf("%s%s/repositories/%s/%s/refs/branches/%s", parms.URL, parms.APIVersion, parms.Workspace, repo.Slug, parms.Branch)
 
-				branches, err = ifExistBranches(urlrepos, parms.AccessToken)
-			/*	if err != nil {
+			} else {
+
+				branches, err = ifExistBranches(parms.Organization, repo.Name, parms.Branch, parms.AccessToken, parms.URL, parms.Apiver)
+				if err != nil {
 					fmt.Printf("❗️ The branch <%s> for repository %s not exist - check your config.json file : \n", parms.Branch, repo.Name)
 					Nobranch = 1
-					continue*/
+					continue
 
 				}
 			}
 			if Nobranch == 0 {
 				// Display Number of branches by repo
-				fmt.Printf("\r\t✅ Repo: %s - Number of branches: %d\n", repo.Name, len(branches))
+				fmt.Printf("\r\t\t✅ %d Repo: %s - Number of branches: %d\n", cpt, repo.Name, len(branches))
 
 				// Finding the branch with the largest size
 				if len(branches) > 1 {
@@ -165,13 +175,13 @@ func GetReposGithub(parms ParamsReposGithub) ([]ProjectBranch, int) {
 						spin1.Prefix = messageB
 						spin1.Start()
 
-						size, err := fetchBranchSizeGithub(parms.Workspace, repo.Slug, branch.Name, parms.AccessToken, parms.URL, parms.APIVersion)
-						messageF = ""
+						size, err := fetchBranchSizeGithub(parms.Organization, repo.Name, branch.Name, parms.AccessToken, parms.URL, parms.Apiver)
+						messageF := ""
 						spin1.FinalMSG = messageF
 
 						spin1.Stop()
 						if err != nil {
-							fmt.Println("❌ Error retrieving branch size:", err)
+							fmt.Printf("❌ Error retrieving branch <%s> size: %v", branch.Name, err)
 							spin1.Stop()
 							os.Exit(1)
 						}
@@ -184,7 +194,7 @@ func GetReposGithub(parms ParamsReposGithub) ([]ProjectBranch, int) {
 
 					}
 				} else {
-					size1, err1 := fetchBranchSize1(parms.Workspace, repo.Slug, parms.AccessToken, parms.URL, parms.APIVersion)
+					size1, err1 := fetchBranchSizeGithub(parms.Organization, repo.Name, branches[0].Name, parms.AccessToken, parms.URL, parms.Apiver)
 
 					if err1 != nil {
 						fmt.Println("\n❌ Error retrieving branch size:", err1)
@@ -196,8 +206,8 @@ func GetReposGithub(parms ParamsReposGithub) ([]ProjectBranch, int) {
 				}
 
 				importantBranches = append(importantBranches, ProjectBranch{
-					ProjectKey:  project.Key,
-					RepoSlug:    repo.Slug,
+					Org:         parms.Organization,
+					RepoSlug:    repo.Name,
 					MainBranch:  largestRepoBranch,
 					LargestSize: largestRepoSize,
 				})
@@ -207,43 +217,51 @@ func GetReposGithub(parms ParamsReposGithub) ([]ProjectBranch, int) {
 			emptyRepo++
 			Nobranch = 0
 		}
+		cpt++
 	}
 
-	result.NumProjects = len(parms.Projects)
+	//result.NumProjects = len(parms.Projects)
 	result.NumRepositories = parms.NBRepos
 	result.ProjectBranches = importantBranches
 
 	// Save Result of Analysis
-	file, err := os.Create("Results/config/analysis_repos.json")
+
+	file, err := os.Create("Results/config/analysis_repos_github.json")
 	if err != nil {
 		fmt.Println("❌ Error creating Analysis file:", err)
-		return importantBranches, parms.NBRepos, emptyRepo
+		return importantBranches, emptyRepo, parms.NBRepos
 	}
 	defer file.Close()
 	encoder := json.NewEncoder(file)
 
 	err = encoder.Encode(result)
 	if err != nil {
-		fmt.Println("Error encoding JSON file <Results/config/analysis_repos.json> :", err)
-		return importantBranches, parms.NBRepos, emptyRepo
+		fmt.Println("Error encoding JSON file <Results/config/analysis_repos_github.json> :", err)
+		return importantBranches, emptyRepo, parms.NBRepos
 	}
-	return importantBranches, emptyRepo
+	return importantBranches, emptyRepo, parms.NBRepos
 }
 
-// Get Infos for all Repositories in Organization for Main Branch
-func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusionfile, repos, branchmain string) ([]Repository, error) {
+// Get Infos for all Repositories in Organization
+func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusionfile, repos, branchmain string) ([]ProjectBranch, error) {
 
-	var repositories []Repository
+	var largestRepoSize int
+	var totalSize int
+	var largestRepoBranch, largesRepo string
+	//var repositories []Repository
+	var importantBranches []ProjectBranch
 	var exclusionList *ExclusionList
 	var err1 error
-	//nbRepos := 0
+	var emptyRepo int
+	nbRepos := 0
 
 	fmt.Print("\n🔎 Analysis of devops platform objects ...\n")
 
 	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
 	spin.Prefix = PrefixMsg
 	spin.Color("green", "bold")
-
+	spin.Start()
+	// Test if exclusion file exist
 	if exlusionfile == "0" {
 		exclusionList = &ExclusionList{
 			Repos: make(map[string]bool),
@@ -266,7 +284,7 @@ func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusion
 		repositories, err := fetchRepositoriesAllGithub(urlrepo, accessToken, apiver, exclusionList)
 		if err != nil {
 			fmt.Printf("❌ Error fetching repositories: %v\n", err)
-			return repositories, nil
+			return importantBranches, nil
 		}
 
 		parms := ParamsReposGithub{
@@ -282,12 +300,32 @@ func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusion
 			Branch:        branchmain,
 		}
 
-		importantBranches, emptyRepo = GetReposGithub(parms)
-		fmt.Printf("Total repositories in %s: %d\n", organization, len(repositories))
-		os.Exit(1)
+		importantBranches, emptyRepo, nbRepos = GetReposGithub(parms)
+		//fmt.Printf("Total repositories in %s: %d\n", organization, len(repositories))
+
 	}
 
-	return repositories, nil
+	largestRepoSize = 0
+	largestRepoBranch = ""
+	largesRepo = ""
+
+	for _, branch := range importantBranches {
+		if branch.LargestSize > largestRepoSize {
+			largestRepoSize = branch.LargestSize
+			largestRepoBranch = branch.MainBranch
+			largesRepo = branch.RepoSlug
+		}
+		totalSize += branch.LargestSize
+	}
+	totalSizeMB := utils.FormatSize(int64(totalSize))
+	largestRepoSizeMB := utils.FormatSize(int64(largestRepoSize))
+
+	fmt.Printf("\n✅ The largest repo is <%s> in the organization <%s> with the branch <%s> and a size of %s\n", largesRepo, organization, largestRepoBranch, largestRepoSizeMB)
+	fmt.Printf("\r✅ Total size of your organization's repositories: %s\n", totalSizeMB)
+	fmt.Printf("\r✅ Total repositories analyzed: %d - Find empty : %d\n", nbRepos-emptyRepo, emptyRepo)
+
+	//os.Exit(1)
+	return importantBranches, nil
 }
 
 func isRepositoryEmpty(urlrepo, apiver, org, repo, accessToken string) (bool, error) {
@@ -306,14 +344,15 @@ func isRepositoryEmpty(urlrepo, apiver, org, repo, accessToken string) (bool, er
 	if err != nil {
 		return false, err
 	}
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
-		return true, nil
-	} else if resp.StatusCode == http.StatusOK {
 		return false, nil
+	} else if resp.StatusCode == http.StatusOK {
+		return true, nil
 	} else {
-		return false, fmt.Errorf("\n❌ Failed to check repository. Status code: %d", resp.StatusCode)
+		return true, fmt.Errorf("\n❌ Failed to check repository. Status code: %d", resp.StatusCode)
 	}
 }
 
@@ -339,7 +378,7 @@ func fetchRepositoriesAllGithub(url, token, apiver string, exclusionList *Exclus
 
 		// Check HTTP status code
 		if resp.StatusCode != http.StatusOK {
-			mess := fmt.Sprintf("\n❌ Request failed with status: %d", resp.StatusCode)
+			mess := fmt.Sprintf("\n❌ Request <fetchRepositoriesAllGithub> failed with status: %d", resp.StatusCode)
 			return nil, fmt.Errorf(mess)
 		}
 
@@ -350,7 +389,13 @@ func fetchRepositoriesAllGithub(url, token, apiver string, exclusionList *Exclus
 		}
 
 		// Add the current page's repositories to the total list
-		allRepos = append(allRepos, repositories...)
+		// Filter archived repositories
+		for _, repo := range repositories {
+			if repoIsArchived(&repo) || repoIsExcluded(&repo, exclusionList) {
+				continue
+			}
+			allRepos = append(allRepos, repo)
+		}
 
 		//  Check for next page
 		nextPage := getNextPage(resp.Header)
@@ -376,7 +421,7 @@ func GithubAllBranches(url, AccessToken, apiver string) ([]Branch, error) {
 			return nil, err
 		}
 		req.Header.Set("Accept", "application/vnd.github.v3+json")
-		req.Header.Set("Authorization", "token "+accessToken)
+		req.Header.Set("Authorization", "token "+AccessToken)
 		req.Header.Set("X-GitHub-Api-Version", apiver)
 
 		resp, err := client.Do(req)
@@ -406,8 +451,9 @@ func GithubAllBranches(url, AccessToken, apiver string) ([]Branch, error) {
 	return branches, nil
 }
 
-func fetchBranchSizeGithub(org, repoName, branchName, accessToken, apiver string) (int, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/git/trees/%s?recursive=1&per_page=100&page=1", org, repoName, branchName)
+func fetchBranchSizeGithub(org, repoName, branchName, accessToken, urlrepo, apiver string) (int, error) {
+	branchNameEncoded := url.QueryEscape(branchName)
+	url := fmt.Sprintf("%srepos/%s/%s/git/trees/%s?recursive=1&per_page=100&page=1", urlrepo, org, repoName, branchNameEncoded)
 
 	totalBranchSize := 0
 
@@ -420,8 +466,6 @@ func fetchBranchSizeGithub(org, repoName, branchName, accessToken, apiver string
 		req.Header.Set("Authorization", "Bearer "+accessToken)
 		req.Header.Set("X-GitHub-Api-Version", apiver)
 
-		fmt.Println(url)
-
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return 0, err
@@ -430,7 +474,7 @@ func fetchBranchSizeGithub(org, repoName, branchName, accessToken, apiver string
 
 		// Check HTTP status code
 		if resp.StatusCode != http.StatusOK {
-			mess := fmt.Sprintf("\n❌ Request failed with status: %d", resp.StatusCode)
+			mess := fmt.Sprintf("\n❌ Request failed with status: %d - requets : %s ", resp.StatusCode, url)
 			return 0, fmt.Errorf(mess)
 		}
 		body, err := io.ReadAll(resp.Body)
@@ -461,6 +505,39 @@ func fetchBranchSizeGithub(org, repoName, branchName, accessToken, apiver string
 	return totalBranchSize, nil
 }
 
+func ifExistBranches(org, repo, branch, accessToken, urlb, apiver string) ([]Branch, error) {
+
+	url := fmt.Sprintf("%srepos/%s/%s/branches/%s", urlb, org, repo, branch)
+
+	client := http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("X-GitHub-Api-Version", apiver)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, nil // La branche n'existe pas
+	} else if resp.StatusCode == http.StatusOK {
+		var branch Branch
+		err := json.NewDecoder(resp.Body).Decode(&branch)
+		if err != nil {
+			return nil, err
+		}
+		return []Branch{branch}, nil
+	} else {
+		return nil, fmt.Errorf("\n❌ Failed to check branch existence. Status code: %d", resp.StatusCode)
+	}
+}
+
 // manage pagination
 func getNextPage(header http.Header) string {
 	linkHeader := header.Get("Link")
@@ -478,3 +555,63 @@ func getNextPage(header http.Header) string {
 
 	return ""
 }
+
+// Function to check if a repository is archived
+func repoIsArchived(repo *Repository) bool {
+
+	return repo != nil && repo.Path != "" && repo.Archived
+}
+
+// Function to check whether a deposit is in the exclusion list
+func repoIsExcluded(repo *Repository, exclusionList *ExclusionList) bool {
+	if exclusionList == nil || exclusionList.Repos == nil {
+		return false
+	}
+	// Checks if the deposit is in the exclusion map
+	_, exists := exclusionList.Repos[repo.Path]
+	return exists
+}
+
+func fetchLanguagesGithub(org, repoName, accessToken, urlrepo string) (map[string]int, error) {
+
+	url := fmt.Sprintf("%srepos/%s/%s/languages", urlrepo, org, repoName)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch languages. Status code: %d", resp.StatusCode)
+	}
+
+	var languages map[string]int
+	if err := json.NewDecoder(resp.Body).Decode(&languages); err != nil {
+		return nil, err
+	}
+
+	return languages, nil
+}
+
+/* func updateRepositoryWithLanguages(repo *Repository, languages map[string]int) {
+
+	repo.LOC = make(map[string]int)
+
+	for lang, loc := range languages {
+
+		langLower := strings.ToLower(lang)
+
+		if _, ok := Languages[langLower]; ok {
+			Languages.language
+			repo.LOC[langLower] = loc
+		}
+	}
+}*/
