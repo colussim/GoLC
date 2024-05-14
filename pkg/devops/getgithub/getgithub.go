@@ -2,17 +2,22 @@ package getgithub
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/briandowns/spinner"
 	"github.com/colussim/GoLC/pkg/utils"
+	"github.com/google/go-github/v62/github"
 )
 
 type ExclusionList struct {
@@ -30,6 +35,7 @@ type ParamsReposGithub struct {
 	ExclusionList *ExclusionList
 	Spin          *spinner.Spinner
 	Branch        string
+	Branchescount int
 }
 type Repository struct {
 	ID            int    `json:"id"`
@@ -80,6 +86,16 @@ type CommitInfo struct {
 	URL string `json:"url"`
 }
 
+type BranchInfo struct {
+	Name     string
+	Activity int
+}
+
+type Lastanalyse struct {
+	LastRepos  string
+	LastBranch string
+}
+
 // const apigit = "X-GitHub-Api-Version"
 const PrefixMsg = "Get Repo(s)..."
 
@@ -108,50 +124,225 @@ func loadExclusionList(filename string) (*ExclusionList, error) {
 	return exclusionList, nil
 }
 
-func GetReposGithub(parms ParamsReposGithub) ([]ProjectBranch, int, int) {
+// Function to randomly select k branch elements of an array
+func selectRandomBranches(branches []Branch, k int) []Branch {
+	source := rand.NewSource(time.Now().UnixNano())
+	randGen := rand.New(source)
 
-	var largestRepoSize int
-	var largestRepoBranch string
-	var importantBranches []ProjectBranch
-	var message4 string
-	cpt := 1
-	emptyRepo := 0
-	result := AnalysisResult{}
+	if k >= len(branches) {
+		return branches
+	}
 
-	parms.Spin.Stop()
+	selectedBranches := make([]Branch, k)
 
-	spin1 := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
-	//spin1.Prefix = PrefixMsg
-	spin1.Color("green", "bold")
+	copy(selectedBranches, branches)
+	for i := len(selectedBranches) - 1; i > 0; i-- {
+		j := randGen.Intn(i + 1)
+		selectedBranches[i], selectedBranches[j] = selectedBranches[j], selectedBranches[i]
+	}
 
-	message4 = "Repo(s)"
+	return selectedBranches
+}
 
-	fmt.Printf("\t  ✅ The number of %s found is: %d\n", message4, parms.NBRepos)
+// Function to get the main branch (main or master)
+func getMainOrMasterBranch(branches []Branch) Branch {
 
-	for _, repo := range parms.Repos {
-		largestRepoSize = 0
-		largestRepoBranch = ""
-		var branches []Branch
-		var Nobranch int = 0
-
-		isEmpty, err := isRepositoryEmpty(parms.URL, parms.Apiver, parms.Organization, repo.Name, parms.AccessToken)
-		if err != nil {
-			fmt.Printf("❌ Error when Testing if repo is empty %s: %v\n", repo.Name, err)
-			//spin1.Stop()
-			continue
+	for _, branch := range branches {
+		if branch.Name == "main" || branch.Name == "master" {
+			return branch
 		}
+	}
 
-		if !isEmpty {
+	return Branch{}
+}
 
-			if len(parms.Branch) == 0 {
+func extractResetTime(errorMessage string) string {
+	re := regexp.MustCompile(`\[rate reset in (\d+h\d+m\d+s)\]`)
+	matches := re.FindStringSubmatch(errorMessage)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+	return ""
+}
 
-				urlrepos := fmt.Sprintf("%srepos/%s/%s/branches?per_page=100&page=1", parms.URL, parms.Organization, repo.Name)
+func SaveResult(result AnalysisResult) error {
+	// Open or create the file
+	file, err := os.Create("Results/config/analysis_repos_github.json")
+	if err != nil {
+		fmt.Println("❌ Error creating Analysis file:", err)
+		return err
+	}
+	defer file.Close()
 
-				branches, err = GithubAllBranches(urlrepos, parms.AccessToken, parms.Apiver)
-				if err != nil {
-					fmt.Printf("❌ Error when retrieving branches for repo %s: %v\n", repo.Name, err)
-					//spin1.Stop()
-					continue
+	// Create a JSON encoder
+	encoder := json.NewEncoder(file)
+
+	// Encode the result and write it to the file
+	if err := encoder.Encode(result); err != nil {
+		fmt.Println("❌ Error encoding JSON file <Results/config/analysis_repos_github.json> :", err)
+		return err
+	}
+
+	fmt.Println("✅ Result saved successfully!")
+	return nil
+}
+
+func SaveBranch(branch []Branch) error {
+	// Open or create the file
+	file, err := os.Create("Results/config/analysis_branch_github.json")
+	if err != nil {
+		fmt.Println("❌ Error creating Analysis Branch file:", err)
+		return err
+	}
+	defer file.Close()
+
+	// Create a JSON encoder
+	encoder := json.NewEncoder(file)
+
+	// Encode the Branch and write it to the file
+	if err := encoder.Encode(branch); err != nil {
+		fmt.Println("❌ Error encoding JSON file <Results/config/analysis_branch_github.json> :", err)
+		return err
+	}
+
+	fmt.Println("✅ Branch saved successfully!")
+	return nil
+}
+
+func SaveRepos(repos []Repository) error {
+	// Open or create the file
+	file, err := os.Create("Results/config/analysis_repos_github.json")
+	if err != nil {
+		fmt.Println("❌ Error creating Analysis Repos file:", err)
+		return err
+	}
+	defer file.Close()
+
+	// Create a JSON encoder
+	encoder := json.NewEncoder(file)
+
+	// Encode the Branch and write it to the file
+	if err := encoder.Encode(repos); err != nil {
+		fmt.Println("❌ Error encoding JSON file <Results/config/analysis_repos_github.json> :", err)
+		return err
+	}
+
+	fmt.Println("✅ Repos saved successfully!")
+	return nil
+}
+
+func SaveLast(last Lastanalyse) error {
+	// Open or create the file
+	file, err := os.Create("Results/config/analysis_last_github.json")
+	if err != nil {
+		fmt.Println("❌ Error creating Analysis Last file:", err)
+		return err
+	}
+	defer file.Close()
+
+	// Create a JSON encoder
+	encoder := json.NewEncoder(file)
+
+	// Encode the Branch and write it to the file
+	if err := encoder.Encode(last); err != nil {
+		fmt.Println("❌ Error encoding JSON file <Results/config/analysis_last_github.json> :", err)
+		return err
+	}
+
+	fmt.Println("✅ Last saved successfully!")
+	return nil
+}
+
+/* func GetReposGithub1(parms ParamsReposGithub) ([]ProjectBranch, int, int) {
+
+var largestRepoSize int
+var largestRepoBranch string
+var importantBranches []ProjectBranch
+var message4 string
+cpt := 1
+emptyRepo := 0
+result := AnalysisResult{}
+
+parms.Spin.Stop()
+
+spin1 := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
+//spin1.Prefix = PrefixMsg
+spin1.Color("green", "bold")
+
+message4 = "Repo(s)"
+
+fmt.Printf("\t  ✅ The number of %s found is: %d\n", message4, parms.NBRepos)
+
+ctx := context.Background()
+client := github.NewClient(nil).WithAuthToken(parms.AccessToken)
+
+for _, repo := range parms.Repos {
+	largestRepoSize = 0
+	largestRepoBranch = ""
+	var branches []Branch
+	var branchesAPI []Branch
+	var branchInfos []BranchInfo
+	//var TopBranches []Branch
+	var Nobranch int = 0
+
+	// Test if Repository is empty
+	isEmpty, err := isRepositoryEmpty(parms.URL, parms.Apiver, parms.Organization, repo.Name, parms.AccessToken)
+	if err != nil {
+		fmt.Printf("❌ Error when Testing if repo is empty %s: %v\n", repo.Name, err)
+		//spin1.Stop()
+		continue
+	}
+
+	if !isEmpty {
+
+		// Test if we pass branch name as a parameter in the config file
+		if len(parms.Branch) == 0 {
+
+			urlrepos := fmt.Sprintf("%srepos/%s/%s/branches?per_page=100&page=1", parms.URL, parms.Organization, repo.Name)
+			branchesAPI, err = GithubAllBranches(urlrepos, parms.AccessToken, parms.Apiver)
+			if err != nil {
+				fmt.Printf("❌ Error when retrieving branches for repo %s: %v\n", repo.Name, err)
+				//spin1.Stop()
+				continue
+			}
+
+			if len(branchesAPI) > parms.Branchescount {
+
+				/*	branches = selectRandomBranches(branchesAPI, parms.Branchescount)
+					// Also add the main branch (main or master) to the selection
+					branches = append(branches, getMainOrMasterBranch(branchesAPI))*/
+
+// Browse branches to get their activity (number of commits)
+/*	for _, branch := range branches {
+						messageB := fmt.Sprintf("\t   Analysis top branch(es) in repository <%s> ...", repo.Name)
+						spin1.Prefix = messageB
+						spin1.Start()
+						// Retrieve branch commits
+						commits, _, err := client.Repositories.ListCommits(ctx, parms.Organization, repo.Name, &github.CommitsListOptions{
+							SHA: branch.Name,
+						})
+						if err != nil {
+							log.Printf("❌ Error retrieving commits for branch %s : %v", branch.Name, err)
+							continue
+						}
+
+						// Store branch information
+						branchInfos = append(branchInfos, BranchInfo{
+							Name:     branch.Name,
+							Activity: len(commits), // Number of commits on branch
+						})
+					}
+
+					// Sort branches based on their activity (number of commits)
+					sort.Slice(branchInfos, func(i, j int) bool {
+						return branchInfos[i].Activity > branchInfos[j].Activity
+					})
+					spin1.Stop()
+
+				} else {
+
+					branches = append(branchesAPI, getMainOrMasterBranch(branchesAPI))
+
 				}
 
 			} else {
@@ -163,25 +354,30 @@ func GetReposGithub(parms ParamsReposGithub) ([]ProjectBranch, int, int) {
 					continue
 
 				}
+
 			}
 			if Nobranch == 0 {
-				// Display Number of branches by repo
-				fmt.Printf("\r\t\t✅ %d Repo: %s - Number of branches: %d\n", cpt, repo.Name, len(branches))
 
 				// Finding the branch with the largest size
 				if len(branches) > 1 {
-					for _, branch := range branches {
-						messageB := fmt.Sprintf("\t   Analysis branch <%s> size...", branch.Name)
+					if len(branchesAPI) > parms.Branchescount {
+						fmt.Printf("\r\t\t✅ %d Repo: %s - Number of branches: %d - Maxi top five analysis is : %d\n", cpt, repo.Name, len(branchesAPI), parms.Branchescount+1)
+					} else {
+						fmt.Printf("\r\t\t✅ %d Repo: %s - Number of branches: %d \n", cpt, repo.Name, len(branches))
+					}
+					//for _, branch := range branches {
+					for i := 0; i < parms.Branchescount+1 && i < len(branches); i++ {
+						messageB := fmt.Sprintf("\t   Analysis branch <%s> size...", branches[i].Name)
 						spin1.Prefix = messageB
 						spin1.Start()
 
-						size, err := fetchBranchSizeGithub(parms.Organization, repo.Name, branch.Name, parms.AccessToken, parms.URL, parms.Apiver)
+						size, err := fetchBranchSizeGithub(parms.Organization, repo.Name, branches[i].Name, parms.AccessToken, parms.URL, parms.Apiver)
 						messageF := ""
 						spin1.FinalMSG = messageF
 
 						spin1.Stop()
 						if err != nil {
-							fmt.Printf("❌ Error retrieving branch <%s> size: %v", branch.Name, err)
+							fmt.Printf("❌ Error retrieving branch <%s> size: %v", branches[i].Name, err)
 							spin1.Stop()
 							os.Exit(1)
 						}
@@ -189,11 +385,13 @@ func GetReposGithub(parms ParamsReposGithub) ([]ProjectBranch, int, int) {
 						if size > largestRepoSize {
 							largestRepoSize = size
 							//largestRepoProject = project.Name
-							largestRepoBranch = branch.Name
+							largestRepoBranch = branches[i].Name
 						}
 
 					}
 				} else {
+					fmt.Printf("\r\t\t✅ %d Repo: %s - Number of branches: %d \n", cpt, repo.Name, len(branchesAPI))
+
 					size1, err1 := fetchBranchSizeGithub(parms.Organization, repo.Name, branches[0].Name, parms.AccessToken, parms.URL, parms.Apiver)
 
 					if err1 != nil {
@@ -240,10 +438,218 @@ func GetReposGithub(parms ParamsReposGithub) ([]ProjectBranch, int, int) {
 		return importantBranches, emptyRepo, parms.NBRepos
 	}
 	return importantBranches, emptyRepo, parms.NBRepos
+}*/
+
+func GetReposGithub(parms ParamsReposGithub) ([]ProjectBranch, int, int, int) {
+
+	var largestRepoSize int
+	var TotalBranches int
+	var largestRepoBranch string
+	var importantBranches []ProjectBranch
+	var message4 string
+	cpt := 1
+	emptyRepo := 0
+	result := AnalysisResult{}
+
+	parms.Spin.Stop()
+
+	spin1 := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
+	//spin1.Prefix = PrefixMsg
+	spin1.Color("green", "bold")
+
+	message4 = "Repo(s)"
+
+	fmt.Printf("\t  ✅ The number of %s found is: %d\n", message4, parms.NBRepos)
+
+	ctx := context.Background()
+	client := github.NewClient(nil).WithAuthToken(parms.AccessToken)
+
+	for _, repo := range parms.Repos {
+		largestRepoSize = 0
+		largestRepoBranch = ""
+		var branches []Branch
+		//var branchesAPI []Branch
+		var branchInfos []BranchInfo
+		//var TopBranches []Branch
+		var Nobranch int = 0
+
+		// Test if Repository is empty
+		isEmpty, err := isRepositoryEmpty(parms.URL, parms.Apiver, parms.Organization, repo.Name, parms.AccessToken)
+		if err != nil {
+			fmt.Printf("❌ Error when Testing if repo is empty %s: %v\n", repo.Name, err)
+			//spin1.Stop()
+			continue
+		}
+
+		if !isEmpty {
+
+			// Test if we pass branch name as a parameter in the config file
+			if len(parms.Branch) == 0 {
+
+				urlrepos := fmt.Sprintf("%srepos/%s/%s/branches?per_page=100&page=1", parms.URL, parms.Organization, repo.Name)
+				branches, err = GithubAllBranches(urlrepos, parms.AccessToken, parms.Apiver)
+				if err != nil {
+					fmt.Printf("❌ Error when retrieving branches for repo %s: %v\n", repo.Name, err)
+					//spin1.Stop()
+					continue
+				}
+				TotalBranches = TotalBranches + len(branches)
+
+				// Browse branches to get their activity (number of commits)
+				for _, branch := range branches {
+					messageB := fmt.Sprintf("\t   Analysis top branch(es) in repository <%s> ...", repo.Name)
+					spin1.Prefix = messageB
+					spin1.Start()
+					// Retrieve branch commits
+					commits, _, err := client.Repositories.ListCommits(ctx, parms.Organization, repo.Name, &github.CommitsListOptions{
+						SHA: branch.Name,
+					})
+					if err != nil {
+						if strings.Contains(err.Error(), "API rate limit of") {
+							resetTime := extractResetTime(err.Error())
+							fmt.Printf("\n❗️ Sorry, you have exceeded the GitHub API call rate limit. Please wait a few moments before trying again : %s.\n", resetTime)
+							fmt.Printf("❌ Stop step %d analysis for the repository %s and the branch %s", cpt, repo.Name, branch.Name)
+
+							/*	importantBranches = append(importantBranches, ProjectBranch{
+									Org:         parms.Organization,
+									RepoSlug:    repo.Name,
+									MainBranch:  largestRepoBranch,
+									LargestSize: largestRepoSize,
+								})
+								result.NumRepositories = parms.NBRepos
+								result.ProjectBranches = importantBranches*/
+
+							// Save Result of Analysis
+							err := SaveResult(result)
+							if err != nil {
+								fmt.Println("❌ Error Save Result of Analysis :", err)
+								os.Exit(1)
+
+							}
+
+							// Save Repos
+							err = SaveRepos(parms.Repos)
+							if err != nil {
+								fmt.Println("❌ Error Save Repos of Analysis :", err)
+								os.Exit(1)
+
+							}
+
+							// Save Branches
+							err = SaveBranch(branches)
+							if err != nil {
+								fmt.Println("❌ Error Save Branch of Analysis :", err)
+								os.Exit(1)
+							}
+
+							var lastanalyse Lastanalyse
+
+							lastanalyse.LastRepos = repo.Name
+							lastanalyse.LastBranch = branch.Name
+							// Save Last
+							err = SaveLast(lastanalyse)
+							if err != nil {
+								fmt.Println("❌ Error Save last of Analysis :", err)
+								os.Exit(1)
+							}
+
+							os.Exit(1)
+						}
+						continue
+					}
+
+					// Store branch information
+					branchInfos = append(branchInfos, BranchInfo{
+						Name:     branch.Name,
+						Activity: len(commits), // Number of commits on branch
+					})
+				}
+
+				// Sort branches based on their activity (number of commits)
+				sort.Slice(branchInfos, func(i, j int) bool {
+					return branchInfos[i].Activity > branchInfos[j].Activity
+				})
+				spin1.Stop()
+
+			} else {
+
+				branches, err = ifExistBranches(parms.Organization, repo.Name, parms.Branch, parms.AccessToken, parms.URL, parms.Apiver)
+				if err != nil {
+					fmt.Printf("❗️ The branch <%s> for repository %s not exist - check your config.json file : \n", parms.Branch, repo.Name)
+					Nobranch = 1
+					continue
+
+				}
+
+			}
+			if Nobranch == 0 {
+
+				// Finding the branch with the largest size
+				//	if len(branches) > 1 {
+
+				fmt.Printf("\r\t\t✅ %d Repo: %s - Number of branches: %d \n", cpt, repo.Name, len(branches))
+
+				//	largestRepoSize = size1
+				largestRepoBranch = branchInfos[0].Name
+				/*	} else {
+					fmt.Printf("\r\t\t✅ %d Repo: %s - Number of branches: %d \n", cpt, repo.Name, len(branches))
+
+					size1, err1 := fetchBranchSizeGithub(parms.Organization, repo.Name, branchInfos[0].Name, parms.AccessToken, parms.URL, parms.Apiver)
+
+					if err1 != nil {
+						fmt.Println("\n❌ Error retrieving branch size:", err1)
+						spin1.Stop()
+						os.Exit(1)
+					}
+					largestRepoSize = size1
+					largestRepoBranch = branchInfos[0].Name
+				}*/
+
+				importantBranches = append(importantBranches, ProjectBranch{
+					Org:         parms.Organization,
+					RepoSlug:    repo.Name,
+					MainBranch:  largestRepoBranch,
+					LargestSize: largestRepoSize,
+				})
+				Nobranch = 0
+			}
+		} else {
+			emptyRepo++
+			Nobranch = 0
+		}
+		cpt++
+	}
+
+	//result.NumProjects = len(parms.Projects)
+	result.NumRepositories = parms.NBRepos
+	result.ProjectBranches = importantBranches
+
+	// Save Result of Analysis
+	err := SaveResult(result)
+	if err != nil {
+		fmt.Println("❌ Error Save Result of Analysis :", err)
+		os.Exit(1)
+
+	}
+
+	/*	file, err := os.Create("Results/config/analysis_repos_github.json")
+		if err != nil {
+			fmt.Println("❌ Error creating Analysis file:", err)
+			return importantBranches, emptyRepo, parms.NBRepos, TotalBranches
+		}
+		defer file.Close()
+		encoder := json.NewEncoder(file)
+
+		err = encoder.Encode(result)
+		if err != nil {
+			fmt.Println("❌ Error encoding JSON file <Results/config/analysis_repos_github.json> :", err)
+			return importantBranches, emptyRepo, parms.NBRepos, TotalBranches
+		}*/
+	return importantBranches, emptyRepo, parms.NBRepos, TotalBranches
 }
 
 // Get Infos for all Repositories in Organization
-func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusionfile, repos, branchmain string) ([]ProjectBranch, error) {
+func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusionfile, repos, branchmain string, topbranchescount int) ([]ProjectBranch, error) {
 
 	var largestRepoSize int
 	var totalSize int
@@ -253,6 +659,7 @@ func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusion
 	var exclusionList *ExclusionList
 	var err1 error
 	var emptyRepo int
+	var TotalBranches int
 	nbRepos := 0
 
 	fmt.Print("\n🔎 Analysis of devops platform objects ...\n")
@@ -298,9 +705,10 @@ func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusion
 			ExclusionList: exclusionList,
 			Spin:          spin,
 			Branch:        branchmain,
+			Branchescount: topbranchescount,
 		}
 
-		importantBranches, emptyRepo, nbRepos = GetReposGithub(parms)
+		importantBranches, emptyRepo, nbRepos, TotalBranches = GetReposGithub(parms)
 		//fmt.Printf("Total repositories in %s: %d\n", organization, len(repositories))
 
 	}
@@ -320,10 +728,10 @@ func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusion
 	totalSizeMB := utils.FormatSize(int64(totalSize))
 	largestRepoSizeMB := utils.FormatSize(int64(largestRepoSize))
 
-	fmt.Printf("\n✅ The largest repo is <%s> in the organization <%s> with the branch <%s> and a size of %s\n", largesRepo, organization, largestRepoBranch, largestRepoSizeMB)
-	fmt.Printf("\r✅ Total size of your organization's repositories: %s\n", totalSizeMB)
-	fmt.Printf("\r✅ Total repositories analyzed: %d - Find empty : %d\n", nbRepos-emptyRepo, emptyRepo)
-
+	fmt.Printf("\n✅ The largest repo is <%s> in the organization <%s> with the branch <%s> and a size of ≃ %s\n", largesRepo, organization, largestRepoBranch, largestRepoSizeMB)
+	fmt.Printf("\r✅ Total size of your organization's repositories ≃ %s\n", totalSizeMB)
+	fmt.Printf("\r✅ Total repositories that will be analyzed: %d - Find empty : %d\n", nbRepos-emptyRepo, emptyRepo)
+	fmt.Printf("\r✅ Total Branches that will be analyzed: %d\n", TotalBranches)
 	//os.Exit(1)
 	return importantBranches, nil
 }
@@ -525,7 +933,7 @@ func ifExistBranches(org, repo, branch, accessToken, urlb, apiver string) ([]Bra
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, nil // La branche n'existe pas
+		return nil, nil
 	} else if resp.StatusCode == http.StatusOK {
 		var branch Branch
 		err := json.NewDecoder(resp.Body).Decode(&branch)

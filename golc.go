@@ -401,12 +401,15 @@ func AnalyseReposListGithub(DestinationResult, AccessToken, Protocol, URL, Baseu
 
 	// Create a channel to receive results
 	results := make(chan int)
+	count := 1
 
 	for _, project := range repolist {
 		go func(project getgithub.ProjectBranch) {
 			//pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s.git", Protocol, user, AccessToken, trimmedURL, project.Org, project.RepoSlug)
 
 			pathToScan := fmt.Sprintf("%s://%s:x-oauth-basic@%s/%s/%s.git", Protocol, AccessToken, Baseurl, project.Org, project.RepoSlug)
+
+			//	pathToScan := fmt.Sprintf("%s://emmanuel-colussi-sonarsource:%s@%s/%s/%s.git", Protocol, AccessToken, Baseurl, project.Org, project.RepoSlug)
 
 			outputFileName := fmt.Sprintf("Result_%s_%s_%s", project.Org, project.RepoSlug, project.MainBranch)
 
@@ -427,6 +430,7 @@ func AnalyseReposListGithub(DestinationResult, AccessToken, Protocol, URL, Baseu
 				OutputPath:        DestinationResult,
 				ReportFormats:     []string{"json"},
 				Branch:            project.MainBranch,
+				Token:             AccessToken,
 			}
 			MessB := fmt.Sprintf("   Extracting files from repo : %s ", project.RepoSlug)
 			spin.Suffix = MessB
@@ -449,7 +453,8 @@ func AnalyseReposListGithub(DestinationResult, AccessToken, Protocol, URL, Baseu
 			}
 
 			spin.Stop()
-			fmt.Printf("\t✅ The repository <%s> has been analyzed\n", project.RepoSlug)
+			fmt.Printf("\r\t✅ %d The repository <%s> has been analyzed\n", count, project.RepoSlug)
+			count++
 
 			// Send result through channel
 			results <- 1
@@ -458,7 +463,7 @@ func AnalyseReposListGithub(DestinationResult, AccessToken, Protocol, URL, Baseu
 
 	// Wait for all goroutines to complete
 	for i := 0; i < len(repolist); i++ {
-		fmt.Printf("\r Waiting for workers...")
+		fmt.Printf("\r Waiting for workers...\n")
 		<-results
 	}
 	//spinWaiting.Stop()
@@ -836,7 +841,7 @@ func main() {
 
 		startTime = time.Now()
 
-		repositories, err := getgithub.GetRepoGithubList(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["Apiver"].(string), platformConfig["AccessToken"].(string), platformConfig["Organization"].(string), fileexclusionEX, platformConfig["Repos"].(string), platformConfig["Branch"].(string))
+		repositories, err := getgithub.GetRepoGithubList(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["Apiver"].(string), platformConfig["AccessToken"].(string), platformConfig["Organization"].(string), fileexclusionEX, platformConfig["Repos"].(string), platformConfig["Branch"].(string), int(platformConfig["TopBranchesCount"].(float64)))
 		if err != nil {
 			fmt.Printf("Error Get Info Repositories in organization '%s' : '%s'", platformConfig["Organization"].(string), err)
 			return

@@ -9,9 +9,10 @@ import (
 
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
-func Getrepos(src, branch string) (string, error) {
+func Getrepos(src, branch, token string) (string, error) {
 
 	suffix, err := randomSuffix()
 	if err != nil {
@@ -25,13 +26,16 @@ func Getrepos(src, branch string) (string, error) {
 	}
 
 	_, err = git.PlainClone(dst, false, &git.CloneOptions{
+		Auth: &http.BasicAuth{
+			Username: "emmanuel-colussi-sonarsource",
+			Password: token,
+		},
 		URL: src,
-		// if you want the progress bar
-		//Progress:      os.Stdout,
 		//ReferenceName: plumbing.NewBranchReferenceName(branch),
 		ReferenceName: plumbing.ReferenceName(branch),
-		SingleBranch:  true,
-		Depth:         1,
+
+		SingleBranch: true,
+		Depth:        1,
 	})
 
 	if err != nil {
