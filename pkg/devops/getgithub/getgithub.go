@@ -6,17 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/briandowns/spinner"
-	"github.com/colussim/GoLC/pkg/utils"
 	"github.com/google/go-github/v62/github"
 )
 
@@ -24,18 +21,21 @@ type ExclusionList struct {
 	Repos map[string]bool `json:"repos"`
 }
 
+// RepositoryMap represents a map of repositories to ignore
+type ExclusionRepos map[string]bool
+
 type ParamsReposGithub struct {
-	Repos         []Repository
+	Repos         []*github.Repository
 	URL           string
 	BaseAPI       string
 	Apiver        string
 	AccessToken   string
 	Organization  string
 	NBRepos       int
-	ExclusionList *ExclusionList
+	ExclusionList ExclusionRepos
 	Spin          *spinner.Spinner
 	Branch        string
-	Branchescount int
+	Period        int
 }
 type Repository struct {
 	ID            int    `json:"id"`
@@ -52,7 +52,7 @@ type ProjectBranch struct {
 	Org         string
 	RepoSlug    string
 	MainBranch  string
-	LargestSize int
+	LargestSize int64
 }
 
 type AnalysisResult struct {
@@ -86,9 +86,12 @@ type CommitInfo struct {
 	URL string `json:"url"`
 }
 
-type BranchInfo struct {
-	Name     string
-	Activity int
+type BranchInfoEvents struct {
+	Name      string
+	Pushes    int
+	Commits   int
+	Additions int
+	Deletions int
 }
 
 type Lastanalyse struct {
@@ -96,78 +99,50 @@ type Lastanalyse struct {
 	LastBranch string
 }
 
+type RepoBranch struct {
+	ID       int64            `json:"id"`
+	Name     string           `json:"name"`
+	Branches []*github.Branch `json:"branches"`
+}
+
 // const apigit = "X-GitHub-Api-Version"
 const PrefixMsg = "Get Repo(s)..."
+const MessageApiRate = "❗️ Rate limit exceeded. Waiting for rate limit reset..."
 
-func loadExclusionList(filename string) (*ExclusionList, error) {
+// Load repository ignore map from file
+func loadExclusionRepos(filename string) (ExclusionRepos, error) {
+	ignoreMap := make(ExclusionRepos)
+
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	exclusionList := &ExclusionList{
-		Repos: make(map[string]bool),
-	}
-
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		line := scanner.Text()
-		exclusionList.Repos[line] = true
-
+		repoName := strings.TrimSpace(scanner.Text())
+		if repoName != "" {
+			ignoreMap[repoName] = true
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
 
-	return exclusionList, nil
+	return ignoreMap, nil
 }
 
-// Function to randomly select k branch elements of an array
-func selectRandomBranches(branches []Branch, k int) []Branch {
-	source := rand.NewSource(time.Now().UnixNano())
-	randGen := rand.New(source)
-
-	if k >= len(branches) {
-		return branches
-	}
-
-	selectedBranches := make([]Branch, k)
-
-	copy(selectedBranches, branches)
-	for i := len(selectedBranches) - 1; i > 0; i-- {
-		j := randGen.Intn(i + 1)
-		selectedBranches[i], selectedBranches[j] = selectedBranches[j], selectedBranches[i]
-	}
-
-	return selectedBranches
-}
-
-// Function to get the main branch (main or master)
-func getMainOrMasterBranch(branches []Branch) Branch {
-
-	for _, branch := range branches {
-		if branch.Name == "main" || branch.Name == "master" {
-			return branch
-		}
-	}
-
-	return Branch{}
-}
-
-func extractResetTime(errorMessage string) string {
-	re := regexp.MustCompile(`\[rate reset in (\d+h\d+m\d+s)\]`)
-	matches := re.FindStringSubmatch(errorMessage)
-	if len(matches) > 1 {
-		return matches[1]
-	}
-	return ""
+// Check if a repository should be ignored
+func shouldIgnore(repoName string, ignoreMap ExclusionRepos) bool {
+	_, ignored := ignoreMap[repoName]
+	return ignored
 }
 
 func SaveResult(result AnalysisResult) error {
 	// Open or create the file
-	file, err := os.Create("Results/config/analysis_repos_github.json")
+	file, err := os.Create("Results/config/analysis_analysis_result.json")
 	if err != nil {
 		fmt.Println("❌ Error creating Analysis file:", err)
 		return err
@@ -179,7 +154,7 @@ func SaveResult(result AnalysisResult) error {
 
 	// Encode the result and write it to the file
 	if err := encoder.Encode(result); err != nil {
-		fmt.Println("❌ Error encoding JSON file <Results/config/analysis_repos_github.json> :", err)
+		fmt.Println("❌ Error encoding JSON file <Results/config/analysis_result_github.json> :", err)
 		return err
 	}
 
@@ -187,7 +162,7 @@ func SaveResult(result AnalysisResult) error {
 	return nil
 }
 
-func SaveBranch(branch []Branch) error {
+func SaveBranch(branch RepoBranch) error {
 	// Open or create the file
 	file, err := os.Create("Results/config/analysis_branch_github.json")
 	if err != nil {
@@ -205,11 +180,32 @@ func SaveBranch(branch []Branch) error {
 		return err
 	}
 
-	fmt.Println("✅ Branch saved successfully!")
+	//	fmt.Println("✅ Branch saved successfully!")
 	return nil
 }
 
-func SaveRepos(repos []Repository) error {
+func SaveCommit(repos []*github.RepositoryCommit) error {
+	// Open or create the file
+	file, err := os.Create("Results/config/analysis_commit_github.json")
+	if err != nil {
+		fmt.Println("❌ Error creating Analysis Repos file:", err)
+		return err
+	}
+	defer file.Close()
+
+	// Create a JSON encoder
+	encoder := json.NewEncoder(file)
+
+	// Encode the Branch and write it to the file
+	if err := encoder.Encode(repos); err != nil {
+		fmt.Println("❌ Error encoding JSON file <Results/config/analysis_commit_github.json> :", err)
+		return err
+	}
+
+	//fmt.Println("✅ Commits saved successfully!")
+	return nil
+}
+func SaveRepos(repos []*github.Repository) error {
 	// Open or create the file
 	file, err := os.Create("Results/config/analysis_repos_github.json")
 	if err != nil {
@@ -227,7 +223,7 @@ func SaveRepos(repos []Repository) error {
 		return err
 	}
 
-	fmt.Println("✅ Repos saved successfully!")
+	fmt.Println("✅ \r Repos saved successfully!")
 	return nil
 }
 
@@ -253,374 +249,242 @@ func SaveLast(last Lastanalyse) error {
 	return nil
 }
 
-/* func GetReposGithub1(parms ParamsReposGithub) ([]ProjectBranch, int, int) {
+func GetReposGithub(parms ParamsReposGithub, ctx context.Context, client *github.Client) ([]ProjectBranch, int, int, int, int, int) {
 
-var largestRepoSize int
-var largestRepoBranch string
-var importantBranches []ProjectBranch
-var message4 string
-cpt := 1
-emptyRepo := 0
-result := AnalysisResult{}
+	var message4 string       // Message for is one or more Repos
+	var TotalBranches int = 0 // Counter Number of Branches on All Repositories
 
-parms.Spin.Stop()
-
-spin1 := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
-//spin1.Prefix = PrefixMsg
-spin1.Color("green", "bold")
-
-message4 = "Repo(s)"
-
-fmt.Printf("\t  ✅ The number of %s found is: %d\n", message4, parms.NBRepos)
-
-ctx := context.Background()
-client := github.NewClient(nil).WithAuthToken(parms.AccessToken)
-
-for _, repo := range parms.Repos {
-	largestRepoSize = 0
-	largestRepoBranch = ""
-	var branches []Branch
-	var branchesAPI []Branch
-	var branchInfos []BranchInfo
-	//var TopBranches []Branch
-	var Nobranch int = 0
-
-	// Test if Repository is empty
-	isEmpty, err := isRepositoryEmpty(parms.URL, parms.Apiver, parms.Organization, repo.Name, parms.AccessToken)
-	if err != nil {
-		fmt.Printf("❌ Error when Testing if repo is empty %s: %v\n", repo.Name, err)
-		//spin1.Stop()
-		continue
-	}
-
-	if !isEmpty {
-
-		// Test if we pass branch name as a parameter in the config file
-		if len(parms.Branch) == 0 {
-
-			urlrepos := fmt.Sprintf("%srepos/%s/%s/branches?per_page=100&page=1", parms.URL, parms.Organization, repo.Name)
-			branchesAPI, err = GithubAllBranches(urlrepos, parms.AccessToken, parms.Apiver)
-			if err != nil {
-				fmt.Printf("❌ Error when retrieving branches for repo %s: %v\n", repo.Name, err)
-				//spin1.Stop()
-				continue
-			}
-
-			if len(branchesAPI) > parms.Branchescount {
-
-				/*	branches = selectRandomBranches(branchesAPI, parms.Branchescount)
-					// Also add the main branch (main or master) to the selection
-					branches = append(branches, getMainOrMasterBranch(branchesAPI))*/
-
-// Browse branches to get their activity (number of commits)
-/*	for _, branch := range branches {
-						messageB := fmt.Sprintf("\t   Analysis top branch(es) in repository <%s> ...", repo.Name)
-						spin1.Prefix = messageB
-						spin1.Start()
-						// Retrieve branch commits
-						commits, _, err := client.Repositories.ListCommits(ctx, parms.Organization, repo.Name, &github.CommitsListOptions{
-							SHA: branch.Name,
-						})
-						if err != nil {
-							log.Printf("❌ Error retrieving commits for branch %s : %v", branch.Name, err)
-							continue
-						}
-
-						// Store branch information
-						branchInfos = append(branchInfos, BranchInfo{
-							Name:     branch.Name,
-							Activity: len(commits), // Number of commits on branch
-						})
-					}
-
-					// Sort branches based on their activity (number of commits)
-					sort.Slice(branchInfos, func(i, j int) bool {
-						return branchInfos[i].Activity > branchInfos[j].Activity
-					})
-					spin1.Stop()
-
-				} else {
-
-					branches = append(branchesAPI, getMainOrMasterBranch(branchesAPI))
-
-				}
-
-			} else {
-
-				branches, err = ifExistBranches(parms.Organization, repo.Name, parms.Branch, parms.AccessToken, parms.URL, parms.Apiver)
-				if err != nil {
-					fmt.Printf("❗️ The branch <%s> for repository %s not exist - check your config.json file : \n", parms.Branch, repo.Name)
-					Nobranch = 1
-					continue
-
-				}
-
-			}
-			if Nobranch == 0 {
-
-				// Finding the branch with the largest size
-				if len(branches) > 1 {
-					if len(branchesAPI) > parms.Branchescount {
-						fmt.Printf("\r\t\t✅ %d Repo: %s - Number of branches: %d - Maxi top five analysis is : %d\n", cpt, repo.Name, len(branchesAPI), parms.Branchescount+1)
-					} else {
-						fmt.Printf("\r\t\t✅ %d Repo: %s - Number of branches: %d \n", cpt, repo.Name, len(branches))
-					}
-					//for _, branch := range branches {
-					for i := 0; i < parms.Branchescount+1 && i < len(branches); i++ {
-						messageB := fmt.Sprintf("\t   Analysis branch <%s> size...", branches[i].Name)
-						spin1.Prefix = messageB
-						spin1.Start()
-
-						size, err := fetchBranchSizeGithub(parms.Organization, repo.Name, branches[i].Name, parms.AccessToken, parms.URL, parms.Apiver)
-						messageF := ""
-						spin1.FinalMSG = messageF
-
-						spin1.Stop()
-						if err != nil {
-							fmt.Printf("❌ Error retrieving branch <%s> size: %v", branches[i].Name, err)
-							spin1.Stop()
-							os.Exit(1)
-						}
-
-						if size > largestRepoSize {
-							largestRepoSize = size
-							//largestRepoProject = project.Name
-							largestRepoBranch = branches[i].Name
-						}
-
-					}
-				} else {
-					fmt.Printf("\r\t\t✅ %d Repo: %s - Number of branches: %d \n", cpt, repo.Name, len(branchesAPI))
-
-					size1, err1 := fetchBranchSizeGithub(parms.Organization, repo.Name, branches[0].Name, parms.AccessToken, parms.URL, parms.Apiver)
-
-					if err1 != nil {
-						fmt.Println("\n❌ Error retrieving branch size:", err1)
-						spin1.Stop()
-						os.Exit(1)
-					}
-					largestRepoSize = size1
-					largestRepoBranch = branches[0].Name
-				}
-
-				importantBranches = append(importantBranches, ProjectBranch{
-					Org:         parms.Organization,
-					RepoSlug:    repo.Name,
-					MainBranch:  largestRepoBranch,
-					LargestSize: largestRepoSize,
-				})
-				Nobranch = 0
-			}
-		} else {
-			emptyRepo++
-			Nobranch = 0
-		}
-		cpt++
-	}
-
-	//result.NumProjects = len(parms.Projects)
-	result.NumRepositories = parms.NBRepos
-	result.ProjectBranches = importantBranches
-
-	// Save Result of Analysis
-
-	file, err := os.Create("Results/config/analysis_repos_github.json")
-	if err != nil {
-		fmt.Println("❌ Error creating Analysis file:", err)
-		return importantBranches, emptyRepo, parms.NBRepos
-	}
-	defer file.Close()
-	encoder := json.NewEncoder(file)
-
-	err = encoder.Encode(result)
-	if err != nil {
-		fmt.Println("Error encoding JSON file <Results/config/analysis_repos_github.json> :", err)
-		return importantBranches, emptyRepo, parms.NBRepos
-	}
-	return importantBranches, emptyRepo, parms.NBRepos
-}*/
-
-func GetReposGithub(parms ParamsReposGithub) ([]ProjectBranch, int, int, int) {
-
-	var largestRepoSize int
-	var TotalBranches int
 	var largestRepoBranch string
 	var importantBranches []ProjectBranch
-	var message4 string
-	cpt := 1
-	emptyRepo := 0
-	result := AnalysisResult{}
+	//var branches []*github.Branch
+
+	result := AnalysisResult{}               // Result structure
+	notAnalyzedCount := 0                    // Counter Number of repositories excluded
+	emptyRepo := 0                           // Counter Number of repositories empty
+	cpt := 1                                 // Counter Number of Repos
+	cptarchiv := 0                           // Counter archiv repos
+	opt := &github.ListOptions{PerPage: 100} // Number Object by page in API Request
+	opt1 := &github.BranchListOptions{
+		ListOptions: github.ListOptions{PerPage: 100},
+	}
+	oneMonthAgo := time.Now().AddDate(0, parms.Period, 0)
 
 	parms.Spin.Stop()
-
 	spin1 := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
-	//spin1.Prefix = PrefixMsg
 	spin1.Color("green", "bold")
 
 	message4 = "Repo(s)"
-
 	fmt.Printf("\t  ✅ The number of %s found is: %d\n", message4, parms.NBRepos)
 
-	ctx := context.Background()
-	client := github.NewClient(nil).WithAuthToken(parms.AccessToken)
-
 	for _, repo := range parms.Repos {
-		largestRepoSize = 0
-		largestRepoBranch = ""
-		var branches []Branch
-		//var branchesAPI []Branch
-		var branchInfos []BranchInfo
-		//var TopBranches []Branch
-		var Nobranch int = 0
+		var branches1 []*github.Branch
+		var AllBranches []RepoBranch
+		var allEvents []*github.Event
 
-		// Test if Repository is empty
-		isEmpty, err := isRepositoryEmpty(parms.URL, parms.Apiver, parms.Organization, repo.Name, parms.AccessToken)
-		if err != nil {
-			fmt.Printf("❌ Error when Testing if repo is empty %s: %v\n", repo.Name, err)
-			//spin1.Stop()
+		largestRepoBranch = ""
+
+		repoName := *repo.Name
+		repoID := *repo.ID
+
+		// Test if repo is archived
+		if repo.GetArchived() {
+			cptarchiv++
 			continue
 		}
 
-		if !isEmpty {
+		// Test is repo is excluded
+		if len(parms.ExclusionList) != 0 {
+			if shouldIgnore(repoName, parms.ExclusionList) {
+				fmt.Printf("\t   ✅ Skipping analysis for repository '%s' as per ignore list.\n", repoName)
+				notAnalyzedCount++ // Increment the counter for repositories analyzed
+				continue
+			}
+		}
+		// Next Step : Test is Repository is empty
+		isEmpty, err := reposIfEmpty(ctx, client, repoName, parms.Organization)
+		if err != nil {
+			fmt.Print(err.Error())
+			continue
 
+		}
+		if !isEmpty {
 			// Test if we pass branch name as a parameter in the config file
 			if len(parms.Branch) == 0 {
 
-				urlrepos := fmt.Sprintf("%srepos/%s/%s/branches?per_page=100&page=1", parms.URL, parms.Organization, repo.Name)
-				branches, err = GithubAllBranches(urlrepos, parms.AccessToken, parms.Apiver)
-				if err != nil {
-					fmt.Printf("❌ Error when retrieving branches for repo %s: %v\n", repo.Name, err)
-					//spin1.Stop()
-					continue
-				}
-				TotalBranches = TotalBranches + len(branches)
+				messageB := fmt.Sprintf("\t   Analysis top branch(es) in repository <%s> ...", repoName)
+				spin1.Prefix = messageB
+				spin1.Start()
+				TotalRepoBranches := 0
 
-				// Browse branches to get their activity (number of commits)
-				for _, branch := range branches {
-					messageB := fmt.Sprintf("\t   Analysis top branch(es) in repository <%s> ...", repo.Name)
-					spin1.Prefix = messageB
-					spin1.Start()
-					// Retrieve branch commits
-					commits, _, err := client.Repositories.ListCommits(ctx, parms.Organization, repo.Name, &github.CommitsListOptions{
-						SHA: branch.Name,
-					})
+				/* ----  Get All Branches for Repository ---- */
+				for {
+					branch0, resp, err := client.Repositories.ListBranches(ctx, parms.Organization, repoName, opt1)
+
+					if rateLimitErr, ok := err.(*github.AbuseRateLimitError); ok {
+						fmt.Println(MessageApiRate)
+						waitTime := rateLimitErr.GetRetryAfter()
+						// Sleep until the rate limit resets
+						time.Sleep(waitTime)
+					}
 					if err != nil {
-						if strings.Contains(err.Error(), "API rate limit of") {
-							resetTime := extractResetTime(err.Error())
-							fmt.Printf("\n❗️ Sorry, you have exceeded the GitHub API call rate limit. Please wait a few moments before trying again : %s.\n", resetTime)
-							fmt.Printf("❌ Stop step %d analysis for the repository %s and the branch %s", cpt, repo.Name, branch.Name)
+						fmt.Printf("❌ Error when retrieving branches for repo %s: %v\n", repoName, err)
+						continue
+					}
+					TotalRepoBranches += len(branch0)
+					branches1 = append(branches1, branch0...)
+					if resp.NextPage == 0 {
+						break
+					}
+					opt1.Page = resp.NextPage
 
-							/*	importantBranches = append(importantBranches, ProjectBranch{
-									Org:         parms.Organization,
-									RepoSlug:    repo.Name,
-									MainBranch:  largestRepoBranch,
-									LargestSize: largestRepoSize,
-								})
-								result.NumRepositories = parms.NBRepos
-								result.ProjectBranches = importantBranches*/
+				}
+				TotalBranches += TotalRepoBranches
 
-							// Save Result of Analysis
-							err := SaveResult(result)
+				/* ----  End Get All Branches for Repository ---- */
+
+				/* ---- Save List of Current Branch ---- */
+				AllBranches = append(AllBranches, RepoBranch{
+					ID:       repoID,
+					Name:     repoName,
+					Branches: branches1,
+				})
+				err = SaveBranch(AllBranches[0])
+				if err != nil {
+					fmt.Printf("❌ Error saving repositories in file Results/config/analysis_branch_github.json: %v\n", err)
+				}
+				/* ---- End Save List of Current Branch ---- */
+
+				/* ----  Get List tRepository Events ---- */
+				for {
+					events, resp, err := client.Activity.ListRepositoryEvents(ctx, parms.Organization, repoName, opt)
+					if rateLimitErr, ok := err.(*github.AbuseRateLimitError); ok {
+						fmt.Println(MessageApiRate)
+						waitTime := rateLimitErr.GetRetryAfter()
+						// Sleep until the rate limit resets
+						time.Sleep(waitTime)
+					}
+					if err != nil {
+						fmt.Println("❌ Error fetching repository events:", err)
+						os.Exit(1)
+					}
+					allEvents = append(allEvents, events...)
+
+					if resp.NextPage == 0 {
+						break
+					}
+					opt.Page = resp.NextPage
+				}
+				/* ----  End Get List tRepository Events ---- */
+
+				/* ---- Count push events for each branch ---- */
+				branchPushes := make(map[string]*BranchInfoEvents)
+				for _, event := range allEvents {
+					if event.CreatedAt != nil && event.CreatedAt.After(oneMonthAgo) {
+						switch event.GetType() {
+						case "PushEvent":
+							payload, err := event.ParsePayload()
 							if err != nil {
-								fmt.Println("❌ Error Save Result of Analysis :", err)
-								os.Exit(1)
-
+								fmt.Println("❌ Error parsing payload:", err)
+								continue
 							}
-
-							// Save Repos
-							err = SaveRepos(parms.Repos)
-							if err != nil {
-								fmt.Println("❌ Error Save Repos of Analysis :", err)
-								os.Exit(1)
-
+							pushEvent, ok := payload.(*github.PushEvent)
+							if ok {
+								branch := pushEvent.GetRef()
+								// Branch references begin with "refs/heads/"
+								if len(branch) > 11 && branch[:11] == "refs/heads/" {
+									branchName := branch[11:]
+									if _, exists := branchPushes[branchName]; !exists {
+										branchPushes[branchName] = &BranchInfoEvents{Name: branchName}
+									}
+									branchPushes[branchName].Pushes++
+								}
 							}
-
-							// Save Branches
-							err = SaveBranch(branches)
-							if err != nil {
-								fmt.Println("❌ Error Save Branch of Analysis :", err)
-								os.Exit(1)
-							}
-
-							var lastanalyse Lastanalyse
-
-							lastanalyse.LastRepos = repo.Name
-							lastanalyse.LastBranch = branch.Name
-							// Save Last
-							err = SaveLast(lastanalyse)
-							if err != nil {
-								fmt.Println("❌ Error Save last of Analysis :", err)
-								os.Exit(1)
-							}
-
-							os.Exit(1)
 						}
+					}
+				}
+				/* ---- End Count push events for each branch ---- */
+
+				/* ---- Get the number of commits and lines of code for selected branches ---- */
+				for _, info := range branchPushes {
+					// Retrieve depot activity statistics for the last week
+					contributorsStats, _, err := client.Repositories.ListContributorsStats(ctx, parms.Organization, repoName)
+					if rateLimitErr, ok := err.(*github.AbuseRateLimitError); ok {
+						fmt.Println(MessageApiRate)
+						waitTime := rateLimitErr.GetRetryAfter()
+						// Sleep until the rate limit resets
+						time.Sleep(waitTime)
+					}
+					if err != nil {
+						//	fmt.Printf("❌ Error fetching contributors stats: %v\n", err)
 						continue
 					}
 
-					// Store branch information
-					branchInfos = append(branchInfos, BranchInfo{
-						Name:     branch.Name,
-						Activity: len(commits), // Number of commits on branch
+					/* ---- Get the number of commits and lines of code for selected branches ---- */
+					for _, contributorStats := range contributorsStats {
+						// Browse contribution weeks
+						for _, week := range contributorStats.Weeks {
+							// If the week is included in the last month
+							if week.Week.After(oneMonthAgo) {
+								// Add line additions and deletions for each contributor to info.Additions and info.Deletions and the number of commits info.Commits
+								info.Additions += *week.Additions
+								info.Deletions += *week.Deletions
+								info.Commits += *week.Commits
+							}
+						}
+					}
+					/* ---- End Get the number of commits and lines of code for selected branches ---- */
+				}
+				/* ---- End Get the number of commits and lines of code for selected branches ---- */
+
+				/* ---- Sort branches by number of commits, then by additions and deletions of lines of code ---- */
+				var branchList []*BranchInfoEvents
+				for _, info := range branchPushes {
+					branchList = append(branchList, info)
+				}
+				sort.Slice(branchList, func(i, j int) bool {
+					if branchList[i].Commits == branchList[j].Commits {
+						return (branchList[i].Additions + branchList[i].Deletions) > (branchList[j].Additions + branchList[j].Deletions)
+					}
+					return branchList[i].Commits > branchList[j].Commits
+				})
+				/* ---- End Sort branches by number of commits, then by additions and deletions of lines of code ---- */
+
+				// Display the most active and important branch in terms of lines of code
+				if len(branchList) > 0 {
+					bc := branchList[0]
+					largestRepoBranch = bc.Name
+					importantBranches = append(importantBranches, ProjectBranch{
+						Org:         parms.Organization,
+						RepoSlug:    repoName,
+						MainBranch:  largestRepoBranch,
+						LargestSize: int64(bc.Commits),
+					})
+
+				} else {
+					largestRepoBranch = *repo.DefaultBranch
+					importantBranches = append(importantBranches, ProjectBranch{
+						Org:         parms.Organization,
+						RepoSlug:    repoName,
+						MainBranch:  largestRepoBranch,
+						LargestSize: int64(*repo.Size),
 					})
 				}
 
-				// Sort branches based on their activity (number of commits)
-				sort.Slice(branchInfos, func(i, j int) bool {
-					return branchInfos[i].Activity > branchInfos[j].Activity
-				})
 				spin1.Stop()
-
-			} else {
-
-				branches, err = ifExistBranches(parms.Organization, repo.Name, parms.Branch, parms.AccessToken, parms.URL, parms.Apiver)
-				if err != nil {
-					fmt.Printf("❗️ The branch <%s> for repository %s not exist - check your config.json file : \n", parms.Branch, repo.Name)
-					Nobranch = 1
-					continue
-
-				}
+				////fmt.Println("\r\t\t Repo:", repoName)
+				//fmt.Println("\r\t\t Size BrancheIno:", len(branchInfos))
+				fmt.Printf("\r\t\t✅ %d Repo: %s - Number of branches: %d - largest Branch: %s \n", cpt, repoName, TotalRepoBranches, largestRepoBranch)
 
 			}
-			if Nobranch == 0 {
 
-				// Finding the branch with the largest size
-				//	if len(branches) > 1 {
-
-				fmt.Printf("\r\t\t✅ %d Repo: %s - Number of branches: %d \n", cpt, repo.Name, len(branches))
-
-				//	largestRepoSize = size1
-				largestRepoBranch = branchInfos[0].Name
-				/*	} else {
-					fmt.Printf("\r\t\t✅ %d Repo: %s - Number of branches: %d \n", cpt, repo.Name, len(branches))
-
-					size1, err1 := fetchBranchSizeGithub(parms.Organization, repo.Name, branchInfos[0].Name, parms.AccessToken, parms.URL, parms.Apiver)
-
-					if err1 != nil {
-						fmt.Println("\n❌ Error retrieving branch size:", err1)
-						spin1.Stop()
-						os.Exit(1)
-					}
-					largestRepoSize = size1
-					largestRepoBranch = branchInfos[0].Name
-				}*/
-
-				importantBranches = append(importantBranches, ProjectBranch{
-					Org:         parms.Organization,
-					RepoSlug:    repo.Name,
-					MainBranch:  largestRepoBranch,
-					LargestSize: largestRepoSize,
-				})
-				Nobranch = 0
-			}
 		} else {
 			emptyRepo++
-			Nobranch = 0
 		}
 		cpt++
+
+		//spin1.Start()
 	}
 
-	//result.NumProjects = len(parms.Projects)
 	result.NumRepositories = parms.NBRepos
 	result.ProjectBranches = importantBranches
 
@@ -632,35 +496,27 @@ func GetReposGithub(parms ParamsReposGithub) ([]ProjectBranch, int, int, int) {
 
 	}
 
-	/*	file, err := os.Create("Results/config/analysis_repos_github.json")
-		if err != nil {
-			fmt.Println("❌ Error creating Analysis file:", err)
-			return importantBranches, emptyRepo, parms.NBRepos, TotalBranches
-		}
-		defer file.Close()
-		encoder := json.NewEncoder(file)
-
-		err = encoder.Encode(result)
-		if err != nil {
-			fmt.Println("❌ Error encoding JSON file <Results/config/analysis_repos_github.json> :", err)
-			return importantBranches, emptyRepo, parms.NBRepos, TotalBranches
-		}*/
-	return importantBranches, emptyRepo, parms.NBRepos, TotalBranches
+	return importantBranches, emptyRepo, parms.NBRepos, TotalBranches, notAnalyzedCount, cptarchiv
 }
 
 // Get Infos for all Repositories in Organization
-func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusionfile, repos, branchmain string, topbranchescount int) ([]ProjectBranch, error) {
+func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusionfile, repos, branchmain string, period int) ([]ProjectBranch, error) {
 
-	var largestRepoSize int
-	var totalSize int
+	var largestRepoSize int64
+	var totalSize int64
+	var totalExclude int
+	var totalArchiv int
 	var largestRepoBranch, largesRepo string
-	//var repositories []Repository
 	var importantBranches []ProjectBranch
-	var exclusionList *ExclusionList
+	var repositories []*github.Repository
+	var exclusionList ExclusionRepos
 	var err1 error
 	var emptyRepo int
 	var TotalBranches int
 	nbRepos := 0
+	opt := &github.RepositoryListByOrgOptions{
+		ListOptions: github.ListOptions{PerPage: 100},
+	} // Number Object by page in API Request
 
 	fmt.Print("\n🔎 Analysis of devops platform objects ...\n")
 
@@ -668,14 +524,13 @@ func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusion
 	spin.Prefix = PrefixMsg
 	spin.Color("green", "bold")
 	spin.Start()
+
 	// Test if exclusion file exist
 	if exlusionfile == "0" {
-		exclusionList = &ExclusionList{
-			Repos: make(map[string]bool),
-		}
+		exclusionList = make(map[string]bool)
 
 	} else {
-		exclusionList, err1 = loadExclusionList(exlusionfile)
+		exclusionList, err1 = loadExclusionRepos(exlusionfile)
 		if err1 != nil {
 			fmt.Printf("\n❌ Error Read Exclusion File <%s>: %v", exlusionfile, err1)
 			spin.Stop()
@@ -683,15 +538,28 @@ func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusion
 		}
 
 	}
-
+	// No repo name in config.json file
 	if len(repos) == 0 {
 
-		urlrepo := fmt.Sprintf("%sorgs/%s/repos?type=all&recurse_submodules=false&per_page=1000&page=1", url, organization)
+		ctx := context.Background()
+		client := github.NewClient(nil).WithAuthToken(accessToken)
 
-		repositories, err := fetchRepositoriesAllGithub(urlrepo, accessToken, apiver, exclusionList)
-		if err != nil {
-			fmt.Printf("❌ Error fetching repositories: %v\n", err)
-			return importantBranches, nil
+		// Get all Repositories in Organization
+		for {
+			repos, resp, err := client.Repositories.ListByOrg(ctx, organization, opt)
+
+			if err != nil {
+				fmt.Printf("❌ Error fetching repositories: %v\n", err)
+				return importantBranches, nil
+			}
+
+			repositories = append(repositories, repos...)
+
+			if resp.NextPage == 0 {
+				break
+			}
+			opt.Page = resp.NextPage
+
 		}
 
 		parms := ParamsReposGithub{
@@ -705,11 +573,57 @@ func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusion
 			ExclusionList: exclusionList,
 			Spin:          spin,
 			Branch:        branchmain,
-			Branchescount: topbranchescount,
+			Period:        period,
 		}
 
-		importantBranches, emptyRepo, nbRepos, TotalBranches = GetReposGithub(parms)
-		//fmt.Printf("Total repositories in %s: %d\n", organization, len(repositories))
+		sortRepositoriesByUpdatedAt(repositories)
+
+		// Save List of Repos
+		err := SaveRepos(repositories)
+		if err != nil {
+			fmt.Printf("❌ Error saving repositories in file Results/config/analysis_repos_github.json: %v\n", err)
+		}
+
+		importantBranches, emptyRepo, nbRepos, TotalBranches, totalExclude, totalArchiv = GetReposGithub(parms, ctx, client)
+
+	} else {
+		ctx := context.Background()
+		client := github.NewClient(nil).WithAuthToken(accessToken)
+
+		repos, _, err := client.Repositories.Get(ctx, organization, repos)
+		if err != nil {
+			fmt.Printf("❌ Error fetching repository: %v\n", err)
+			return importantBranches, nil
+		}
+
+		var repositories []*github.Repository
+
+		// Append the repository to the slice
+		repositories = append(repositories, repos)
+
+		parms := ParamsReposGithub{
+			Repos:         repositories,
+			URL:           url,
+			BaseAPI:       baseapi,
+			Apiver:        apiver,
+			AccessToken:   accessToken,
+			Organization:  organization,
+			NBRepos:       len(repositories),
+			ExclusionList: exclusionList,
+			Spin:          spin,
+			Branch:        branchmain,
+			Period:        period,
+		}
+
+		sortRepositoriesByUpdatedAt(repositories)
+
+		// Save List of Repos
+		err = SaveRepos(repositories)
+		if err != nil {
+			fmt.Printf("❌ Error saving repositories in file Results/config/analysis_repos_github.json: %v\n", err)
+		}
+
+		importantBranches, emptyRepo, nbRepos, TotalBranches, totalExclude, totalArchiv = GetReposGithub(parms, ctx, client)
 
 	}
 
@@ -725,45 +639,44 @@ func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusion
 		}
 		totalSize += branch.LargestSize
 	}
-	totalSizeMB := utils.FormatSize(int64(totalSize))
-	largestRepoSizeMB := utils.FormatSize(int64(largestRepoSize))
 
-	fmt.Printf("\n✅ The largest repo is <%s> in the organization <%s> with the branch <%s> and a size of ≃ %s\n", largesRepo, organization, largestRepoBranch, largestRepoSizeMB)
-	fmt.Printf("\r✅ Total size of your organization's repositories ≃ %s\n", totalSizeMB)
-	fmt.Printf("\r✅ Total repositories that will be analyzed: %d - Find empty : %d\n", nbRepos-emptyRepo, emptyRepo)
+	fmt.Printf("\n✅ The largest Repository is <%s> in the organization <%s> with the branch <%s> \n", largesRepo, organization, largestRepoBranch)
+	fmt.Printf("\r✅ Total Repositories that will be analyzed: %d - Find empty : %d - Excluded : %d - Archived : %d\n", nbRepos-emptyRepo-totalExclude-totalArchiv, emptyRepo, totalExclude, totalArchiv)
 	fmt.Printf("\r✅ Total Branches that will be analyzed: %d\n", TotalBranches)
-	//os.Exit(1)
+
 	return importantBranches, nil
 }
 
-func isRepositoryEmpty(urlrepo, apiver, org, repo, accessToken string) (bool, error) {
-	url := fmt.Sprintf("%s/repos/%s/%s/contents", urlrepo, org, repo)
-
-	client := http.Client{}
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return false, err
+func reposIfEmpty(ctx context.Context, client *github.Client, repoName, org string) (bool, error) {
+	// Get the number of commits in the repository
+	commits, _, err := client.Repositories.ListCommits(ctx, org, repoName, nil)
+	if rateLimitErr, ok := err.(*github.AbuseRateLimitError); ok {
+		fmt.Println(MessageApiRate)
+		waitTime := rateLimitErr.GetRetryAfter()
+		// Sleep until the rate limit resets
+		time.Sleep(waitTime)
 	}
-	req.Header.Set("Accept", "application/vnd.github.v3+json")
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	req.Header.Set("X-GitHub-Api-Version", apiver)
-
-	resp, err := client.Do(req)
 	if err != nil {
-		return false, err
+		fmt.Printf("\n❌ Error getting commits for repository %s: %v\n", repoName, err)
+		return true, fmt.Errorf("\n❌ Failed to check repository <%s> is empty - : %v", repoName, err)
 	}
 
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return false, nil
-	} else if resp.StatusCode == http.StatusOK {
+	// Test if the repository is empty
+	isEmpty := len(commits) == 0
+	if isEmpty {
 		return true, nil
 	} else {
-		return true, fmt.Errorf("\n❌ Failed to check repository. Status code: %d", resp.StatusCode)
+		return false, nil
 	}
 }
 
+func sortRepositoriesByUpdatedAt(repos []*github.Repository) {
+	sort.Slice(repos, func(i, j int) bool {
+		timeI := repos[i].GetUpdatedAt().Time
+		timeJ := repos[j].GetUpdatedAt().Time
+		return timeI.After(timeJ)
+	})
+}
 func fetchRepositoriesAllGithub(url, token, apiver string, exclusionList *ExclusionList) ([]Repository, error) {
 
 	var allRepos []Repository

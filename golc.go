@@ -439,7 +439,8 @@ func AnalyseReposListGithub(DestinationResult, AccessToken, Protocol, URL, Baseu
 			gc, err := goloc.NewGCloc(params, assets.Languages)
 			if err != nil {
 				fmt.Println(errorMessageRepo, err)
-				os.Exit(1)
+				//os.Exit(1)
+
 			}
 
 			gc.Run()
@@ -449,11 +450,11 @@ func AnalyseReposListGithub(DestinationResult, AccessToken, Protocol, URL, Baseu
 			err1 := os.RemoveAll(gc.Repopath)
 			if err != nil {
 				fmt.Printf(errorMessageDi, err1)
-				return
+				//return
 			}
 
 			spin.Stop()
-			fmt.Printf("\r\t✅ %d The repository <%s> has been analyzed\n", count, project.RepoSlug)
+			fmt.Printf("\r✅ %d The repository <%s> has been analyzed\n", count, project.RepoSlug)
 			count++
 
 			// Send result through channel
@@ -841,7 +842,7 @@ func main() {
 
 		startTime = time.Now()
 
-		repositories, err := getgithub.GetRepoGithubList(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["Apiver"].(string), platformConfig["AccessToken"].(string), platformConfig["Organization"].(string), fileexclusionEX, platformConfig["Repos"].(string), platformConfig["Branch"].(string), int(platformConfig["TopBranchesCount"].(float64)))
+		repositories, err := getgithub.GetRepoGithubList(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["Apiver"].(string), platformConfig["AccessToken"].(string), platformConfig["Organization"].(string), fileexclusionEX, platformConfig["Repos"].(string), platformConfig["Branch"].(string), int(platformConfig["Period"].(float64)))
 		if err != nil {
 			fmt.Printf("Error Get Info Repositories in organization '%s' : '%s'", platformConfig["Organization"].(string), err)
 			return

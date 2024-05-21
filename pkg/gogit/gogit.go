@@ -27,12 +27,12 @@ func Getrepos(src, branch, token string) (string, error) {
 
 	_, err = git.PlainClone(dst, false, &git.CloneOptions{
 		Auth: &http.BasicAuth{
-			Username: "emmanuel-colussi-sonarsource",
+			Username: "token",
 			Password: token,
 		},
-		URL: src,
-		//ReferenceName: plumbing.NewBranchReferenceName(branch),
-		ReferenceName: plumbing.ReferenceName(branch),
+		URL:           src,
+		ReferenceName: plumbing.NewBranchReferenceName(branch),
+		//ReferenceName: plumbing.ReferenceName(branch),
 
 		SingleBranch: true,
 		Depth:        1,
