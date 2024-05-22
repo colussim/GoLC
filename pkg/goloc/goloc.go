@@ -5,6 +5,7 @@ import (
 
 	"github.com/colussim/GoLC/pkg/analyzer"
 	"github.com/colussim/GoLC/pkg/filesystem"
+	"github.com/colussim/GoLC/pkg/getter"
 	"github.com/colussim/GoLC/pkg/gogit"
 	"github.com/colussim/GoLC/pkg/goloc/language"
 	"github.com/colussim/GoLC/pkg/reporter"
@@ -45,11 +46,20 @@ type GCloc struct {
 }
 
 func NewGCloc(params Params, languages language.Languages) (*GCloc, error) {
-	path, err := gogit.Getrepos(params.Path, params.Branch, params.Token)
-	if err != nil {
-		return nil, err
-	}
+	var path string
+	var err error
 
+	if len(params.Branch) != 0 {
+		path, err = gogit.Getrepos(params.Path, params.Branch, params.Token)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		path, err = getter.Getter(params.Path)
+		if err != nil {
+			return nil, err
+		}
+	}
 	excludePaths, err := filesystem.GetExcludePaths(path, params.ExcludePaths)
 	if err != nil {
 		return nil, err

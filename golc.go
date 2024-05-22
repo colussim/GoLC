@@ -405,11 +405,8 @@ func AnalyseReposListGithub(DestinationResult, AccessToken, Protocol, URL, Baseu
 
 	for _, project := range repolist {
 		go func(project getgithub.ProjectBranch) {
-			//pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s.git", Protocol, user, AccessToken, trimmedURL, project.Org, project.RepoSlug)
 
 			pathToScan := fmt.Sprintf("%s://%s:x-oauth-basic@%s/%s/%s.git", Protocol, AccessToken, Baseurl, project.Org, project.RepoSlug)
-
-			//	pathToScan := fmt.Sprintf("%s://emmanuel-colussi-sonarsource:%s@%s/%s/%s.git", Protocol, AccessToken, Baseurl, project.Org, project.RepoSlug)
 
 			outputFileName := fmt.Sprintf("Result_%s_%s_%s", project.Org, project.RepoSlug, project.MainBranch)
 
@@ -470,6 +467,47 @@ func AnalyseReposListGithub(DestinationResult, AccessToken, Protocol, URL, Baseu
 	//spinWaiting.Stop()
 
 	return cpt
+}
+
+func AnalyseReposListFile(Directory, fileexclusionEX string) {
+
+	fmt.Print("\n🔎 Analysis of Repos ...\n")
+
+	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
+	spin.Color("green", "bold")
+	messageF := ""
+	spin.FinalMSG = messageF
+
+	outputFileName := fmt.Sprintf("Resultf_%s", Directory)
+
+	params := goloc.Params{
+		Path:              Directory,
+		ByFile:            false,
+		ExcludePaths:      []string{},
+		ExcludeExtensions: []string{},
+		IncludeExtensions: []string{},
+		OrderByLang:       false,
+		OrderByFile:       false,
+		OrderByCode:       false,
+		OrderByLine:       false,
+		OrderByBlank:      false,
+		OrderByComment:    false,
+		Order:             "DESC",
+		OutputName:        outputFileName,
+		OutputPath:        "Results",
+		ReportFormats:     []string{"json"},
+		Branch:            "",
+		Token:             "",
+	}
+
+	gc, err := goloc.NewGCloc(params, assets.Languages)
+	if err != nil {
+		fmt.Println(errorMessageRepo, err)
+		//os.Exit(1)
+
+	}
+	gc.Run()
+
 }
 
 // Analyse Repositories bitbucket Cloud
@@ -751,7 +789,7 @@ func main() {
 	}
 
 	// Temporary function for future functionality
-	if *devopsFlag == "Gitlab" || *devopsFlag == "Azure" || *devopsFlag == "File" {
+	if *devopsFlag == "Gitlab" || *devopsFlag == "Azure" {
 		fmt.Println("❗️ Functionality coming soon...")
 		os.Exit(0)
 	}
@@ -956,7 +994,11 @@ func main() {
 		}
 
 	case "file":
+		var fileexclusion = platformConfig["FileExclusion"].(string)
+		fileexclusionEX := getFileNameIfExists(fileexclusion)
 
+		startTime = time.Now()
+		AnalyseReposListFile(platformConfig["Directory"].(string), fileexclusionEX)
 	}
 
 	// Begin of report file analysis
