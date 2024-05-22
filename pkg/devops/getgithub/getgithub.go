@@ -105,6 +105,19 @@ type RepoBranch struct {
 	Branches []*github.Branch `json:"branches"`
 }
 
+type LanguageInfo1 struct {
+	Language  string
+	CodeLines int
+}
+
+type LanguageInfo struct {
+	LineComments      []string
+	MultiLineComments [][]string
+	Extensions        []string
+}
+
+type Languages map[string]LanguageInfo
+
 // const apigit = "X-GitHub-Api-Version"
 const PrefixMsg = "Get Repo(s)..."
 const MessageApiRate = "❗️ Rate limit exceeded. Waiting for rate limit reset..."
@@ -500,7 +513,7 @@ func GetReposGithub(parms ParamsReposGithub, ctx context.Context, client *github
 }
 
 // Get Infos for all Repositories in Organization
-func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusionfile, repos, branchmain string, period int) ([]ProjectBranch, error) {
+func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusionfile, repos, branchmain string, period int, fast bool) ([]ProjectBranch, error) {
 
 	var largestRepoSize int64
 	var totalSize int64
@@ -645,6 +658,207 @@ func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusion
 	fmt.Printf("\r✅ Total Branches that will be analyzed: %d\n", TotalBranches)
 
 	return importantBranches, nil
+}
+
+func fastAnalysis(url, baseapi, apiver, accessToken, organization, exlusionfile, repos, branchmain string, period int) error {
+
+	var totalExclude int
+	var totalArchiv int
+	var repositories []*github.Repository
+	var exclusionList ExclusionRepos
+	var err1 error
+	var emptyRepo int
+	nbRepos := 0
+	opt := &github.RepositoryListByOrgOptions{
+		ListOptions: github.ListOptions{PerPage: 100},
+	} // Number Object by page in API Request
+
+	fmt.Print("\n🔎 Analysis of devops platform objects ...\n")
+
+	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
+	spin.Prefix = PrefixMsg
+	spin.Color("green", "bold")
+	spin.Start()
+
+	// Test if exclusion file exist
+	if exlusionfile == "0" {
+		exclusionList = make(map[string]bool)
+
+	} else {
+		exclusionList, err1 = loadExclusionRepos(exlusionfile)
+		if err1 != nil {
+			fmt.Printf("\n❌ Error Read Exclusion File <%s>: %v", exlusionfile, err1)
+			spin.Stop()
+			//return nil, err1
+		}
+
+	}
+
+	if len(repos) == 0 {
+
+		ctx := context.Background()
+		client := github.NewClient(nil).WithAuthToken(accessToken)
+
+		// Get all Repositories in Organization
+		for {
+			repos, resp, err := client.Repositories.ListByOrg(ctx, organization, opt)
+
+			if err != nil {
+				fmt.Printf("❌ Error fetching repositories: %v\n", err)
+				//return importantBranches, nil
+			}
+
+			repositories = append(repositories, repos...)
+
+			if resp.NextPage == 0 {
+				break
+			}
+			opt.Page = resp.NextPage
+
+		}
+
+		parms := ParamsReposGithub{
+			Repos:         repositories,
+			URL:           url,
+			BaseAPI:       baseapi,
+			Apiver:        apiver,
+			AccessToken:   accessToken,
+			Organization:  organization,
+			NBRepos:       len(repositories),
+			ExclusionList: exclusionList,
+			Spin:          spin,
+			Branch:        branchmain,
+			Period:        period,
+		}
+
+		sortRepositoriesByUpdatedAt(repositories)
+
+		// Save List of Repos
+		err := SaveRepos(repositories)
+		if err != nil {
+			fmt.Printf("❌ Error saving repositories in file Results/config/analysis_repos_github.json: %v\n", err)
+		}
+
+		nbRepos, emptyRepo, totalExclude, totalArchiv, err = GetGithubLanguages(parms, ctx, client)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	fmt.Printf("\r✅ Total Repositories that will be analyzed: %d - Find empty : %d - Excluded : %d - Archived : %d\n", nbRepos-emptyRepo-totalExclude-totalArchiv, emptyRepo, totalExclude, totalArchiv)
+	return nil
+}
+
+func GetGithubLanguages(parms ParamsReposGithub, ctx context.Context, client *github.Client) (int, int, int, int, error) {
+
+	cptarchiv := 0        // Counter archiv repos
+	notAnalyzedCount := 0 // Counter Number of repositories excluded
+	emptyRepo := 0        // Counter Number of repositories empty
+	parms.Spin.Stop()
+	spin1 := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
+	spin1.Color("green", "bold")
+
+	message4 := "Repo(s)"
+	fmt.Printf("\t  ✅ The number of %s found is: %d\n", message4, parms.NBRepos)
+
+	for _, repo := range parms.Repos {
+
+		repoName := *repo.Name
+
+		// Test if repo is archived
+		if repo.GetArchived() {
+			cptarchiv++
+			continue
+		}
+
+		// Test is repo is excluded
+		if len(parms.ExclusionList) != 0 {
+			if shouldIgnore(repoName, parms.ExclusionList) {
+				fmt.Printf("\t   ✅ Skipping analysis for repository '%s' as per ignore list.\n", repoName)
+				notAnalyzedCount++ // Increment the counter for repositories analyzed
+				continue
+			}
+		}
+		// Next Step : Test is Repository is empty
+		isEmpty, err := reposIfEmpty(ctx, client, repoName, parms.Organization)
+		if err != nil {
+			fmt.Print(err.Error())
+			continue
+
+		}
+		if !isEmpty {
+			ctx := context.Background()
+			client := github.NewClient(nil).WithAuthToken(parms.AccessToken)
+
+			totalFiles := 0
+			totalLines := 0
+			totalBlankLines := 0
+			totalComments := 0
+			totalCodeLines := 0
+			results := make([]map[string]interface{}, 0)
+
+			languages, _, err := client.Repositories.ListLanguages(ctx, parms.Organization, repoName)
+			if err != nil {
+				mess := fmt.Sprintf("\r❌ failed to fetch languages. Status code: %v\n", err)
+				return 0, 0, 0, 0, fmt.Errorf(mess)
+			}
+
+			for lang, lines := range languages {
+				if lang, ok := languages[lang]; ok {
+					totalLines += lines
+					totalCodeLines += lines
+					result := map[string]interface{}{
+						"Language":   lang,
+						"Files":      1, // Assuming each language file is counted as 1
+						"Lines":      lines,
+						"BlankLines": 0, // Placeholder for now
+						"Comments":   0, // Placeholder for now
+						"CodeLines":  lines,
+					}
+					results = append(results, result)
+				}
+			}
+
+			output := map[string]interface{}{
+				"TotalFiles":      totalFiles,
+				"TotalLines":      totalLines,
+				"TotalBlankLines": totalBlankLines,
+				"TotalComments":   totalComments,
+				"TotalCodeLines":  totalCodeLines,
+				"Results":         results,
+			}
+
+			// Marshal the output to JSON
+			jsonData, err := json.MarshalIndent(output, "", "    ")
+			if err != nil {
+				mess := fmt.Sprintf("\r❌ Error marshaling JSON: %v\n", err)
+				return 0, 0, 0, 0, fmt.Errorf(mess)
+			}
+
+			// Write JSON data to file
+			Resultfile := fmt.Sprintf("Result_%s_%s.json", parms.Organization, repoName)
+			file, err := os.Create(Resultfile)
+			if err != nil {
+				mess := fmt.Sprintf("\r❌ Error creating file: %v\n", err)
+				return 0, 0, 0, 0, fmt.Errorf(mess)
+			}
+			defer file.Close()
+
+			_, err = file.Write(jsonData)
+			if err != nil {
+				mess := fmt.Sprintf("\r❌ Error writing JSON to file: %v\n", err)
+				return 0, 0, 0, 0, fmt.Errorf(mess)
+			}
+
+			fmt.Println("\t  ✅  JSON data written to :", Resultfile)
+
+		} else {
+			emptyRepo++
+		}
+	}
+
+	return parms.NBRepos, emptyRepo, notAnalyzedCount, cptarchiv, nil
 }
 
 func reposIfEmpty(ctx context.Context, client *github.Client, repoName, org string) (bool, error) {
