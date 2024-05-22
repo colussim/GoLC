@@ -847,7 +847,11 @@ func main() {
 		if *fastFlag {
 			fmt.Println("🚀 Fast mode enabled for Github")
 			fast = true
-			err := getgithub.fastAnalysis
+			err := getgithub.FastAnalys(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["Apiver"].(string), platformConfig["AccessToken"].(string), platformConfig["Organization"].(string), fileexclusionEX, platformConfig["Repos"].(string), platformConfig["Branch"].(string), int(platformConfig["Period"].(float64)))
+			if err != nil {
+				fmt.Printf("❌ Quick scan Analysis : '%s'", err)
+				os.Exit(0)
+			}
 		} else {
 			fast = false
 

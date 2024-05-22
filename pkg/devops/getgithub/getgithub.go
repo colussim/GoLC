@@ -489,6 +489,15 @@ func GetReposGithub(parms ParamsReposGithub, ctx context.Context, client *github
 				//fmt.Println("\r\t\t Size BrancheIno:", len(branchInfos))
 				fmt.Printf("\r\t\t✅ %d Repo: %s - Number of branches: %d - largest Branch: %s \n", cpt, repoName, TotalRepoBranches, largestRepoBranch)
 
+			} else {
+				largestRepoBranch = parms.Branch
+				importantBranches = append(importantBranches, ProjectBranch{
+					Org:         parms.Organization,
+					RepoSlug:    repoName,
+					MainBranch:  largestRepoBranch,
+					LargestSize: int64(*repo.Size),
+				})
+				TotalBranches = 1
 			}
 
 		} else {
@@ -661,7 +670,7 @@ func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusion
 	return importantBranches, nil
 }
 
-func fastAnalysis(url, baseapi, apiver, accessToken, organization, exlusionfile, repos, branchmain string, period int) error {
+func FastAnalys(url, baseapi, apiver, accessToken, organization, exlusionfile, repos, branchmain string, period int) error {
 
 	var totalExclude int
 	var totalArchiv int
@@ -745,7 +754,20 @@ func fastAnalysis(url, baseapi, apiver, accessToken, organization, exlusionfile,
 			return err
 		}
 
-	}
+	} /*else {
+
+		ctx := context.Background()
+		client := github.NewClient(nil).WithAuthToken(accessToken)
+
+		repos, _, err := client.Repositories.Get(ctx, organization, repos)
+		if err != nil {
+			fmt.Printf("❌ Error fetching repository: %v\n", err)
+			return importantBranches, nil
+		}
+
+		var repositories []*github.Repository
+
+	}*/
 
 	fmt.Printf("\r✅ Total Repositories that will be analyzed: %d - Find empty : %d - Excluded : %d - Archived : %d\n", nbRepos-emptyRepo-totalExclude-totalArchiv, emptyRepo, totalExclude, totalArchiv)
 	return nil
@@ -808,15 +830,15 @@ func GetGithubLanguages(parms ParamsReposGithub, ctx context.Context, client *gi
 
 			for lang, lines := range languages {
 				if _, ok := supportedLanguages[lang]; ok {
-					totalLines += lines
-					totalCodeLines += lines
+					totalLines += lines / 31
+					totalCodeLines += lines / 31
 					result := map[string]interface{}{
 						"Language":   lang,
 						"Files":      1, // Assuming each language file is counted as 1
-						"Lines":      lines,
+						"Lines":      lines / 31,
 						"BlankLines": 0, // Placeholder for now
 						"Comments":   0, // Placeholder for now
-						"CodeLines":  lines,
+						"CodeLines":  lines / 31,
 					}
 					results = append(results, result)
 				}
@@ -839,7 +861,7 @@ func GetGithubLanguages(parms ParamsReposGithub, ctx context.Context, client *gi
 			}
 
 			// Write JSON data to file
-			Resultfile := fmt.Sprintf("Result_%s_%s.json", parms.Organization, repoName)
+			Resultfile := fmt.Sprintf("Results/Result_%s_%s.json", parms.Organization, repoName)
 			file, err := os.Create(Resultfile)
 			if err != nil {
 				mess := fmt.Sprintf("\r❌ Error creating file: %v\n", err)
