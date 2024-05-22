@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
+	"github.com/colussim/GoLC/assets"
 	"github.com/google/go-github/v62/github"
 )
 
@@ -110,13 +111,13 @@ type LanguageInfo1 struct {
 	CodeLines int
 }
 
-type LanguageInfo struct {
+/*type LanguageInfo struct {
 	LineComments      []string
 	MultiLineComments [][]string
 	Extensions        []string
 }
 
-type Languages map[string]LanguageInfo
+type Languages map[string]LanguageInfo*/
 
 // const apigit = "X-GitHub-Api-Version"
 const PrefixMsg = "Get Repo(s)..."
@@ -797,6 +798,7 @@ func GetGithubLanguages(parms ParamsReposGithub, ctx context.Context, client *gi
 			totalComments := 0
 			totalCodeLines := 0
 			results := make([]map[string]interface{}, 0)
+			supportedLanguages := assets.Languages
 
 			languages, _, err := client.Repositories.ListLanguages(ctx, parms.Organization, repoName)
 			if err != nil {
@@ -805,7 +807,7 @@ func GetGithubLanguages(parms ParamsReposGithub, ctx context.Context, client *gi
 			}
 
 			for lang, lines := range languages {
-				if lang, ok := languages[lang]; ok {
+				if _, ok := supportedLanguages[lang]; ok {
 					totalLines += lines
 					totalCodeLines += lines
 					result := map[string]interface{}{

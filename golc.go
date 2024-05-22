@@ -727,6 +727,7 @@ func main() {
 	// Test command line Flags
 
 	devopsFlag := flag.String("devops", "", "Specify the DevOps platform")
+	fastFlag := flag.Bool("fast", false, "Enable fast mode (only for Github)")
 	helpFlag := flag.Bool("help", false, "Show help message")
 
 	flag.Parse()
@@ -839,24 +840,33 @@ func main() {
 
 		var fileexclusion = ".cloc_github_ignore"
 		fileexclusionEX := getFileNameIfExists(fileexclusion)
+		var fast bool
 
 		startTime = time.Now()
 
-		repositories, err := getgithub.GetRepoGithubList(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["Apiver"].(string), platformConfig["AccessToken"].(string), platformConfig["Organization"].(string), fileexclusionEX, platformConfig["Repos"].(string), platformConfig["Branch"].(string), int(platformConfig["Period"].(float64)))
-		if err != nil {
-			fmt.Printf("Error Get Info Repositories in organization '%s' : '%s'", platformConfig["Organization"].(string), err)
-			return
-		}
-
-		if len(repositories) == 0 {
-			fmt.Printf(errorMessageAnalyse)
-			os.Exit(1)
-
+		if *fastFlag {
+			fmt.Println("🚀 Fast mode enabled for Github")
+			fast = true
+			err := getgithub.fastAnalysis
 		} else {
+			fast = false
 
-			// Run scanning repositories
-			NumberRepos = AnalyseReposListGithub(DestinationResult, platformConfig["AccessToken"].(string), platformConfig["Protocol"].(string), platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["DevOps"].(string), repositories)
+			repositories, err := getgithub.GetRepoGithubList(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["Apiver"].(string), platformConfig["AccessToken"].(string), platformConfig["Organization"].(string), fileexclusionEX, platformConfig["Repos"].(string), platformConfig["Branch"].(string), int(platformConfig["Period"].(float64)), fast)
+			if err != nil {
+				fmt.Printf("Error Get Info Repositories in organization '%s' : '%s'", platformConfig["Organization"].(string), err)
+				return
+			}
 
+			if len(repositories) == 0 {
+				fmt.Printf(errorMessageAnalyse)
+				os.Exit(1)
+
+			} else {
+
+				// Run scanning repositories
+				NumberRepos = AnalyseReposListGithub(DestinationResult, platformConfig["AccessToken"].(string), platformConfig["Protocol"].(string), platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["DevOps"].(string), repositories)
+
+			}
 		}
 
 	case "gitlab":
