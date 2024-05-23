@@ -4,12 +4,12 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
 func Getrepos(src, branch, token string) (string, error) {
@@ -24,12 +24,13 @@ func Getrepos(src, branch, token string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	log.SetOutput(os.Stderr)
 
 	_, err = git.PlainClone(dst, false, &git.CloneOptions{
-		Auth: &http.BasicAuth{
-			Username: "token",
+		/*Auth: &http.BasicAuth{
+			Username: "x-token-auth",
 			Password: token,
-		},
+		},*/
 		URL:           src,
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
 		//ReferenceName: plumbing.ReferenceName(branch),

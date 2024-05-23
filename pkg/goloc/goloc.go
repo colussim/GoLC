@@ -53,7 +53,8 @@ func NewGCloc(params Params, languages language.Languages) (*GCloc, error) {
 	if len(params.Branch) != 0 {
 		path, err = gogit.Getrepos(params.Path, params.Branch, params.Token)
 		if err != nil {
-			return nil, err
+			//return nil, err
+			fmt.Println(err)
 		}
 	} else {
 		path, err = getter.Getter(params.Path)

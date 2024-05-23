@@ -334,7 +334,7 @@ func main() {
 		}
 
 	} else {
-		// Si l'utilisateur répond autre chose que "Y" ou "y", quitter le programme
+
 		fmt.Println("Exiting...")
 		os.Exit(0)
 	}

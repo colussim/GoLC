@@ -5,9 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"sort"
 	"strings"
@@ -111,17 +109,10 @@ type LanguageInfo1 struct {
 	CodeLines int
 }
 
-/*type LanguageInfo struct {
-	LineComments      []string
-	MultiLineComments [][]string
-	Extensions        []string
-}
-
-type Languages map[string]LanguageInfo*/
-
-// const apigit = "X-GitHub-Api-Version"
 const PrefixMsg = "Get Repo(s)..."
 const MessageApiRate = "❗️ Rate limit exceeded. Waiting for rate limit reset..."
+const ApiHeader1 = "application/vnd.github.v3+json"
+const ErrorMesssage1 = "❌ Error saving repositories in file Results/config/analysis_repos_github.json: %v\n"
 
 // Load repository ignore map from file
 func loadExclusionRepos(filename string) (ExclusionRepos, error) {
@@ -523,7 +514,8 @@ func GetReposGithub(parms ParamsReposGithub, ctx context.Context, client *github
 }
 
 // Get Infos for all Repositories in Organization
-func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusionfile, repos, branchmain string, period int, fast bool) ([]ProjectBranch, error) {
+
+func GetRepoGithubList(platformConfig map[string]interface{}, exlusionfile string, fast bool) ([]ProjectBranch, error) {
 
 	var largestRepoSize int64
 	var totalSize int64
@@ -562,14 +554,14 @@ func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusion
 
 	}
 	// No repo name in config.json file
-	if len(repos) == 0 {
+	if len(platformConfig["Repos"].(string)) == 0 {
 
 		ctx := context.Background()
-		client := github.NewClient(nil).WithAuthToken(accessToken)
+		client := github.NewClient(nil).WithAuthToken(platformConfig["AccessToken"].(string))
 
 		// Get all Repositories in Organization
 		for {
-			repos, resp, err := client.Repositories.ListByOrg(ctx, organization, opt)
+			repos, resp, err := client.Repositories.ListByOrg(ctx, platformConfig["Organization"].(string), opt)
 
 			if err != nil {
 				fmt.Printf("❌ Error fetching repositories: %v\n", err)
@@ -587,16 +579,16 @@ func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusion
 
 		parms := ParamsReposGithub{
 			Repos:         repositories,
-			URL:           url,
-			BaseAPI:       baseapi,
-			Apiver:        apiver,
-			AccessToken:   accessToken,
-			Organization:  organization,
+			URL:           platformConfig["Url"].(string),
+			BaseAPI:       platformConfig["Baseapi"].(string),
+			Apiver:        platformConfig["Apiver"].(string),
+			AccessToken:   platformConfig["AccessToken"].(string),
+			Organization:  platformConfig["Organization"].(string),
 			NBRepos:       len(repositories),
 			ExclusionList: exclusionList,
 			Spin:          spin,
-			Branch:        branchmain,
-			Period:        period,
+			Branch:        platformConfig["Branch"].(string),
+			Period:        int(platformConfig["Period"].(float64)),
 		}
 
 		sortRepositoriesByUpdatedAt(repositories)
@@ -604,16 +596,16 @@ func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusion
 		// Save List of Repos
 		err := SaveRepos(repositories)
 		if err != nil {
-			fmt.Printf("❌ Error saving repositories in file Results/config/analysis_repos_github.json: %v\n", err)
+			fmt.Printf(ErrorMesssage1, err)
 		}
 
 		importantBranches, emptyRepo, nbRepos, TotalBranches, totalExclude, totalArchiv = GetReposGithub(parms, ctx, client)
 
 	} else {
 		ctx := context.Background()
-		client := github.NewClient(nil).WithAuthToken(accessToken)
+		client := github.NewClient(nil).WithAuthToken(platformConfig["AccessToken"].(string))
 
-		repos, _, err := client.Repositories.Get(ctx, organization, repos)
+		repos, _, err := client.Repositories.Get(ctx, platformConfig["Organization"].(string), platformConfig["Repos"].(string))
 		if err != nil {
 			fmt.Printf("❌ Error fetching repository: %v\n", err)
 			return importantBranches, nil
@@ -626,16 +618,16 @@ func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusion
 
 		parms := ParamsReposGithub{
 			Repos:         repositories,
-			URL:           url,
-			BaseAPI:       baseapi,
-			Apiver:        apiver,
-			AccessToken:   accessToken,
-			Organization:  organization,
+			URL:           platformConfig["Url"].(string),
+			BaseAPI:       platformConfig["Baseapi"].(string),
+			Apiver:        platformConfig["Apiver"].(string),
+			AccessToken:   platformConfig["AccessToken"].(string),
+			Organization:  platformConfig["Organization"].(string),
 			NBRepos:       len(repositories),
 			ExclusionList: exclusionList,
 			Spin:          spin,
-			Branch:        branchmain,
-			Period:        period,
+			Branch:        platformConfig["Branch"].(string),
+			Period:        int(platformConfig["Period"].(float64)),
 		}
 
 		sortRepositoriesByUpdatedAt(repositories)
@@ -643,7 +635,7 @@ func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusion
 		// Save List of Repos
 		err = SaveRepos(repositories)
 		if err != nil {
-			fmt.Printf("❌ Error saving repositories in file Results/config/analysis_repos_github.json: %v\n", err)
+			fmt.Printf(ErrorMesssage1, err)
 		}
 
 		importantBranches, emptyRepo, nbRepos, TotalBranches, totalExclude, totalArchiv = GetReposGithub(parms, ctx, client)
@@ -663,14 +655,15 @@ func GetRepoGithubList(url, baseapi, apiver, accessToken, organization, exlusion
 		totalSize += branch.LargestSize
 	}
 
-	fmt.Printf("\n✅ The largest Repository is <%s> in the organization <%s> with the branch <%s> \n", largesRepo, organization, largestRepoBranch)
+	fmt.Printf("\n✅ The largest Repository is <%s> in the organization <%s> with the branch <%s> \n", largesRepo, platformConfig["Organization"].(string), largestRepoBranch)
 	fmt.Printf("\r✅ Total Repositories that will be analyzed: %d - Find empty : %d - Excluded : %d - Archived : %d\n", nbRepos-emptyRepo-totalExclude-totalArchiv, emptyRepo, totalExclude, totalArchiv)
 	fmt.Printf("\r✅ Total Branches that will be analyzed: %d\n", TotalBranches)
 
 	return importantBranches, nil
 }
 
-func FastAnalys(url, baseapi, apiver, accessToken, organization, exlusionfile, repos, branchmain string, period int) error {
+// func FastAnalys(url, baseapi, apiver, accessToken, organization, exlusionfile, repos, branchmain string, period int) error {
+func FastAnalys(platformConfig map[string]interface{}, exlusionfile string) error {
 
 	var totalExclude int
 	var totalArchiv int
@@ -704,14 +697,14 @@ func FastAnalys(url, baseapi, apiver, accessToken, organization, exlusionfile, r
 
 	}
 
-	if len(repos) == 0 {
+	if len(platformConfig["Repos"].(string)) == 0 {
 
 		ctx := context.Background()
-		client := github.NewClient(nil).WithAuthToken(accessToken)
+		client := github.NewClient(nil).WithAuthToken(platformConfig["AccessToken"].(string))
 
 		// Get all Repositories in Organization
 		for {
-			repos, resp, err := client.Repositories.ListByOrg(ctx, organization, opt)
+			repos, resp, err := client.Repositories.ListByOrg(ctx, platformConfig["Organization"].(string), opt)
 
 			if err != nil {
 				fmt.Printf("❌ Error fetching repositories: %v\n", err)
@@ -729,16 +722,16 @@ func FastAnalys(url, baseapi, apiver, accessToken, organization, exlusionfile, r
 
 		parms := ParamsReposGithub{
 			Repos:         repositories,
-			URL:           url,
-			BaseAPI:       baseapi,
-			Apiver:        apiver,
-			AccessToken:   accessToken,
-			Organization:  organization,
+			URL:           platformConfig["Url"].(string),
+			BaseAPI:       platformConfig["Baseapi"].(string),
+			Apiver:        platformConfig["Apiver"].(string),
+			AccessToken:   platformConfig["AccessToken"].(string),
+			Organization:  platformConfig["Organization"].(string),
 			NBRepos:       len(repositories),
 			ExclusionList: exclusionList,
 			Spin:          spin,
-			Branch:        branchmain,
-			Period:        period,
+			Branch:        platformConfig["Branch"].(string),
+			Period:        int(platformConfig["Period"].(float64)),
 		}
 
 		sortRepositoriesByUpdatedAt(repositories)
@@ -746,34 +739,52 @@ func FastAnalys(url, baseapi, apiver, accessToken, organization, exlusionfile, r
 		// Save List of Repos
 		err := SaveRepos(repositories)
 		if err != nil {
-			fmt.Printf("❌ Error saving repositories in file Results/config/analysis_repos_github.json: %v\n", err)
+			fmt.Printf(ErrorMesssage1, err)
 		}
 
-		nbRepos, emptyRepo, totalExclude, totalArchiv, err = GetGithubLanguages(parms, ctx, client)
+		nbRepos, emptyRepo, totalExclude, totalArchiv, err = GetGithubLanguages(parms, ctx, client, int(platformConfig["Factor"].(float64)))
 		if err != nil {
 			return err
 		}
 
-	} /*else {
+	} else {
 
+		var reposSlice []*github.Repository
 		ctx := context.Background()
-		client := github.NewClient(nil).WithAuthToken(accessToken)
+		client := github.NewClient(nil).WithAuthToken(platformConfig["AccessToken"].(string))
 
-		repos, _, err := client.Repositories.Get(ctx, organization, repos)
+		repos1, _, err := client.Repositories.Get(ctx, platformConfig["Organization"].(string), platformConfig["Repos"].(string))
 		if err != nil {
 			fmt.Printf("❌ Error fetching repository: %v\n", err)
-			return importantBranches, nil
+
 		}
 
-		var repositories []*github.Repository
+		reposSlice = append(reposSlice, repos1)
+		parms := ParamsReposGithub{
+			Repos:         reposSlice,
+			URL:           platformConfig["Url"].(string),
+			BaseAPI:       platformConfig["Baseapi"].(string),
+			Apiver:        platformConfig["Apiver"].(string),
+			AccessToken:   platformConfig["AccessToken"].(string),
+			Organization:  platformConfig["Organization"].(string),
+			NBRepos:       len(repositories),
+			ExclusionList: exclusionList,
+			Spin:          spin,
+			Branch:        platformConfig["Branch"].(string),
+			Period:        int(platformConfig["Period"].(float64)),
+		}
+		nbRepos, emptyRepo, totalExclude, totalArchiv, err = GetGithubLanguages(parms, ctx, client, int(platformConfig["Factor"].(float64)))
+		if err != nil {
+			return err
+		}
 
-	}*/
+	}
 
 	fmt.Printf("\r✅ Total Repositories that will be analyzed: %d - Find empty : %d - Excluded : %d - Archived : %d\n", nbRepos-emptyRepo-totalExclude-totalArchiv, emptyRepo, totalExclude, totalArchiv)
 	return nil
 }
 
-func GetGithubLanguages(parms ParamsReposGithub, ctx context.Context, client *github.Client) (int, int, int, int, error) {
+func GetGithubLanguages(parms ParamsReposGithub, ctx context.Context, client *github.Client, factor int) (int, int, int, int, error) {
 
 	cptarchiv := 0        // Counter archiv repos
 	notAnalyzedCount := 0 // Counter Number of repositories excluded
@@ -830,15 +841,15 @@ func GetGithubLanguages(parms ParamsReposGithub, ctx context.Context, client *gi
 
 			for lang, lines := range languages {
 				if _, ok := supportedLanguages[lang]; ok {
-					totalLines += lines / 31
-					totalCodeLines += lines / 31
+					totalLines += lines / factor
+					totalCodeLines += lines / factor
 					result := map[string]interface{}{
 						"Language":   lang,
 						"Files":      1, // Assuming each language file is counted as 1
-						"Lines":      lines / 31,
+						"Lines":      lines / factor,
 						"BlankLines": 0, // Placeholder for now
 						"Comments":   0, // Placeholder for now
-						"CodeLines":  lines / 31,
+						"CodeLines":  lines / factor,
 					}
 					results = append(results, result)
 				}
@@ -915,59 +926,6 @@ func sortRepositoriesByUpdatedAt(repos []*github.Repository) {
 		return timeI.After(timeJ)
 	})
 }
-func fetchRepositoriesAllGithub(url, token, apiver string, exclusionList *ExclusionList) ([]Repository, error) {
-
-	var allRepos []Repository
-
-	for {
-
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("Authorization", "token "+token)
-		req.Header.Set("X-GitHub-Api-Version", apiver)
-
-		//  Check HTTP status code
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return nil, err
-		}
-		defer resp.Body.Close()
-
-		// Check HTTP status code
-		if resp.StatusCode != http.StatusOK {
-			mess := fmt.Sprintf("\n❌ Request <fetchRepositoriesAllGithub> failed with status: %d", resp.StatusCode)
-			return nil, fmt.Errorf(mess)
-		}
-
-		// Decoding the JSON response
-		var repositories []Repository
-		if err := json.NewDecoder(resp.Body).Decode(&repositories); err != nil {
-			return nil, err
-		}
-
-		// Add the current page's repositories to the total list
-		// Filter archived repositories
-		for _, repo := range repositories {
-			if repoIsArchived(&repo) || repoIsExcluded(&repo, exclusionList) {
-				continue
-			}
-			allRepos = append(allRepos, repo)
-		}
-
-		//  Check for next page
-		nextPage := getNextPage(resp.Header)
-		if nextPage == "" {
-			break
-		}
-
-		url = nextPage
-
-	}
-
-	return allRepos, nil
-}
 
 func GithubAllBranches(url, AccessToken, apiver string) ([]Branch, error) {
 
@@ -979,7 +937,7 @@ func GithubAllBranches(url, AccessToken, apiver string) ([]Branch, error) {
 		if err != nil {
 			return nil, err
 		}
-		req.Header.Set("Accept", "application/vnd.github.v3+json")
+		req.Header.Set("Accept", ApiHeader1)
 		req.Header.Set("Authorization", "token "+AccessToken)
 		req.Header.Set("X-GitHub-Api-Version", apiver)
 
@@ -1010,93 +968,6 @@ func GithubAllBranches(url, AccessToken, apiver string) ([]Branch, error) {
 	return branches, nil
 }
 
-func fetchBranchSizeGithub(org, repoName, branchName, accessToken, urlrepo, apiver string) (int, error) {
-	branchNameEncoded := url.QueryEscape(branchName)
-	url := fmt.Sprintf("%srepos/%s/%s/git/trees/%s?recursive=1&per_page=100&page=1", urlrepo, org, repoName, branchNameEncoded)
-
-	totalBranchSize := 0
-
-	for {
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			return 0, err
-		}
-		req.Header.Set("Accept", "application/vnd.github.v3+json")
-		req.Header.Set("Authorization", "Bearer "+accessToken)
-		req.Header.Set("X-GitHub-Api-Version", apiver)
-
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return 0, err
-		}
-		defer resp.Body.Close()
-
-		// Check HTTP status code
-		if resp.StatusCode != http.StatusOK {
-			mess := fmt.Sprintf("\n❌ Request failed with status: %d - requets : %s ", resp.StatusCode, url)
-			return 0, fmt.Errorf(mess)
-		}
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return 0, err
-		}
-
-		var treeResponse TreeResponse
-		err = json.Unmarshal(body, &treeResponse)
-		if err != nil {
-			return 0, err
-		}
-
-		// Calculate branch size
-		for _, item := range treeResponse.Tree {
-			if item.Type == "blob" {
-				totalBranchSize += item.Size
-			}
-		}
-
-		nextPageURL := getNextPage(resp.Header)
-		if nextPageURL == "" {
-			break
-		}
-		url = nextPageURL
-	}
-
-	return totalBranchSize, nil
-}
-
-func ifExistBranches(org, repo, branch, accessToken, urlb, apiver string) ([]Branch, error) {
-
-	url := fmt.Sprintf("%srepos/%s/%s/branches/%s", urlb, org, repo, branch)
-
-	client := http.Client{}
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Accept", "application/vnd.github.v3+json")
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	req.Header.Set("X-GitHub-Api-Version", apiver)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, nil
-	} else if resp.StatusCode == http.StatusOK {
-		var branch Branch
-		err := json.NewDecoder(resp.Body).Decode(&branch)
-		if err != nil {
-			return nil, err
-		}
-		return []Branch{branch}, nil
-	} else {
-		return nil, fmt.Errorf("\n❌ Failed to check branch existence. Status code: %d", resp.StatusCode)
-	}
-}
-
 // manage pagination
 func getNextPage(header http.Header) string {
 	linkHeader := header.Get("Link")
@@ -1113,49 +984,4 @@ func getNextPage(header http.Header) string {
 	}
 
 	return ""
-}
-
-// Function to check if a repository is archived
-func repoIsArchived(repo *Repository) bool {
-
-	return repo != nil && repo.Path != "" && repo.Archived
-}
-
-// Function to check whether a deposit is in the exclusion list
-func repoIsExcluded(repo *Repository, exclusionList *ExclusionList) bool {
-	if exclusionList == nil || exclusionList.Repos == nil {
-		return false
-	}
-	// Checks if the deposit is in the exclusion map
-	_, exists := exclusionList.Repos[repo.Path]
-	return exists
-}
-
-func fetchLanguagesGithub(org, repoName, accessToken, urlrepo string) (map[string]int, error) {
-
-	url := fmt.Sprintf("%srepos/%s/%s/languages", urlrepo, org, repoName)
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Accept", "application/vnd.github.v3+json")
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch languages. Status code: %d", resp.StatusCode)
-	}
-
-	var languages map[string]int
-	if err := json.NewDecoder(resp.Body).Decode(&languages); err != nil {
-		return nil, err
-	}
-
-	return languages, nil
 }
