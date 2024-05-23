@@ -11,7 +11,7 @@ GoLC can be used to estimate LoC counts that would be produced by a Sonar analys
 
 GoLC The tool analyzes your repositories and identifies the largest branch of each repository, counting the total number of lines of code per language for that branch. At the end of the analysis, a text and PDF report is generated, along with a JSON results file for each repository.It starts an HTTP service to display an HTML page with the results.
 
-> This version ver1.01 is available for Bitbucket Cloud , Bitbucket DC, and GitHub, for GitLab, Azure DevOps, and Files the next updates will be available soon, integrating these platforms.A Docker version will be planned.
+> This version ver1.01 is available for Bitbucket Cloud , Bitbucket DC, GitHub and Files, for GitLab and Azure DevOps the next updates will be available soon, integrating these platforms.A Docker version will be planned.
 
 ---
 ## Installation
@@ -76,7 +76,9 @@ You can install from the stable release by clicking here
         "Apiver": "",
         "Baseapi": "api.github.com/",
         "Protocol": "https",
-        "FileExclusion":".cloc_github_ignore"
+        "FileExclusion":".cloc_github_ignore",
+        "Period":-1,
+        "Factor":33
       },
       "Gitlab": {
         "Users": "xxxxxxxxxxxxxx",
@@ -107,18 +109,10 @@ You can install from the stable release by clicking here
         "FileExclusion":".cloc_azure_ignore"
       },
       "File": {
-        "Users": "",
-        "AccessToken": "",
-        "Organization": "xxxxxxxxx",
         "DevOps": "file",
-        "Project": "",
-        "Repos": "",
-        "Branch": "",
-        "Url": "",
-        "Apiver": "",
-        "Baseapi": "",
-        "Protocol": "",
-        "FileExclusion":".cloc_file_ignore"
+        "Directory": "",
+        "FileExclusion":".cloc_file_ignore",
+         "FileLoad":".cloc_file_load"
       }
     }
   }
@@ -172,6 +166,8 @@ REPO2_KEY
 ```
 - REPO1_KEY = for one Repository
 ```
+
+For the **File** mode, if you want to have a list of directories to analyze, you create a **.cloc_file_load** file and add the directories or files to be analyzed line by line.If the **.cloc_file_load**. file is provided, its contents will override the **Directory** parameter."
 
  ✅ Run GoLC
 
