@@ -469,6 +469,8 @@ func AnalyseReposListGithub(DestinationResult, AccessToken, Protocol, URL, Baseu
 	return cpt
 }
 
+// Analyse Directory
+
 func AnalyseReposListFile(Directory, fileexclusionEX string) {
 
 	fmt.Print("\n🔎 Analysis of Repos ...\n")
@@ -478,7 +480,7 @@ func AnalyseReposListFile(Directory, fileexclusionEX string) {
 	messageF := ""
 	spin.FinalMSG = messageF
 
-	outputFileName := fmt.Sprintf("Resultf_%s", Directory)
+	outputFileName := "Resultf_"
 
 	params := goloc.Params{
 		Path:              Directory,
@@ -503,11 +505,11 @@ func AnalyseReposListFile(Directory, fileexclusionEX string) {
 	gc, err := goloc.NewGCloc(params, assets.Languages)
 	if err != nil {
 		fmt.Println(errorMessageRepo, err)
-		//os.Exit(1)
+		os.Exit(1)
 
 	}
 	gc.Run()
-
+	spin.Stop()
 }
 
 // Analyse Repositories bitbucket Cloud
@@ -1054,33 +1056,35 @@ func main() {
 	maxTotalCodeLines1 := utils.FormatCodeLines(float64(maxTotalCodeLines))
 	totalCodeLinesSum1 := utils.FormatCodeLines(float64(totalCodeLinesSum))
 
-	// Global Result file
-	data := OrganizationData{
-		Organization:           platformConfig["Organization"].(string),
-		TotalLinesOfCode:       totalCodeLinesSum1,
-		LargestRepository:      maxRepo,
-		LinesOfCodeLargestRepo: maxTotalCodeLines1,
-		DevOpsPlatform:         platformConfig["DevOps"].(string),
-		NumberRepos:            NumberRepos,
-	}
+	if platformConfig["DevOps"].(string) != "File" {
+		// Global Result file
+		data := OrganizationData{
+			Organization:           platformConfig["Organization"].(string),
+			TotalLinesOfCode:       totalCodeLinesSum1,
+			LargestRepository:      maxRepo,
+			LinesOfCodeLargestRepo: maxTotalCodeLines1,
+			DevOpsPlatform:         platformConfig["DevOps"].(string),
+			NumberRepos:            NumberRepos,
+		}
 
-	jsonData, err := json.MarshalIndent(data, "", "    ")
-	if err != nil {
-		fmt.Println("\n❌ Error during JSON encoding in Gobal Report:", err)
-		return
-	}
-	// Created Global Result json file
-	file1, err := os.Create("Results/GlobalReport.json")
-	if err != nil {
-		fmt.Println("\n❌ Error during file creation Gobal Report:", err)
-		return
-	}
-	defer file.Close()
+		jsonData, err := json.MarshalIndent(data, "", "    ")
+		if err != nil {
+			fmt.Println("\n❌ Error during JSON encoding in Gobal Report:", err)
+			return
+		}
+		// Created Global Result json file
+		file1, err := os.Create("Results/GlobalReport.json")
+		if err != nil {
+			fmt.Println("\n❌ Error during file creation Gobal Report:", err)
+			return
+		}
+		defer file.Close()
 
-	_, err = file1.Write(jsonData)
-	if err != nil {
-		fmt.Println("\n❌ Error writing to file:", err)
-		return
+		_, err = file1.Write(jsonData)
+		if err != nil {
+			fmt.Println("\n❌ Error writing to file:", err)
+			return
+		}
 	}
 
 	spin.Stop()

@@ -2,6 +2,7 @@ package goloc
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/colussim/GoLC/pkg/analyzer"
 	"github.com/colussim/GoLC/pkg/filesystem"
@@ -58,6 +59,14 @@ func NewGCloc(params Params, languages language.Languages) (*GCloc, error) {
 		path, err = getter.Getter(params.Path)
 		if err != nil {
 			return nil, err
+		}
+		lastSlashIndex := strings.LastIndex(path, "/")
+		if lastSlashIndex != -1 {
+			lastPart := path[lastSlashIndex+1:]
+			params.OutputName = fmt.Sprintf("%s%s", params.OutputName, lastPart)
+		} else {
+			return nil, fmt.Errorf("\n❌ Failed to created OutputName")
+
 		}
 	}
 	excludePaths, err := filesystem.GetExcludePaths(path, params.ExcludePaths)

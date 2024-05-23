@@ -1159,18 +1159,3 @@ func fetchLanguagesGithub(org, repoName, accessToken, urlrepo string) (map[strin
 
 	return languages, nil
 }
-
-/* func updateRepositoryWithLanguages(repo *Repository, languages map[string]int) {
-
-	repo.LOC = make(map[string]int)
-
-	for lang, loc := range languages {
-
-		langLower := strings.ToLower(lang)
-
-		if _, ok := Languages[langLower]; ok {
-			Languages.language
-			repo.LOC[langLower] = loc
-		}
-	}
-}*/
