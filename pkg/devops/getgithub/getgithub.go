@@ -35,6 +35,7 @@ type ParamsReposGithub struct {
 	Spin          *spinner.Spinner
 	Branch        string
 	Period        int
+	Stats         bool
 }
 type Repository struct {
 	ID            int    `json:"id"`
@@ -359,7 +360,7 @@ func GetReposGithub(parms ParamsReposGithub, ctx context.Context, client *github
 				}
 				/* ---- End Save List of Current Branch ---- */
 
-				/* ----  Get List tRepository Events ---- */
+				/* ----  Get List Repository Events ---- */
 				for {
 					events, resp, err := client.Activity.ListRepositoryEvents(ctx, parms.Organization, repoName, opt)
 					if rateLimitErr, ok := err.(*github.AbuseRateLimitError); ok {
@@ -370,7 +371,8 @@ func GetReposGithub(parms ParamsReposGithub, ctx context.Context, client *github
 					}
 					if err != nil {
 						fmt.Println("❌ Error fetching repository events:", err)
-						os.Exit(1)
+						//os.Exit(1)
+						continue
 					}
 					allEvents = append(allEvents, events...)
 
@@ -411,33 +413,65 @@ func GetReposGithub(parms ParamsReposGithub, ctx context.Context, client *github
 
 				/* ---- Get the number of commits and lines of code for selected branches ---- */
 				for _, info := range branchPushes {
-					// Retrieve depot activity statistics for the last week
-					contributorsStats, _, err := client.Repositories.ListContributorsStats(ctx, parms.Organization, repoName)
-					if rateLimitErr, ok := err.(*github.AbuseRateLimitError); ok {
-						fmt.Println(MessageApiRate)
-						waitTime := rateLimitErr.GetRetryAfter()
-						// Sleep until the rate limit resets
-						time.Sleep(waitTime)
-					}
-					if err != nil {
-						//	fmt.Printf("❌ Error fetching contributors stats: %v\n", err)
-						continue
-					}
 
-					/* ---- Get the number of commits and lines of code for selected branches ---- */
-					for _, contributorStats := range contributorsStats {
-						// Browse contribution weeks
-						for _, week := range contributorStats.Weeks {
-							// If the week is included in the last month
-							if week.Week.After(oneMonthAgo) {
-								// Add line additions and deletions for each contributor to info.Additions and info.Deletions and the number of commits info.Commits
-								info.Additions += *week.Additions
-								info.Deletions += *week.Deletions
-								info.Commits += *week.Commits
+					// Retrieve depot activity statistics for the last week
+					// this blog is deactivated because if the statistics are not activated poses a problem, the analysis is false :
+					// job scheduled on GitHub side; try again later
+					// Statistics are Commits,Deletes,Adds a last Month
+					if parms.Stats {
+						contributorsStats, _, err := client.Repositories.ListContributorsStats(ctx, parms.Organization, repoName)
+						if rateLimitErr, ok := err.(*github.AbuseRateLimitError); ok {
+							fmt.Println(MessageApiRate)
+							waitTime := rateLimitErr.GetRetryAfter()
+							// Sleep until the rate limit resets
+							time.Sleep(waitTime)
+						}
+						if err != nil {
+							//	fmt.Printf("❌ Error fetching contributors stats: %v\n", err)
+							continue
+						}
+
+						/* ---- Get the number of commits and lines of code for selected branches ---- */
+						for _, contributorStats := range contributorsStats {
+							// Browse contribution weeks
+							for _, week := range contributorStats.Weeks {
+								// If the week is included in the last month
+								if week.Week.After(oneMonthAgo) {
+									// Add line additions and deletions for each contributor to info.Additions and info.Deletions and the number of commits info.Commits
+									info.Additions += *week.Additions
+									info.Deletions += *week.Deletions
+									info.Commits += *week.Commits
+								}
 							}
 						}
+						/* ---- End Get the number of commits and lines of code for selected branches ---- */
+					} else {
+						/* ---- Get the number of commits and lines of code for selected branches ---- */
+
+						// Browse contribution weeks
+						opt := &github.CommitsListOptions{
+							SHA:         info.Name,
+							Since:       oneMonthAgo,
+							ListOptions: github.ListOptions{PerPage: 100},
+						}
+						var allCommits []*github.RepositoryCommit
+						for {
+							commits, resp, err := client.Repositories.ListCommits(ctx, parms.Organization, repoName, opt)
+							if err != nil {
+								//fmt.Printf("Error fetching commits for branch %s: %v\n", info.name, err)
+								break
+							}
+							allCommits = append(allCommits, commits...)
+
+							if resp.NextPage == 0 {
+								break
+							}
+							opt.Page = resp.NextPage
+						}
+						branchPushes[info.Name].Commits = len(allCommits)
+
 					}
-					/* ---- End Get the number of commits and lines of code for selected branches ---- */
+
 				}
 				/* ---- End Get the number of commits and lines of code for selected branches ---- */
 
@@ -447,10 +481,14 @@ func GetReposGithub(parms ParamsReposGithub, ctx context.Context, client *github
 					branchList = append(branchList, info)
 				}
 				sort.Slice(branchList, func(i, j int) bool {
-					if branchList[i].Commits == branchList[j].Commits {
-						return (branchList[i].Additions + branchList[i].Deletions) > (branchList[j].Additions + branchList[j].Deletions)
+					if parms.Stats {
+						if branchList[i].Commits == branchList[j].Commits {
+							return (branchList[i].Additions + branchList[i].Deletions) > (branchList[j].Additions + branchList[j].Deletions)
+						}
+						return branchList[i].Commits > branchList[j].Commits
+					} else {
+						return branchList[i].Commits > branchList[j].Commits
 					}
-					return branchList[i].Commits > branchList[j].Commits
 				})
 				/* ---- End Sort branches by number of commits, then by additions and deletions of lines of code ---- */
 
@@ -464,6 +502,7 @@ func GetReposGithub(parms ParamsReposGithub, ctx context.Context, client *github
 						MainBranch:  largestRepoBranch,
 						LargestSize: int64(bc.Commits),
 					})
+					TotalRepoBranches = len(branchPushes)
 
 				} else {
 					largestRepoBranch = *repo.DefaultBranch
@@ -473,6 +512,7 @@ func GetReposGithub(parms ParamsReposGithub, ctx context.Context, client *github
 						MainBranch:  largestRepoBranch,
 						LargestSize: int64(*repo.Size),
 					})
+					TotalRepoBranches = 1
 				}
 
 				spin1.Stop()
@@ -589,6 +629,7 @@ func GetRepoGithubList(platformConfig map[string]interface{}, exlusionfile strin
 			Spin:          spin,
 			Branch:        platformConfig["Branch"].(string),
 			Period:        int(platformConfig["Period"].(float64)),
+			Stats:         platformConfig["Stats"].(bool),
 		}
 
 		sortRepositoriesByUpdatedAt(repositories)
@@ -628,6 +669,7 @@ func GetRepoGithubList(platformConfig map[string]interface{}, exlusionfile strin
 			Spin:          spin,
 			Branch:        platformConfig["Branch"].(string),
 			Period:        int(platformConfig["Period"].(float64)),
+			Stats:         platformConfig["Stats"].(bool),
 		}
 
 		sortRepositoriesByUpdatedAt(repositories)
@@ -732,6 +774,7 @@ func FastAnalys(platformConfig map[string]interface{}, exlusionfile string) erro
 			Spin:          spin,
 			Branch:        platformConfig["Branch"].(string),
 			Period:        int(platformConfig["Period"].(float64)),
+			Stats:         platformConfig["Stats"].(bool),
 		}
 
 		sortRepositoriesByUpdatedAt(repositories)
@@ -772,6 +815,7 @@ func FastAnalys(platformConfig map[string]interface{}, exlusionfile string) erro
 			Spin:          spin,
 			Branch:        platformConfig["Branch"].(string),
 			Period:        int(platformConfig["Period"].(float64)),
+			Stats:         platformConfig["Stats"].(bool),
 		}
 		nbRepos, emptyRepo, totalExclude, totalArchiv, err = GetGithubLanguages(parms, ctx, client, int(platformConfig["Factor"].(float64)))
 		if err != nil {

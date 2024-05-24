@@ -103,6 +103,31 @@ const errorMessageRepo = "\n❌ Error Analyse Repositories: "
 const errorMessageDi = "❌ Error deleting Repository Directory: %v\n"
 const errorMessageAnalyse = "❌ No Analysis performed...\n"
 
+var logFile *os.File
+
+func OpenLogFile(filename string) error {
+	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	logFile = file
+	return nil
+}
+
+// CloseLogFile closes the log file.
+func CloseLogFile() {
+	if logFile != nil {
+		logFile.Close()
+	}
+}
+
+// LogError writes an error message to the log file along with additional context information.
+func LogError(message string, err error) {
+	if logFile != nil {
+		logFile.WriteString(fmt.Sprintf("[%s] ERROR: %s - %v\n", time.Now().Format(time.RFC3339), message, err))
+	}
+}
+
 func getFileNameIfExists(filePath string) string {
 	_, err := os.Stat(filePath)
 	if err != nil {
@@ -321,9 +346,66 @@ func AnalyseReposListGithub(DestinationResult string, platformConfig map[string]
 	results := make(chan int)
 	count := 1
 
-	for _, project := range repolist {
-		go func(project getgithub.ProjectBranch) {
+	if platformConfig["Multithreading"].(bool) {
+		for _, project := range repolist {
+			go func(project getgithub.ProjectBranch) {
 
+				pathToScan := fmt.Sprintf("%s://%s:x-oauth-basic@%s/%s/%s.git", platformConfig["Protocol"].(string), platformConfig["AccessToken"].(string), platformConfig["Baseapi"].(string), project.Org, project.RepoSlug)
+
+				outputFileName := fmt.Sprintf("Result_%s_%s_%s", project.Org, project.RepoSlug, project.MainBranch)
+
+				params := goloc.Params{
+					Path:              pathToScan,
+					ByFile:            false,
+					ExcludePaths:      []string{},
+					ExcludeExtensions: []string{},
+					IncludeExtensions: []string{},
+					OrderByLang:       false,
+					OrderByFile:       false,
+					OrderByCode:       false,
+					OrderByLine:       false,
+					OrderByBlank:      false,
+					OrderByComment:    false,
+					Order:             "DESC",
+					OutputName:        outputFileName,
+					OutputPath:        DestinationResult,
+					ReportFormats:     []string{"json"},
+					Branch:            project.MainBranch,
+					Token:             platformConfig["AccessToken"].(string),
+				}
+				MessB := fmt.Sprintf("   Extracting files from repo : %s ", project.RepoSlug)
+				spin.Suffix = MessB
+				spin.Start()
+
+				gc, err := goloc.NewGCloc(params, assets.Languages)
+				if err != nil {
+					fmt.Println(errorMessageRepo, err)
+					//os.Exit(1)
+
+				}
+
+				gc.Run()
+				cpt++
+
+				// Remove Repository Directory
+				err1 := os.RemoveAll(gc.Repopath)
+				if err1 != nil {
+					fmt.Printf(errorMessageDi, err1)
+					//return
+				}
+
+				spin.Stop()
+				fmt.Printf("\r✅ %d The repository <%s> has been analyzed\n", count, project.RepoSlug)
+				count++
+
+				// Send result through channel
+				results <- 1
+			}(project)
+		}
+	} else {
+		// Without multithreading
+		for _, project := range repolist {
+			// Execute the analysis synchronously
 			pathToScan := fmt.Sprintf("%s://%s:x-oauth-basic@%s/%s/%s.git", platformConfig["Protocol"].(string), platformConfig["AccessToken"].(string), platformConfig["Baseapi"].(string), project.Org, project.RepoSlug)
 
 			outputFileName := fmt.Sprintf("Result_%s_%s_%s", project.Org, project.RepoSlug, project.MainBranch)
@@ -363,7 +445,7 @@ func AnalyseReposListGithub(DestinationResult string, platformConfig map[string]
 
 			// Remove Repository Directory
 			err1 := os.RemoveAll(gc.Repopath)
-			if err != nil {
+			if err1 != nil {
 				fmt.Printf(errorMessageDi, err1)
 				//return
 			}
@@ -371,9 +453,100 @@ func AnalyseReposListGithub(DestinationResult string, platformConfig map[string]
 			spin.Stop()
 			fmt.Printf("\r✅ %d The repository <%s> has been analyzed\n", count, project.RepoSlug)
 			count++
+		}
+	}
 
-			// Send result through channel
-			results <- 1
+	// Wait for all goroutines to complete
+	if platformConfig["Multithreading"].(bool) {
+		for i := 0; i < len(repolist); i++ {
+			fmt.Printf("\r Waiting for workers...\n")
+			<-results
+		}
+	}
+
+	return cpt
+}
+func AnalyseReposListGithub1(DestinationResult string, platformConfig map[string]interface{}, repolist []getgithub.ProjectBranch) (cpt int) {
+	fmt.Print("\n🔎 Analysis of Repos ...\n")
+
+	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
+	spin.Color("green", "bold")
+	messageF := ""
+	spin.FinalMSG = messageF
+	useMultithreading := platformConfig["Multithreading"].(bool)
+	workers := int(platformConfig["Workers"].(float64))
+
+	// Create a channel to receive results
+	results := make(chan int)
+	count := 1
+
+	var semaphore chan struct{}
+	if useMultithreading {
+		semaphore = make(chan struct{}, workers) // Limiting to 8 concurrent goroutines
+	}
+
+	for _, project := range repolist {
+		if useMultithreading {
+			semaphore <- struct{}{} // Acquire a semaphore slot
+		}
+
+		go func(project getgithub.ProjectBranch) {
+			defer func() {
+				results <- 1
+				if useMultithreading {
+					<-semaphore // Release the semaphore slot
+				}
+			}()
+
+			// Analysis logic for each project
+			pathToScan := fmt.Sprintf("%s://%s:x-oauth-basic@%s/%s/%s.git", platformConfig["Protocol"].(string), platformConfig["AccessToken"].(string), platformConfig["Baseapi"].(string), project.Org, project.RepoSlug)
+
+			outputFileName := fmt.Sprintf("Result_%s_%s_%s", project.Org, project.RepoSlug, project.MainBranch)
+
+			params := goloc.Params{
+				Path:              pathToScan,
+				ByFile:            false,
+				ExcludePaths:      []string{},
+				ExcludeExtensions: []string{},
+				IncludeExtensions: []string{},
+				OrderByLang:       false,
+				OrderByFile:       false,
+				OrderByCode:       false,
+				OrderByLine:       false,
+				OrderByBlank:      false,
+				OrderByComment:    false,
+				Order:             "DESC",
+				OutputName:        outputFileName,
+				OutputPath:        DestinationResult,
+				ReportFormats:     []string{"json"},
+				Branch:            project.MainBranch,
+				Token:             platformConfig["AccessToken"].(string),
+			}
+
+			MessB := fmt.Sprintf("   Extracting files from repo : %s ", project.RepoSlug)
+			spin.Suffix = MessB
+			spin.Start()
+
+			gc, err := goloc.NewGCloc(params, assets.Languages)
+			if err != nil {
+				fmt.Println(errorMessageRepo, err)
+				LogError(errorMessageRepo, err)
+				//os.Exit(1)
+			}
+
+			gc.Run()
+			cpt++
+
+			// Remove Repository Directory
+			err1 := os.RemoveAll(gc.Repopath)
+			if err1 != nil {
+				fmt.Printf(errorMessageDi, err1)
+				//return
+			}
+
+			spin.Stop()
+			fmt.Printf("\r✅ %d The repository <%s> has been analyzed\n", count, project.RepoSlug)
+			count++
 		}(project)
 	}
 
@@ -382,7 +555,6 @@ func AnalyseReposListGithub(DestinationResult string, platformConfig map[string]
 		fmt.Printf("\r Waiting for workers...\n")
 		<-results
 	}
-	//spinWaiting.Stop()
 
 	return cpt
 }
@@ -798,6 +970,15 @@ func main() {
 		return
 	}
 	defer file.Close()
+
+	// Open Logs
+
+	err = OpenLogFile("Results/Logs.log")
+	if err != nil {
+		fmt.Println("❌ Error opening log file:", err)
+		return
+	}
+	defer CloseLogFile()
 
 	// Select DevOps Platform
 
