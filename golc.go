@@ -128,6 +128,7 @@ func LogError(message string, err error) {
 	}
 }
 
+// Check Exclusion File Exist
 func getFileNameIfExists(filePath string) string {
 	_, err := os.Stat(filePath)
 	if err != nil {
@@ -203,11 +204,13 @@ func createBackup(sourceDir, pwd string) error {
 	return nil
 }
 
+// Generate Backup File Name
 func generateBackupFilePath(sourceDir, backupDir string) string {
 	backupFileName := fmt.Sprintf("%s_%s.zip", filepath.Base(sourceDir), time.Now().Format("2006-01-02_15-04-05"))
 	return filepath.Join(backupDir, backupFileName)
 }
 
+// Create a backup Directory
 func createBackupDirectory(backupDir string) error {
 	if _, err := os.Stat(backupDir); os.IsNotExist(err) {
 		if err := os.MkdirAll(backupDir, 0755); err != nil {
@@ -217,6 +220,7 @@ func createBackupDirectory(backupDir string) error {
 	return nil
 }
 
+// Add Files in backup
 func addFilesToBackup(sourceDir string, zipWriter *zip.Writer) error {
 	return filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -255,86 +259,9 @@ func addFileToZip(filePath, relPath string, fileInfo os.FileInfo, zipWriter *zip
 	return nil
 }
 
-// Parallelize processing
-// Analyse Repositories bitbucket DC
+/* ---------------- Analyse Repositories bitbucket Cloud  ---------------- */
 
-func AnalyseReposListBitSRV(DestinationResult string, user string, AccessToken string, Protocol string, URL string, DevOps string, repolist []getbibucketdc.ProjectBranch) (cpt int) {
-	URLcut := Protocol + "://"
-	trimmedURL := strings.TrimPrefix(URL, URLcut)
-
-	fmt.Print("\n🔎 Analysis of Repos ...\n")
-
-	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
-	spin.Color("green", "bold")
-	messageF := ""
-	spin.FinalMSG = messageF
-
-	// Create a channel to receive results
-	results := make(chan int)
-
-	for _, project := range repolist {
-		go func(project getbibucketdc.ProjectBranch) {
-			pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s.git", Protocol, user, AccessToken, trimmedURL, project.ProjectKey, project.RepoSlug)
-			outputFileName := fmt.Sprintf("Result_%s_%s_%s", project.ProjectKey, project.RepoSlug, project.MainBranch)
-
-			params := goloc.Params{
-				Path:              pathToScan,
-				ByFile:            false,
-				ExcludePaths:      []string{},
-				ExcludeExtensions: []string{},
-				IncludeExtensions: []string{},
-				OrderByLang:       false,
-				OrderByFile:       false,
-				OrderByCode:       false,
-				OrderByLine:       false,
-				OrderByBlank:      false,
-				OrderByComment:    false,
-				Order:             "DESC",
-				OutputName:        outputFileName,
-				OutputPath:        DestinationResult,
-				ReportFormats:     []string{"json"},
-				Branch:            project.MainBranch,
-			}
-			MessB := fmt.Sprintf("   Extracting files from repo : %s ", project.RepoSlug)
-			spin.Suffix = MessB
-			spin.Start()
-
-			gc, err := goloc.NewGCloc(params, assets.Languages)
-			if err != nil {
-				fmt.Println(errorMessageRepo, err)
-				//os.Exit(1)
-			}
-
-			gc.Run()
-			cpt++
-
-			// Remove Repository Directory
-			err1 := os.RemoveAll(gc.Repopath)
-			if err != nil {
-				fmt.Printf(errorMessageDi, err1)
-				return
-			}
-
-			spin.Stop()
-			fmt.Printf("\t✅ The repository <%s> has been analyzed\n", project.RepoSlug)
-
-			// Send result through channel
-			results <- 1
-		}(project)
-	}
-
-	// Wait for all goroutines to complete
-	for i := 0; i < len(repolist); i++ {
-		fmt.Printf("\r Waiting for workers...")
-		<-results
-	}
-	//spinWaiting.Stop()
-
-	return cpt
-}
-
-func AnalyseReposListGithub(DestinationResult string, platformConfig map[string]interface{}, repolist []getgithub.ProjectBranch) (cpt int) {
-
+func AnalyseReposListBitC(DestinationResult string, platformConfig map[string]interface{}, repolist []getbibucket.ProjectBranch) (cpt int) {
 	fmt.Print("\n🔎 Analysis of Repos ...\n")
 
 	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
@@ -347,219 +274,308 @@ func AnalyseReposListGithub(DestinationResult string, platformConfig map[string]
 	count := 1
 
 	if platformConfig["Multithreading"].(bool) {
-		for _, project := range repolist {
-			go func(project getgithub.ProjectBranch) {
-
-				pathToScan := fmt.Sprintf("%s://%s:x-oauth-basic@%s/%s/%s.git", platformConfig["Protocol"].(string), platformConfig["AccessToken"].(string), platformConfig["Baseapi"].(string), project.Org, project.RepoSlug)
-
-				outputFileName := fmt.Sprintf("Result_%s_%s_%s", project.Org, project.RepoSlug, project.MainBranch)
-
-				params := goloc.Params{
-					Path:              pathToScan,
-					ByFile:            false,
-					ExcludePaths:      []string{},
-					ExcludeExtensions: []string{},
-					IncludeExtensions: []string{},
-					OrderByLang:       false,
-					OrderByFile:       false,
-					OrderByCode:       false,
-					OrderByLine:       false,
-					OrderByBlank:      false,
-					OrderByComment:    false,
-					Order:             "DESC",
-					OutputName:        outputFileName,
-					OutputPath:        DestinationResult,
-					ReportFormats:     []string{"json"},
-					Branch:            project.MainBranch,
-					Token:             platformConfig["AccessToken"].(string),
+		if len(repolist) > 50 {
+			// Launch goroutines in batches of X
+			X := int(platformConfig["Workers"].(float64))
+			batches := len(repolist) / X
+			remainder := len(repolist) % X
+			for i := 0; i < batches; i++ {
+				for j := i * X; j < (i+1)*X; j++ {
+					go analyseBitCRepo(repolist[j], DestinationResult, platformConfig, spin, results, &count)
 				}
-				MessB := fmt.Sprintf("   Extracting files from repo : %s ", project.RepoSlug)
-				spin.Suffix = MessB
-				spin.Start()
-
-				gc, err := goloc.NewGCloc(params, assets.Languages)
-				if err != nil {
-					fmt.Println(errorMessageRepo, err)
-					//os.Exit(1)
-
-				}
-
-				gc.Run()
-				cpt++
-
-				// Remove Repository Directory
-				err1 := os.RemoveAll(gc.Repopath)
-				if err1 != nil {
-					fmt.Printf(errorMessageDi, err1)
-					//return
-				}
-
-				spin.Stop()
-				fmt.Printf("\r✅ %d The repository <%s> has been analyzed\n", count, project.RepoSlug)
-				count++
-
-				// Send result through channel
-				results <- 1
-			}(project)
+				waitForWorkers(batches*X, results)
+			}
+			// Launch remaining goroutines
+			for i := batches * X; i < batches*X+remainder; i++ {
+				go analyseBitCRepo(repolist[i], DestinationResult, platformConfig, spin, results, &count)
+			}
+			waitForWorkers(len(repolist), results)
+		} else {
+			// Launch goroutines for each repo
+			for _, project := range repolist {
+				go analyseBitCRepo(project, DestinationResult, platformConfig, spin, results, &count)
+			}
+			waitForWorkers(len(repolist), results)
 		}
 	} else {
 		// Without multithreading
 		for _, project := range repolist {
 			// Execute the analysis synchronously
-			pathToScan := fmt.Sprintf("%s://%s:x-oauth-basic@%s/%s/%s.git", platformConfig["Protocol"].(string), platformConfig["AccessToken"].(string), platformConfig["Baseapi"].(string), project.Org, project.RepoSlug)
-
-			outputFileName := fmt.Sprintf("Result_%s_%s_%s", project.Org, project.RepoSlug, project.MainBranch)
-
-			params := goloc.Params{
-				Path:              pathToScan,
-				ByFile:            false,
-				ExcludePaths:      []string{},
-				ExcludeExtensions: []string{},
-				IncludeExtensions: []string{},
-				OrderByLang:       false,
-				OrderByFile:       false,
-				OrderByCode:       false,
-				OrderByLine:       false,
-				OrderByBlank:      false,
-				OrderByComment:    false,
-				Order:             "DESC",
-				OutputName:        outputFileName,
-				OutputPath:        DestinationResult,
-				ReportFormats:     []string{"json"},
-				Branch:            project.MainBranch,
-				Token:             platformConfig["AccessToken"].(string),
-			}
-			MessB := fmt.Sprintf("   Extracting files from repo : %s ", project.RepoSlug)
-			spin.Suffix = MessB
-			spin.Start()
-
-			gc, err := goloc.NewGCloc(params, assets.Languages)
-			if err != nil {
-				fmt.Println(errorMessageRepo, err)
-				//os.Exit(1)
-
-			}
-
-			gc.Run()
-			cpt++
-
-			// Remove Repository Directory
-			err1 := os.RemoveAll(gc.Repopath)
-			if err1 != nil {
-				fmt.Printf(errorMessageDi, err1)
-				//return
-			}
-
-			spin.Stop()
-			fmt.Printf("\r✅ %d The repository <%s> has been analyzed\n", count, project.RepoSlug)
-			count++
+			analyseBitCRepo(project, DestinationResult, platformConfig, spin, results, &count)
 		}
 	}
 
-	// Wait for all goroutines to complete
-	if platformConfig["Multithreading"].(bool) {
-		for i := 0; i < len(repolist); i++ {
-			fmt.Printf("\r Waiting for workers...\n")
-			<-results
-		}
-	}
-
-	return cpt
+	return len(repolist)
 }
-func AnalyseReposListGithub1(DestinationResult string, platformConfig map[string]interface{}, repolist []getgithub.ProjectBranch) (cpt int) {
+
+func analyseBitCRepo(project getbibucket.ProjectBranch, DestinationResult string, platformConfig map[string]interface{}, spin *spinner.Spinner, results chan int, count *int) {
+
+	pathToScan := fmt.Sprintf("%s://x-token-auth:%s@%s/%s/%s.git", platformConfig["Protocol"].(string), platformConfig["AccessToken"].(string), platformConfig["Baseapi"].(string), platformConfig["Workspace"].(string), project.RepoSlug)
+	outputFileName := fmt.Sprintf("Result_%s_%s_%s", project.ProjectKey, project.RepoSlug, project.MainBranch)
+
+	params := goloc.Params{
+		Path:              pathToScan,
+		ByFile:            false,
+		ExcludePaths:      []string{},
+		ExcludeExtensions: []string{},
+		IncludeExtensions: []string{},
+		OrderByLang:       false,
+		OrderByFile:       false,
+		OrderByCode:       false,
+		OrderByLine:       false,
+		OrderByBlank:      false,
+		OrderByComment:    false,
+		Order:             "DESC",
+		OutputName:        outputFileName,
+		OutputPath:        DestinationResult,
+		ReportFormats:     []string{"json"},
+		Branch:            project.MainBranch,
+	}
+	MessB := fmt.Sprintf("   Extracting files from repo : %s ", project.RepoSlug)
+	spin.Suffix = MessB
+	spin.Start()
+
+	gc, err := goloc.NewGCloc(params, assets.Languages)
+	if err != nil {
+		fmt.Println(errorMessageRepo, err)
+		//os.Exit(1)
+	}
+
+	gc.Run()
+	*count++
+
+	// Remove Repository Directory
+	err1 := os.RemoveAll(gc.Repopath)
+	if err1 != nil {
+		fmt.Printf(errorMessageDi, err1)
+		//return
+	}
+
+	spin.Stop()
+	fmt.Printf("\t✅ The repository <%s> has been analyzed\n", project.RepoSlug)
+
+	// Send result through channel
+	results <- 1
+}
+
+/* ---------------- End Analyse Repositories bitbucket Cloud  ---------------- */
+
+/* ---------------- Analyse Repositories bitbucket DC  ---------------- */
+
+func AnalyseReposListBitSRV(DestinationResult string, platformConfig map[string]interface{}, repolist []getbibucketdc.ProjectBranch) (cpt int) {
+	URLcut := platformConfig["Protocol"].(string) + "://"
+	trimmedURL := strings.TrimPrefix(platformConfig["Url"].(string), URLcut)
+
 	fmt.Print("\n🔎 Analysis of Repos ...\n")
 
 	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
 	spin.Color("green", "bold")
 	messageF := ""
 	spin.FinalMSG = messageF
-	useMultithreading := platformConfig["Multithreading"].(bool)
-	workers := int(platformConfig["Workers"].(float64))
 
 	// Create a channel to receive results
 	results := make(chan int)
 	count := 1
 
-	var semaphore chan struct{}
-	if useMultithreading {
-		semaphore = make(chan struct{}, workers) // Limiting to 8 concurrent goroutines
-	}
-
-	for _, project := range repolist {
-		if useMultithreading {
-			semaphore <- struct{}{} // Acquire a semaphore slot
-		}
-
-		go func(project getgithub.ProjectBranch) {
-			defer func() {
-				results <- 1
-				if useMultithreading {
-					<-semaphore // Release the semaphore slot
+	if platformConfig["Multithreading"].(bool) {
+		if len(repolist) > 50 {
+			// Launch goroutines in batches of X
+			X := int(platformConfig["Workers"].(float64))
+			batches := len(repolist) / X
+			remainder := len(repolist) % X
+			for i := 0; i < batches; i++ {
+				for j := i * X; j < (i+1)*X; j++ {
+					go analyseBitSRVRepo(repolist[j], DestinationResult, platformConfig, trimmedURL, spin, results, &count)
 				}
-			}()
-
-			// Analysis logic for each project
-			pathToScan := fmt.Sprintf("%s://%s:x-oauth-basic@%s/%s/%s.git", platformConfig["Protocol"].(string), platformConfig["AccessToken"].(string), platformConfig["Baseapi"].(string), project.Org, project.RepoSlug)
-
-			outputFileName := fmt.Sprintf("Result_%s_%s_%s", project.Org, project.RepoSlug, project.MainBranch)
-
-			params := goloc.Params{
-				Path:              pathToScan,
-				ByFile:            false,
-				ExcludePaths:      []string{},
-				ExcludeExtensions: []string{},
-				IncludeExtensions: []string{},
-				OrderByLang:       false,
-				OrderByFile:       false,
-				OrderByCode:       false,
-				OrderByLine:       false,
-				OrderByBlank:      false,
-				OrderByComment:    false,
-				Order:             "DESC",
-				OutputName:        outputFileName,
-				OutputPath:        DestinationResult,
-				ReportFormats:     []string{"json"},
-				Branch:            project.MainBranch,
-				Token:             platformConfig["AccessToken"].(string),
+				waitForWorkers(batches*X, results)
 			}
-
-			MessB := fmt.Sprintf("   Extracting files from repo : %s ", project.RepoSlug)
-			spin.Suffix = MessB
-			spin.Start()
-
-			gc, err := goloc.NewGCloc(params, assets.Languages)
-			if err != nil {
-				fmt.Println(errorMessageRepo, err)
-				LogError(errorMessageRepo, err)
-				//os.Exit(1)
+			// Launch remaining goroutines
+			for i := batches * X; i < batches*X+remainder; i++ {
+				go analyseBitSRVRepo(repolist[i], DestinationResult, platformConfig, trimmedURL, spin, results, &count)
 			}
-
-			gc.Run()
-			cpt++
-
-			// Remove Repository Directory
-			err1 := os.RemoveAll(gc.Repopath)
-			if err1 != nil {
-				fmt.Printf(errorMessageDi, err1)
-				//return
+			waitForWorkers(len(repolist), results)
+		} else {
+			// Launch goroutines for each repo
+			for _, project := range repolist {
+				go analyseBitSRVRepo(project, DestinationResult, platformConfig, trimmedURL, spin, results, &count)
 			}
-
-			spin.Stop()
-			fmt.Printf("\r✅ %d The repository <%s> has been analyzed\n", count, project.RepoSlug)
-			count++
-		}(project)
+			waitForWorkers(len(repolist), results)
+		}
+	} else {
+		// Without multithreading
+		for _, project := range repolist {
+			// Execute the analysis synchronously
+			analyseBitSRVRepo(project, DestinationResult, platformConfig, trimmedURL, spin, results, &count)
+		}
 	}
 
-	// Wait for all goroutines to complete
-	for i := 0; i < len(repolist); i++ {
+	return len(repolist)
+}
+
+func analyseBitSRVRepo(project getbibucketdc.ProjectBranch, DestinationResult string, platformConfig map[string]interface{}, trimmedURL string, spin *spinner.Spinner, results chan int, count *int) {
+
+	pathToScan := fmt.Sprintf("%s://%s:%s@%sscm/%s/%s.git", platformConfig["Protocol"].(string), platformConfig["Users"].(string), platformConfig["AccessToken"].(string), trimmedURL, project.ProjectKey, project.RepoSlug)
+	outputFileName := fmt.Sprintf("Result_%s_%s_%s", project.ProjectKey, project.RepoSlug, project.MainBranch)
+
+	params := goloc.Params{
+		Path:              pathToScan,
+		ByFile:            false,
+		ExcludePaths:      []string{},
+		ExcludeExtensions: []string{},
+		IncludeExtensions: []string{},
+		OrderByLang:       false,
+		OrderByFile:       false,
+		OrderByCode:       false,
+		OrderByLine:       false,
+		OrderByBlank:      false,
+		OrderByComment:    false,
+		Order:             "DESC",
+		OutputName:        outputFileName,
+		OutputPath:        DestinationResult,
+		ReportFormats:     []string{"json"},
+		Branch:            project.MainBranch,
+	}
+	MessB := fmt.Sprintf("   Extracting files from repo : %s ", project.RepoSlug)
+	spin.Suffix = MessB
+	spin.Start()
+
+	gc, err := goloc.NewGCloc(params, assets.Languages)
+	if err != nil {
+		fmt.Println(errorMessageRepo, err)
+		//os.Exit(1)
+	}
+
+	gc.Run()
+	*count++
+
+	// Remove Repository Directory
+	err1 := os.RemoveAll(gc.Repopath)
+	if err1 != nil {
+		fmt.Printf(errorMessageDi, err1)
+		//return
+	}
+
+	spin.Stop()
+	fmt.Printf("\t✅ The repository <%s> has been analyzed\n", project.RepoSlug)
+
+	// Send result through channel
+	results <- 1
+}
+
+/* ----------------End Analyse Repositories bitbucket DC  ---------------- */
+
+/* ---------------- Analyse Repositories GitHub  ---------------- */
+func AnalyseReposListGithub(DestinationResult string, platformConfig map[string]interface{}, repolist []getgithub.ProjectBranch) (cpt int) {
+	fmt.Print("\n🔎 Analysis of Repos ...\n")
+
+	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
+	spin.Color("green", "bold")
+	messageF := ""
+	spin.FinalMSG = messageF
+
+	// Create a channel to receive results
+	results := make(chan int)
+	count := 1
+
+	if platformConfig["Multithreading"].(bool) {
+		// Check if the number of repos is greater than 50
+		if len(repolist) > 50 {
+			// Launch goroutines in batches of X
+			X := int(platformConfig["Workers"].(float64))
+			batches := len(repolist) / X
+			remainder := len(repolist) % X
+			for i := 0; i < batches; i++ {
+				for j := i * X; j < (i+1)*X; j++ {
+					go analyseRepo(repolist[j], DestinationResult, platformConfig, spin, results, &count)
+				}
+				waitForWorkers(X, results)
+			}
+			// Launch remaining goroutines
+			for i := batches * X; i < batches*X+remainder; i++ {
+				go analyseRepo(repolist[i], DestinationResult, platformConfig, spin, results, &count)
+			}
+			waitForWorkers(remainder, results)
+
+		} else {
+			// Launch goroutines for each repo
+			for _, project := range repolist {
+				go analyseRepo(project, DestinationResult, platformConfig, spin, results, &count)
+			}
+			waitForWorkers(len(repolist), results)
+		}
+	} else {
+		// Without multithreading
+		for _, project := range repolist {
+			// Execute the analysis synchronously
+			analyseRepo(project, DestinationResult, platformConfig, spin, results, &count)
+		}
+	}
+
+	return len(repolist)
+}
+
+func analyseRepo(project getgithub.ProjectBranch, DestinationResult string, platformConfig map[string]interface{}, spin *spinner.Spinner, results chan int, count *int) {
+	pathToScan := fmt.Sprintf("%s://%s:x-oauth-basic@%s/%s/%s.git", platformConfig["Protocol"].(string), platformConfig["AccessToken"].(string), platformConfig["Baseapi"].(string), project.Org, project.RepoSlug)
+
+	outputFileName := fmt.Sprintf("Result_%s_%s_%s", project.Org, project.RepoSlug, project.MainBranch)
+
+	params := goloc.Params{
+		Path:              pathToScan,
+		ByFile:            false,
+		ExcludePaths:      []string{},
+		ExcludeExtensions: []string{},
+		IncludeExtensions: []string{},
+		OrderByLang:       false,
+		OrderByFile:       false,
+		OrderByCode:       false,
+		OrderByLine:       false,
+		OrderByBlank:      false,
+		OrderByComment:    false,
+		Order:             "DESC",
+		OutputName:        outputFileName,
+		OutputPath:        DestinationResult,
+		ReportFormats:     []string{"json"},
+		Branch:            project.MainBranch,
+		Token:             platformConfig["AccessToken"].(string),
+	}
+	MessB := fmt.Sprintf("   Extracting files from repo : %s ", project.RepoSlug)
+	spin.Suffix = MessB
+	spin.Start()
+
+	gc, err := goloc.NewGCloc(params, assets.Languages)
+	if err != nil {
+		fmt.Println(errorMessageRepo, err)
+		//os.Exit(1)
+
+	}
+
+	gc.Run()
+	*count++
+
+	// Remove Repository Directory
+	err1 := os.RemoveAll(gc.Repopath)
+	if err1 != nil {
+		fmt.Printf(errorMessageDi, err1)
+		//return
+	}
+
+	spin.Stop()
+	fmt.Printf("\r✅ %d The repository <%s> has been analyzed\n", *count, project.RepoSlug)
+
+	// Send result through channel
+	results <- 1
+}
+
+func waitForWorkers(numWorkers int, results chan int) {
+	for i := 0; i < numWorkers; i++ {
 		fmt.Printf("\r Waiting for workers...\n")
 		<-results
 	}
-
-	return cpt
 }
 
-// Analyse Directory
+/* ---------------- End  Analyse Repositories GitHub  ---------------- */
+
+/* ---------------- Analyse Directory ---------------- */
 
 func AnalyseReposListFile(Listdirectorie, fileexclusionEX []string) {
 
@@ -616,138 +632,7 @@ func AnalyseReposListFile(Listdirectorie, fileexclusionEX []string) {
 	wg.Wait()
 }
 
-// Analyse Repositories bitbucket Cloud
-/*func AnalyseReposListBitC(DestinationResult, AccessToken, Protocol, Baseurl, workspace, DevOps string, repolist []getbibucket.ProjectBranch) (cpt int) {
-
-	fmt.Print("\n🔎 Analysis of Repos ...\n")
-
-	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
-	spin.Color("green", "bold")
-	messageF := ""
-	spin.FinalMSG = messageF
-
-	for _, project := range repolist {
-
-		pathToScan := fmt.Sprintf("%s://x-token-auth:%s@%s/%s/%s.git", Protocol, AccessToken, Baseurl, workspace, project.RepoSlug)
-		outputFileName := fmt.Sprintf("Result_%s_%s_%s", project.ProjectKey, project.RepoSlug, project.MainBranch)
-
-		params := goloc.Params{
-			Path:              pathToScan,
-			ByFile:            false,
-			ExcludePaths:      []string{},
-			ExcludeExtensions: []string{},
-			IncludeExtensions: []string{},
-			OrderByLang:       false,
-			OrderByFile:       false,
-			OrderByCode:       false,
-			OrderByLine:       false,
-			OrderByBlank:      false,
-			OrderByComment:    false,
-			Order:             "DESC",
-			OutputName:        outputFileName,
-			OutputPath:        DestinationResult,
-			ReportFormats:     []string{"json"},
-			Branch:            project.MainBranch,
-		}
-		MessB := fmt.Sprintf("   Extracting files from repo : %s ", project.RepoSlug)
-		spin.Suffix = MessB
-		spin.Start()
-
-		gc, err := goloc.NewGCloc(params, assets.Languages)
-		if err != nil {
-			fmt.Println(errorMessageRepo, err)
-			os.Exit(1)
-		}
-		//fmt.Println("\r ")
-		gc.Run()
-		cpt++
-
-		// Remove Repository Directory
-		err1 := os.RemoveAll(gc.Repopath)
-		if err != nil {
-			fmt.Printf(errorMessageDi, err1)
-			return
-		}
-
-		spin.Stop()
-		fmt.Printf("\t✅ The repository <%s> has been analyzed\n", project.RepoSlug)
-	}
-	return cpt
-}*/
-
-// Parallelize processing
-// Analyse Repositories bitbucket Cloud
-
-func AnalyseReposListBitC(DestinationResult, AccessToken, Protocol, Baseurl, workspace, DevOps string, repolist []getbibucket.ProjectBranch) (cpt int) {
-	fmt.Print("\n🔎 Analysis of Repos ...\n")
-
-	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
-	spin.Color("green", "bold")
-	messageF := ""
-	spin.FinalMSG = messageF
-
-	// Create a channel to receive results
-	results := make(chan int)
-
-	for _, project := range repolist {
-		go func(project getbibucket.ProjectBranch) {
-			pathToScan := fmt.Sprintf("%s://x-token-auth:%s@%s/%s/%s.git", Protocol, AccessToken, Baseurl, workspace, project.RepoSlug)
-			outputFileName := fmt.Sprintf("Result_%s_%s_%s", project.ProjectKey, project.RepoSlug, project.MainBranch)
-
-			params := goloc.Params{
-				Path:              pathToScan,
-				ByFile:            false,
-				ExcludePaths:      []string{},
-				ExcludeExtensions: []string{},
-				IncludeExtensions: []string{},
-				OrderByLang:       false,
-				OrderByFile:       false,
-				OrderByCode:       false,
-				OrderByLine:       false,
-				OrderByBlank:      false,
-				OrderByComment:    false,
-				Order:             "DESC",
-				OutputName:        outputFileName,
-				OutputPath:        DestinationResult,
-				ReportFormats:     []string{"json"},
-				Branch:            project.MainBranch,
-			}
-			MessB := fmt.Sprintf("   Extracting files from repo : %s ", project.RepoSlug)
-			spin.Suffix = MessB
-			spin.Start()
-
-			gc, err := goloc.NewGCloc(params, assets.Languages)
-			if err != nil {
-				fmt.Println(errorMessageRepo, err)
-				os.Exit(1)
-			}
-			//fmt.Println("\r ")
-			gc.Run()
-			cpt++
-
-			// Remove Repository Directory
-			err1 := os.RemoveAll(gc.Repopath)
-			if err != nil {
-				fmt.Printf(errorMessageDi, err1)
-				return
-			}
-
-			spin.Stop()
-			fmt.Printf("\t✅ The repository <%s> has been analyzed\n", project.RepoSlug)
-
-			//Send result through channel
-			results <- 1
-		}(project)
-	}
-
-	// Wait for all goroutines to complete
-	for i := 0; i < len(repolist); i++ {
-		fmt.Printf("\r Waiting for workers...")
-		<-results
-	}
-
-	return cpt
-}
+/* ---------------- End Analyse Directory ---------------- */
 
 func AnalyseRun(params goloc.Params, reponame string) {
 	gc, err := goloc.NewGCloc(params, assets.Languages)
@@ -1031,7 +916,6 @@ func main() {
 		fileexclusionEX := getFileNameIfExists(fileexclusion)
 
 		startTime = time.Now()
-		//	projects, err := getbibucketdc.GetProjectBitbucketList(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["Apiver"].(string), platformConfig["AccessToken"].(string), fileexclusionEX, platformConfig["Project"].(string), platformConfig["Repos"].(string), platformConfig["Branch"].(string))
 		projects, err := getbibucketdc.GetProjectBitbucketList(platformConfig, fileexclusionEX)
 		if err != nil {
 			fmt.Printf("❌ Error Get Info Projects in Bitbucket server '%s' : ", err)
@@ -1045,8 +929,7 @@ func main() {
 		} else {
 
 			// Run scanning repositories
-			NumberRepos = AnalyseReposListBitSRV(DestinationResult, platformConfig["Users"].(string), platformConfig["AccessToken"].(string), platformConfig["Protocol"].(string), platformConfig["Url"].(string), platformConfig["DevOps"].(string), projects)
-
+			NumberRepos = AnalyseReposListBitSRV(DestinationResult, platformConfig, projects)
 		}
 
 	case "bitbucket":
@@ -1055,7 +938,6 @@ func main() {
 
 		startTime = time.Now()
 
-		//projects1, err := getbibucket.GetProjectBitbucketListCloud(platformConfig["Url"].(string), platformConfig["Baseapi"].(string), platformConfig["Apiver"].(string), platformConfig["AccessToken"].(string), platformConfig["Workspace"].(string), fileexclusionEX, platformConfig["Project"].(string), platformConfig["Repos"].(string), platformConfig["Branch"].(string))
 		projects1, err := getbibucket.GetProjectBitbucketListCloud(platformConfig, fileexclusionEX)
 
 		if err != nil {
@@ -1069,7 +951,7 @@ func main() {
 		} else {
 
 			// Run scanning repositories
-			NumberRepos = AnalyseReposListBitC(DestinationResult, platformConfig["AccessToken"].(string), platformConfig["Protocol"].(string), platformConfig["Baseapi"].(string), platformConfig["Workspace"].(string), platformConfig["DevOps"].(string), projects1)
+			NumberRepos = AnalyseReposListBitC(DestinationResult, platformConfig, projects1)
 		}
 
 	case "file":

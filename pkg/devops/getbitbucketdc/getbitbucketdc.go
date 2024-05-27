@@ -199,8 +199,6 @@ func loadExclusionList(filename string) (*ExclusionList, error) {
 
 	return exclusionList, nil
 }
-
-// func GetReposProject(projects []Project, url, baseapi, apiver, accessToken, bitbucketURLBase, branchmain string, nbRepos int, exclusionList *ExclusionList, spin *spinner.Spinner) ([]ProjectBranch, int, int) {
 func GetReposProject(projects []Project, parms ParamsReposProjectDC, bitbucketURLBase string, nbRepos int, exclusionList *ExclusionList) ([]ProjectBranch, int, int) {
 
 	var largestRepoSize int
@@ -357,8 +355,6 @@ func GetReposProject(projects []Project, parms ParamsReposProjectDC, bitbucketUR
 	return importantBranches, nbRepos, emptyRepo
 }
 
-//func GetRepos(project string, repos []Repo, url, baseapi, apiver, accessToken, bitbucketURLBase, branchmain string, exclusionList *ExclusionList, spin *spinner.Spinner) ([]ProjectBranch, int, int) {
-
 func GetRepos(project string, repos []Repo, parms ParamsReposDC, bitbucketURLBase string, exclusionList *ExclusionList) ([]ProjectBranch, int, int) {
 
 	var largestRepoSize int
@@ -464,7 +460,7 @@ func GetRepos(project string, repos []Repo, parms ParamsReposDC, bitbucketURLBas
 	result.ProjectBranches = importantBranches
 
 	// Save Result of Analysis
-	file, err := os.Create("Results/config/analysis_repos.json")
+	file, err := os.Create("Results/config/analysis_repos_bitbucketdc.json")
 	if err != nil {
 		fmt.Println("❌ Error creating Analysis file:", err)
 		return importantBranches, nbRepos, emptyRepo
@@ -474,7 +470,7 @@ func GetRepos(project string, repos []Repo, parms ParamsReposDC, bitbucketURLBas
 
 	err = encoder.Encode(result)
 	if err != nil {
-		fmt.Println("Error encoding JSON file <Results/config/analysis_repos.json> :", err)
+		fmt.Println("Error encoding JSON file <Results/config/analysis_repos_bitbucketdc.json> :", err)
 		return importantBranches, nbRepos, emptyRepo
 	}
 

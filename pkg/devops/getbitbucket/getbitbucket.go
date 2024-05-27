@@ -500,6 +500,7 @@ func GetProjectBitbucketListCloud(platformConfig map[string]interface{}, exlusio
 	var exclusionList *ExclusionList
 	var err1 error
 	var emptyRepo int
+	result := AnalysisResult{}
 
 	nbRepos := 0
 
@@ -650,6 +651,26 @@ func GetProjectBitbucketListCloud(platformConfig map[string]interface{}, exlusio
 	fmt.Printf("\n✅ The largest repo is <%s> in the project <%s> with the branch <%s> and a size of %s\n", largesRepo, largestRepoProject, largestRepoBranch, largestRepoSizeMB)
 	fmt.Printf("\r✅ Total size of your organization's repositories: %s\n", totalSizeMB)
 	fmt.Printf("\r✅ Total repositories analyzed: %d - Find empty : %d\n", nbRepos-emptyRepo, emptyRepo)
+
+	result.NumProjects = 1
+	result.NumRepositories = nbRepos
+	result.ProjectBranches = importantBranches
+
+	// Save Result of Analysis
+	file, err := os.Create("Results/config/analysis_repos_bitbucketdc.json")
+	if err != nil {
+		fmt.Println("❌ Error creating Analysis file:", err)
+		return importantBranches, nil
+	}
+	defer file.Close()
+	encoder := json.NewEncoder(file)
+
+	err = encoder.Encode(result)
+	if err != nil {
+		fmt.Println("Error encoding JSON file <Results/config/analysis_repos_bitbucketdc.json> :", err)
+		return importantBranches, nil
+	}
+
 	return importantBranches, nil
 }
 
