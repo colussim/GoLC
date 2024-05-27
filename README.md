@@ -31,6 +31,7 @@ You can install from the stable release by clicking here
  ✅ Environment Configuration
 
  Before running GoLC, you need to configure your environment by initializing the various values in the config.json file.
+ Copy the **config_sample.json** file to **config.json** and modify the various entries.
 
  ```json
 {
