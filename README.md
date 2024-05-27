@@ -16,7 +16,7 @@ GoLC The tool analyzes your repositories and identifies the largest branch of ea
 ---
 ## Installation
 
-You can install from the stable release by clicking here
+You can install from the stable release by clicking [here](https://github.com/colussim/GoLC/releases/tag/V1.0.1)
 
 ## Prerequisites 
 
