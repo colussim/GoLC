@@ -1,0 +1,33 @@
+{
+  "TotalFiles": 223,
+  "TotalLines": 226176,
+  "TotalBlankLines": 454,
+  "TotalComments": 55913,
+  "TotalCodeLines": 169809,
+  "Results": [
+    {
+      "Language": "JCL",
+      "Files": 218,
+      "Lines": 224691,
+      "BlankLines": 440,
+      "Comments": 55552,
+      "CodeLines": 168699
+    },
+    {
+      "Language": "COBOL",
+      "Files": 4,
+      "Lines": 1422,
+      "BlankLines": 0,
+      "Comments": 342,
+      "CodeLines": 1080
+    },
+    {
+      "Language": "YAML",
+      "Files": 1,
+      "Lines": 63,
+      "BlankLines": 14,
+      "Comments": 19,
+      "CodeLines": 30
+    }
+  ]
+}

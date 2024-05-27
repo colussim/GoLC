@@ -1,0 +1,6 @@
+
+✅ Number of Repository analyzed in Organization <SonarSource-Demos> is 42 
+✅ The repository with the largest line of code is in project <SonarSource-Demos> the repo name is <opencv> with <2.34M> lines of code
+✅ The total sum of lines of code in Organization <SonarSource-Demos> is : 5.37M Lines of Code
+
+✅ Time elapsed : 00:01:18

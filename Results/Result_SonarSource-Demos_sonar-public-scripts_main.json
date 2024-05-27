@@ -1,0 +1,17 @@
+{
+  "TotalFiles": 1,
+  "TotalLines": 12,
+  "TotalBlankLines": 2,
+  "TotalComments": 2,
+  "TotalCodeLines": 8,
+  "Results": [
+    {
+      "Language": "Python",
+      "Files": 1,
+      "Lines": 12,
+      "BlankLines": 2,
+      "Comments": 2,
+      "CodeLines": 8
+    }
+  ]
+}

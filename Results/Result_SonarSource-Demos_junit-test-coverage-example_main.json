@@ -1,0 +1,33 @@
+{
+  "TotalFiles": 6,
+  "TotalLines": 173,
+  "TotalBlankLines": 17,
+  "TotalComments": 25,
+  "TotalCodeLines": 131,
+  "Results": [
+    {
+      "Language": "XML",
+      "Files": 1,
+      "Lines": 53,
+      "BlankLines": 5,
+      "Comments": 1,
+      "CodeLines": 47
+    },
+    {
+      "Language": "Java",
+      "Files": 4,
+      "Lines": 80,
+      "BlankLines": 10,
+      "Comments": 24,
+      "CodeLines": 46
+    },
+    {
+      "Language": "YAML",
+      "Files": 1,
+      "Lines": 40,
+      "BlankLines": 2,
+      "Comments": 0,
+      "CodeLines": 38
+    }
+  ]
+}

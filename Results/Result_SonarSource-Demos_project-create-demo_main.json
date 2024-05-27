@@ -1,0 +1,49 @@
+{
+  "TotalFiles": 13,
+  "TotalLines": 301,
+  "TotalBlankLines": 58,
+  "TotalComments": 8,
+  "TotalCodeLines": 235,
+  "Results": [
+    {
+      "Language": "Python",
+      "Files": 8,
+      "Lines": 180,
+      "BlankLines": 45,
+      "Comments": 4,
+      "CodeLines": 131
+    },
+    {
+      "Language": "HTML",
+      "Files": 2,
+      "Lines": 62,
+      "BlankLines": 4,
+      "Comments": 0,
+      "CodeLines": 58
+    },
+    {
+      "Language": "YAML",
+      "Files": 1,
+      "Lines": 41,
+      "BlankLines": 6,
+      "Comments": 4,
+      "CodeLines": 31
+    },
+    {
+      "Language": "SQL",
+      "Files": 1,
+      "Lines": 15,
+      "BlankLines": 3,
+      "Comments": 0,
+      "CodeLines": 12
+    },
+    {
+      "Language": "CSS",
+      "Files": 1,
+      "Lines": 3,
+      "BlankLines": 0,
+      "Comments": 0,
+      "CodeLines": 3
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "TotalFiles": 10,
+  "TotalLines": 287,
+  "TotalBlankLines": 31,
+  "TotalComments": 42,
+  "TotalCodeLines": 214,
+  "Results": [
+    {
+      "Language": "JavaScript",
+      "Files": 6,
+      "Lines": 160,
+      "BlankLines": 24,
+      "Comments": 11,
+      "CodeLines": 125
+    },
+    {
+      "Language": "CSS",
+      "Files": 2,
+      "Lines": 51,
+      "BlankLines": 6,
+      "Comments": 0,
+      "CodeLines": 45
+    },
+    {
+      "Language": "YAML",
+      "Files": 1,
+      "Lines": 33,
+      "BlankLines": 1,
+      "Comments": 8,
+      "CodeLines": 24
+    },
+    {
+      "Language": "HTML",
+      "Files": 1,
+      "Lines": 43,
+      "BlankLines": 0,
+      "Comments": 23,
+      "CodeLines": 20
+    }
+  ]
+}

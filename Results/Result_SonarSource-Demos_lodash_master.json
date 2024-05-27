@@ -1,0 +1,25 @@
+{
+  "TotalFiles": 704,
+  "TotalLines": 35191,
+  "TotalBlankLines": 5479,
+  "TotalComments": 6707,
+  "TotalCodeLines": 23005,
+  "Results": [
+    {
+      "Language": "JavaScript",
+      "Files": 702,
+      "Lines": 35148,
+      "BlankLines": 5469,
+      "Comments": 6699,
+      "CodeLines": 22980
+    },
+    {
+      "Language": "YAML",
+      "Files": 2,
+      "Lines": 43,
+      "BlankLines": 10,
+      "Comments": 8,
+      "CodeLines": 25
+    }
+  ]
+}

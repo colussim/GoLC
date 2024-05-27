@@ -1,0 +1,57 @@
+{
+  "TotalFiles": 635,
+  "TotalLines": 147613,
+  "TotalBlankLines": 20947,
+  "TotalComments": 64613,
+  "TotalCodeLines": 62053,
+  "Results": [
+    {
+      "Language": "C++ Header",
+      "Files": 444,
+      "Lines": 99437,
+      "BlankLines": 13130,
+      "Comments": 48051,
+      "CodeLines": 38256
+    },
+    {
+      "Language": "C Header",
+      "Files": 153,
+      "Lines": 39381,
+      "BlankLines": 6358,
+      "Comments": 14807,
+      "CodeLines": 18216
+    },
+    {
+      "Language": "C",
+      "Files": 29,
+      "Lines": 6664,
+      "BlankLines": 1068,
+      "Comments": 1555,
+      "CodeLines": 4041
+    },
+    {
+      "Language": "Python",
+      "Files": 1,
+      "Lines": 1825,
+      "BlankLines": 343,
+      "Comments": 87,
+      "CodeLines": 1395
+    },
+    {
+      "Language": "C++",
+      "Files": 7,
+      "Lines": 253,
+      "BlankLines": 42,
+      "Comments": 113,
+      "CodeLines": 98
+    },
+    {
+      "Language": "YAML",
+      "Files": 1,
+      "Lines": 53,
+      "BlankLines": 6,
+      "Comments": 0,
+      "CodeLines": 47
+    }
+  ]
+}

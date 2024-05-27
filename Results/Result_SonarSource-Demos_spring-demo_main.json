@@ -1,0 +1,41 @@
+{
+  "TotalFiles": 9,
+  "TotalLines": 241,
+  "TotalBlankLines": 31,
+  "TotalComments": 2,
+  "TotalCodeLines": 208,
+  "Results": [
+    {
+      "Language": "Java",
+      "Files": 5,
+      "Lines": 114,
+      "BlankLines": 27,
+      "Comments": 0,
+      "CodeLines": 87
+    },
+    {
+      "Language": "XML",
+      "Files": 1,
+      "Lines": 69,
+      "BlankLines": 4,
+      "Comments": 0,
+      "CodeLines": 65
+    },
+    {
+      "Language": "YAML",
+      "Files": 1,
+      "Lines": 42,
+      "BlankLines": 0,
+      "Comments": 0,
+      "CodeLines": 42
+    },
+    {
+      "Language": "SQL",
+      "Files": 2,
+      "Lines": 16,
+      "BlankLines": 0,
+      "Comments": 2,
+      "CodeLines": 14
+    }
+  ]
+}
