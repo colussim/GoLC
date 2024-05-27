@@ -47,7 +47,12 @@ You can install from the stable release by clicking here
         "Apiver": "1.0",
         "Baseapi": "rest/api/",
         "Protocol": "http",
-        "FileExclusion":".cloc_bitbucketdc_ignore"
+        "FileExclusion":".cloc_bitbucketdc_ignore",
+         "Period":-1,
+        "Factor":33,
+        "Multithreading":true,
+        "Stats": false,
+        "Workers": 50
       },
       "BitBucket": {
         "Users": "xxxxxxxxxxxxxx",
@@ -62,7 +67,12 @@ You can install from the stable release by clicking here
         "Apiver": "2.0",
         "Baseapi": "bitbucket.org",
         "Protocol": "http",
-        "FileExclusion":".cloc_bitbucket_ignore"
+        "FileExclusion":".cloc_bitbucket_ignore",
+         "Period":-1,
+        "Factor":33,
+        "Multithreading":true,
+        "Stats": false,
+        "Workers": 50
       },
       "Github": {
         "Users": "xxxxxxxxxxxxxx",
@@ -78,7 +88,10 @@ You can install from the stable release by clicking here
         "Protocol": "https",
         "FileExclusion":".cloc_github_ignore",
         "Period":-1,
-        "Factor":33
+        "Factor":33,
+        "Multithreading":true,
+        "Stats": false,
+        "Workers": 50
       },
       "Gitlab": {
         "Users": "xxxxxxxxxxxxxx",
@@ -92,7 +105,12 @@ You can install from the stable release by clicking here
         "Apiver": "v4",
         "Baseapi": "api/",
         "Protocol": "https",
-        "FileExclusion":".cloc_gitlab_ignore"
+        "FileExclusion":".cloc_gitlab_ignore",
+         "Period":-1,
+        "Factor":33,
+        "Multithreading":true,
+        "Stats": false,
+        "Workers": 50
       },
       "Azure": {
         "Users": "xxxxxxxxxxxxxx",
@@ -106,7 +124,12 @@ You can install from the stable release by clicking here
         "Apiver": "7.1",
         "Baseapi": "_apis/git/",
         "Protocol": "https",
-        "FileExclusion":".cloc_azure_ignore"
+        "FileExclusion":".cloc_azure_ignore",
+         "Period":-1,
+        "Factor":33,
+        "Multithreading":true,
+        "Stats": false,
+        "Workers": 50
       },
       "File": {
         "DevOps": "file",
@@ -167,7 +190,22 @@ REPO2_KEY
 - REPO1_KEY = for one Repository
 ```
 
-For the **File** mode, if you want to have a list of directories to analyze, you create a **.cloc_file_load** file and add the directories or files to be analyzed line by line.If the **.cloc_file_load**. file is provided, its contents will override the **Directory** parameter."
+The syntax of this file is as follows for File:
+
+```
+DIRECTORY_NAME
+FILE_NAME
+...
+```
+
+ ✅  Config.json File Settings
+
+❗️ For the **File** mode, if you want to have a list of directories to analyze, you create a **.cloc_file_load** file and add the directories or files to be analyzed line by line.If the **.cloc_file_load**. file is provided, its contents will override the **Directory** parameter."
+
+❗️ The parameters **'Period'**, **'Factor'**, and **'Stats'** should not be modified as they will be used in a future version.
+
+❗️ The parameters **'Multithreading'** and **'Workers'** initialize whether multithreading is enabled or not, allowing parallel analysis. You can disable it by setting **'Multithreading'** to **false**. **'Workers'** corresponds to the number of concurrent analyses.
+
 
  ✅ Run GoLC
 
