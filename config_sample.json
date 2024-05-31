@@ -8,6 +8,7 @@
         "Project": "",
         "Repos": "",
         "Branch": "",
+        "DefaultBranch": false,
         "Url": "http://X.X.X.X/",
         "Apiver": "1.0",
         "Baseapi": "rest/api/",
@@ -16,7 +17,8 @@
         "Factor":33,
         "Multithreading":true,
         "Stats": false,
-        "Workers": 50
+        "Workers": 50,
+        "LevelWorkerRepos":50
       },
       "BitBucket": {
         "Users": "xxxxxxxxxxxxxx",
@@ -27,6 +29,7 @@
         "Project": "",
         "Repos": "",
         "Branch": "",
+        "DefaultBranch": false,
         "Url": "https://api.bitbucket.org/",
         "Apiver": "2.0",
         "Baseapi": "bitbucket.org",
@@ -35,7 +38,8 @@
         "Factor":33,
         "Multithreading":true,
         "Stats": false,
-        "Workers": 50
+        "Workers": 50,
+        "LevelWorkerRepos":50
       },
       "Github": {
         "Users": "xxxxxxxxxxxxxx",
@@ -45,6 +49,7 @@
         "Project": "",
         "Repos": "",
         "Branch": "",
+        "DefaultBranch": false,
         "Url": "https://api.github.com/",
         "Apiver": "",
         "Baseapi": "api.github.com/",
@@ -54,7 +59,8 @@
         "Factor":33,
         "Multithreading":true,
         "Stats": false,
-        "Workers": 50
+        "Workers": 50,
+        "LevelWorkerRepos":50
       },
       "Gitlab": {
         "Users": "xxxxxxxxxxxxxx",
@@ -64,6 +70,7 @@
         "Project": "",
         "Repos": "",
         "Branch": "",
+        "DefaultBranch": false,
         "Url": "https://gitlab.com/",
         "Apiver": "v4",
         "Baseapi": "api/",
@@ -72,7 +79,8 @@
         "Factor":33,
         "Multithreading":true,
         "Stats": false,
-        "Workers": 50
+        "Workers": 50,
+        "LevelWorkerRepos":50
 
       },
       "Azure": {
@@ -83,6 +91,7 @@
         "Project": "",
         "Repos": "",
         "Branch": "",
+        "DefaultBranch": false,
         "Url": "https://dev.azure.com/",
         "Apiver": "7.1",
         "Baseapi": "_apis/git/",
@@ -91,7 +100,8 @@
         "Factor":33,
         "Multithreading":true,
         "Stats": false,
-        "Workers": 50
+        "Workers": 50,
+        "LevelWorkerRepos":50
       },
       "File": {
         "Organization": "xxxxxxxxx",

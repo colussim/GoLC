@@ -381,7 +381,7 @@ func GetReposGithub(parms ParamsReposGithub, ctx context.Context, client *github
 					}
 					opt.Page = resp.NextPage
 				}
-				/* ----  End Get List tRepository Events ---- */
+				/* ----  End Get List Repository Events ---- */
 
 				/* ---- Count push events for each branch ---- */
 				branchPushes := make(map[string]*BranchInfoEvents)
