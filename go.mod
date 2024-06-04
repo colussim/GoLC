@@ -14,7 +14,7 @@ require (
 	github.com/schollz/progressbar/v3 v3.8.6
 	github.com/wcharczuk/go-chart v2.0.1+incompatible
 	github.com/wcharczuk/go-chart/v2 v2.1.1
-	golang.org/x/oauth2 v0.6.0
+	golang.org/x/oauth2 v0.20.0
 )
 
 require (
@@ -50,12 +50,14 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
+	github.com/ktrysmt/go-bitbucket v0.9.80 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
-	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect

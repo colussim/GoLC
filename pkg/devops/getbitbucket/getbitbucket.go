@@ -167,7 +167,6 @@ type SizeResponse struct {
 }
 
 const PrefixMsg = "Get Projects..."
-const MessageError1 = "❌ Error creating Analysis file:"
 
 func loadExclusionList(filename string) (*ExclusionList, error) {
 	file, err := os.Open(filename)
@@ -351,7 +350,7 @@ func GetReposProjectCloud(parms ParamsReposProjectCloud) ([]ProjectBranch, int, 
 	// Save Result of Analysis
 	file, err := os.Create("Results/config/analysis_repos.json")
 	if err != nil {
-		fmt.Println(MessageError1, err)
+		fmt.Println("❌ Error creating Analysis file:", err)
 		return importantBranches, parms.NBRepos, emptyRepo
 	}
 	defer file.Close()
@@ -476,7 +475,7 @@ func GetRepos(parms ParamsReposCloud) ([]ProjectBranch, int, int) {
 	// Save Result of Analysis
 	file, err := os.Create("Results/config/analysis_repos_bitbucket.json")
 	if err != nil {
-		fmt.Println(MessageError1, err)
+		fmt.Println("❌ Error creating Analysis file:", err)
 		return importantBranches, nbRepos, emptyRepo
 	}
 	defer file.Close()
@@ -660,7 +659,7 @@ func GetProjectBitbucketListCloud(platformConfig map[string]interface{}, exlusio
 	// Save Result of Analysis
 	file, err := os.Create("Results/config/analysis_repos_bitbucketdc.json")
 	if err != nil {
-		fmt.Println(MessageError1, err)
+		fmt.Println("❌ Error creating Analysis file:", err)
 		return importantBranches, nil
 	}
 	defer file.Close()

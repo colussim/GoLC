@@ -14,11 +14,12 @@
         "Baseapi": "rest/api/",
         "Protocol": "http",
         "FileExclusion":".cloc_bitbucketdc_ignore",
+        "Period":-1,
         "Factor":33,
         "Multithreading":true,
         "Stats": false,
         "Workers": 50,
-        "LevelWorkerRepos":50
+        "NumberWorkerRepos":50
       },
       "BitBucket": {
         "Users": "xxxxxxxxxxxxxx",
@@ -35,19 +36,21 @@
         "Baseapi": "bitbucket.org",
         "Protocol": "http",
         "FileExclusion":".cloc_bitbucket_ignore",
+        "Period":-1,
         "Factor":33,
         "Multithreading":true,
         "Stats": false,
         "Workers": 50,
-        "LevelWorkerRepos":50
+        "NumberWorkerRepos":50
       },
+      
       "Github": {
         "Users": "xxxxxxxxxxxxxx",
         "AccessToken": "xxxxxxxxxxxxxx",
         "Organization": "xxxxxxxxxx",
         "DevOps": "github",
         "Project": "",
-        "Repos": "",
+        "Repos": "linux-cmake-gh-actions-sq",
         "Branch": "",
         "DefaultBranch": false,
         "Url": "https://api.github.com/",
@@ -60,7 +63,7 @@
         "Multithreading":true,
         "Stats": false,
         "Workers": 50,
-        "LevelWorkerRepos":50
+        "NumberWorkerRepos":50
       },
       "Gitlab": {
         "Users": "xxxxxxxxxxxxxx",
@@ -80,7 +83,7 @@
         "Multithreading":true,
         "Stats": false,
         "Workers": 50,
-        "LevelWorkerRepos":50
+        "NumberWorkerRepos":50
 
       },
       "Azure": {
@@ -101,7 +104,7 @@
         "Multithreading":true,
         "Stats": false,
         "Workers": 50,
-        "LevelWorkerRepos":50
+        "NumberWorkerRepos":50
       },
       "File": {
         "Organization": "xxxxxxxxx",
