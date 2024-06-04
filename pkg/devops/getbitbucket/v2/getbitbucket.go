@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"sort"
 	"strings"
 	"time"
 
@@ -105,6 +104,10 @@ type Commit struct {
 		} `json:"self"`
 	} `json:"links"`
 	Type string `json:"type"`
+}
+
+type Reposize struct {
+	Size int `json:"size"`
 }
 
 const PrefixMsg = "Get Projects..."
@@ -236,18 +239,19 @@ func GetProjectBitbucketListCloud(platformConfig map[string]interface{}, exclusi
 }
 
 func findLargestRepository(importantBranches []ProjectBranch, totalSize *int) (string, string) {
-	var largestRepoSize int
+
 	var largestRepoBranch, largesRepo string
+	largestRepoSize := 0
 
 	for _, branch := range importantBranches {
 		if branch.LargestSize > largestRepoSize {
 			largestRepoSize = branch.LargestSize
 			largestRepoBranch = branch.MainBranch
 			largesRepo = branch.RepoSlug
+
 		}
 		*totalSize += branch.LargestSize
 	}
-	//return largestRepoSize, largestRepoBranch, largesRepo
 	return largestRepoBranch, largesRepo
 }
 
@@ -265,6 +269,43 @@ func loadExclusionFileOrCreateNew(exclusionFile string) (*ExclusionList, error) 
 		}, nil
 	}
 	return loadExclusionList(exclusionFile)
+}
+
+func GetSize(parms ParamsProjectBitbucket, repo *bitbucket.Repository) (int, error) {
+
+	url := fmt.Sprintf("%srepositories/%s/%s/?fields=size", parms.BitbucketURLBase, parms.Workspace, repo.Slug)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Set("Authorization", "Bearer "+parms.AccessToken)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return 0, err
+	}
+
+	if strings.Contains(string(body), "error") || strings.Contains(string(body), "size not found") {
+		// Branch does not exist, return nil response
+		return 0, nil
+	}
+
+	var Repostruct Reposize
+	err = json.Unmarshal(body, &Repostruct)
+	if err != nil {
+		return 0, err
+	}
+
+	return Repostruct.Size, nil
+
 }
 
 func getCommonParams(client *bitbucket.Client, platformConfig map[string]interface{}, project []Projectc, exclusionList *ExclusionList, spin *spinner.Spinner, bitbucketURLBase string) ParamsProjectBitbucket {
@@ -338,8 +379,6 @@ func getRepoAnalyse(params ParamsProjectBitbucket) ([]ProjectBranch, int, int, i
 	for _, project := range params.Projects {
 
 		fmt.Printf("\n\t🟢  Analyse Projet: %s \n", project.Name)
-		//largestRepoSize = 0
-		//largestRepoBranch = ""
 
 		emptyOrArchivedCount, excludedCount, repos, err := listReposForProject(params, project.Key)
 		if err != nil {
@@ -353,7 +392,7 @@ func getRepoAnalyse(params ParamsProjectBitbucket) ([]ProjectBranch, int, int, i
 		spin1.Stop()
 
 		for _, repo := range repos {
-			fmt.Println("Reponame:", repo.Name)
+
 			largestRepoBranch, repoBranches, nbrb, err := analyzeRepoBranches(params, repo, cpt, spin1)
 			if err != nil {
 				largestRepoBranch = repo.Mainbranch.Name
@@ -385,8 +424,6 @@ func getRepoAnalyse(params ParamsProjectBitbucket) ([]ProjectBranch, int, int, i
 	return importantBranches, emptyRepos, NBRrepos, TotalBranches, totalexclude, cptarchiv
 
 }
-
-// List Project in Workspace
 func listReposForProject(parms ParamsProjectBitbucket, projectKey string) (int, int, []*bitbucket.Repository, error) {
 	var allRepos []*bitbucket.Repository
 	var excludedCount, emptyOrArchivedCount int
@@ -402,7 +439,10 @@ func listReposForProject(parms ParamsProjectBitbucket, projectKey string) (int, 
 			return 0, 0, nil, err
 		}
 
-		emptyOrArchivedCount, excludedCount, allRepos = listRepos(parms, reposRes)
+		eoc, exc, repos := listRepos(parms, reposRes)
+		emptyOrArchivedCount += eoc
+		excludedCount += exc
+		allRepos = append(allRepos, repos...)
 
 		if len(reposRes.Items) < int(reposRes.Pagelen) {
 			break
@@ -420,6 +460,7 @@ func listRepos(parms ParamsProjectBitbucket, reposRes *bitbucket.RepositoriesRes
 	var excludedCount, emptyOrArchivedCount int
 
 	for _, repo := range reposRes.Items {
+		repoCopy := repo
 		if isRepoExcluded(parms.Exclusionlist, repo.Slug) {
 			excludedCount++
 			continue
@@ -428,15 +469,13 @@ func listRepos(parms ParamsProjectBitbucket, reposRes *bitbucket.RepositoriesRes
 		isEmpty, err := isRepositoryEmpty(parms.Workspace, repo.Slug, repo.Mainbranch.Name, parms.AccessToken, parms.BitbucketURLBase)
 		if err != nil {
 			fmt.Printf("❌ Error when Testing if repo is empty %s: %v\n", repo.Slug, err)
-
 		}
 		if isEmpty {
 			emptyOrArchivedCount++
 			continue
 		}
-
-		allRepos = append(allRepos, &repo)
-
+		//allRepos = append(allRepos, &repo)
+		allRepos = append(allRepos, &repoCopy)
 	}
 	return emptyOrArchivedCount, excludedCount, allRepos
 }
@@ -446,7 +485,6 @@ func isRepositoryEmpty(workspace, repoSlug, mainbranch, accessToken, bitbucketUR
 
 	urlMain := fmt.Sprintf("%srepositories/%s/%s/src/%s/?pagelen=100", bitbucketURLBase, workspace, repoSlug, mainbranch)
 
-	// Récupérer les fichiers de la branche principale
 	filesResp, err := fetchFiles(urlMain, accessToken)
 	if err != nil {
 		return false, fmt.Errorf("❌ Error when testing if repo: %s is empty - Function: %s - %v", repoSlug, "getbibucket-isRepositoryEmpty", err)
@@ -504,7 +542,7 @@ func analyzeRepoBranches(parms ParamsProjectBitbucket, repo *bitbucket.Repositor
 	var branches []*bitbucket.RepositoryBranch
 	//var branchPushes map[string]int
 
-	spin1.Prefix = "Analyzing branches"
+	spin1.Prefix = "\r Analyzing branches"
 	spin1.Start()
 
 	// Get all branches for the repository
@@ -515,10 +553,9 @@ func analyzeRepoBranches(parms ParamsProjectBitbucket, repo *bitbucket.Repositor
 	}
 
 	// Determine the largest branch based on the number of commits
-	largestRepoBranch := determineLargestBranch(parms, repo, branches)
+	largestRepoBranch := determineLargestBranch(parms, repo, repoBranches)
 	if err != nil {
 		spin1.Stop()
-		//fmt.Println("error determineLargestBranch")
 		return "", nil, 1, err
 	}
 
@@ -531,89 +568,104 @@ func analyzeRepoBranches(parms ParamsProjectBitbucket, repo *bitbucket.Repositor
 }
 
 func getAllBranches(client *bitbucket.Client, workspace, repoSlug string) ([]*bitbucket.RepositoryBranch, error) {
-	// Get all branches for the repository
-	branchesRes, err := client.Repositories.Repository.ListBranches(&bitbucket.RepositoryBranchOptions{
+	var allBranches []*bitbucket.RepositoryBranch
+	options := &bitbucket.RepositoryBranchOptions{
 		Owner:    workspace,
 		RepoSlug: repoSlug,
-	})
-	if err != nil {
-		return nil, err
+		Pagelen:  100,
 	}
-	// Convert branchesRes.Values to []*bitbucket.RepositoryBranch
-	branches := make([]*bitbucket.RepositoryBranch, len(branchesRes.Branches))
-	for i, branch := range branchesRes.Branches {
-		branches[i] = &branch
+	page := 1
+
+	for {
+		// Set the page number for pagination
+		options.PageNum = page
+
+		// Get a page of branches for the repository
+		branchesRes, err := client.Repositories.Repository.ListBranches(options)
+		if err != nil {
+			return nil, err
+		}
+
+		// Convert branchesRes.Values to []*bitbucket.RepositoryBranch
+		for i := range branchesRes.Branches {
+			branch := branchesRes.Branches[i]
+			allBranches = append(allBranches, &branch)
+		}
+
+		// Check if there are more pages to fetch
+		if len(branchesRes.Branches) < options.Pagelen {
+			break
+		}
+
+		page++
 	}
 
-	return branches, nil
+	return allBranches, nil
 }
-
-func getBranchCommitCount(client *bitbucket.Client, workspace, repoSlug, branchName string) (int, error) {
-
-	commitsRes, err := client.Repositories.Commits.GetCommits(&bitbucket.CommitsOptions{
-		Owner:    workspace,
-		RepoSlug: repoSlug,
-		Include:  branchName,
-	})
-
-	if err != nil {
-		return 0, err
-	}
-	commitsMap, ok := commitsRes.(map[string]interface{})
-	if !ok {
-		return 0, fmt.Errorf("❌ unexpected response format")
-	}
-
-	values, ok := commitsMap["values"].([]interface{})
-	if !ok {
-		return 0, fmt.Errorf("❌ unexpected response format")
-	}
-
-	return len(values), nil
-}
-
-func countBranchPushes(client *bitbucket.Client, workspace, repoSlug string, period int) (map[string]int, error) {
-	// Implement counting of branch pushes based on events
-	// (This functionality depends on whether Bitbucket provides an API for retrieving push events for branches)
-	// For now, return an empty map.
-	return make(map[string]int), nil
-}
-
 func determineLargestBranch(parms ParamsProjectBitbucket, repo *bitbucket.Repository, branches []*bitbucket.RepositoryBranch) string {
 	var largestRepoBranch string
-	var maxCommits int
+	var maxCommits, branchSize int
 
 	for _, branch := range branches {
-		commits, err := getBranchCommitCount(parms.Client, parms.Workspace, repo.Slug, branch.Name)
+		commits, err := getCommitsForLastMonth(parms.Client, parms.Workspace, repo.Slug, branch.Name, parms.Period)
 		if err != nil {
-			fmt.Printf("❌ Error when retrieving commit count for branch %s in repo %s: %v\n", branch.Name, repo.Slug, err)
+			fmt.Printf("❌ Error getting commits for branch %s: %v\n", branch.Name, err)
 			continue
 		}
-		if commits > maxCommits {
-			maxCommits = commits
+		if len(commits) == 0 {
+			branchSize, _ = GetSize(parms, repo)
+		} else {
+			branchSize = len(commits)
+		}
+
+		fmt.Println("reposize:", branchSize)
+
+		//branchSize := len(commits)
+		if branchSize > maxCommits {
+			maxCommits = branchSize
 			largestRepoBranch = branch.Name
 		}
 	}
 
 	if largestRepoBranch == "" {
 		largestRepoBranch = repo.Mainbranch.Name
+		//maxCommits, _ = GetSize(parms, repo)
 	}
 
 	return largestRepoBranch
 }
 
-/*func getDefaultBranch(client *bitbucket.Client, workspace, repoSlug string) (string, error) {
-	// Get the repository details to fetch the default branch
-	repoDetails, err := client.Repositories.Get(workspace, repoSlug)
+func getCommitsForLastMonth(client *bitbucket.Client, workspace, repoSlug, branchName string, periode int) ([]interface{}, error) {
+	now := time.Now()
+	lastMonth := now.AddDate(0, -periode, 0)
+
+	commits, err := client.Repositories.Commits.GetCommits(&bitbucket.CommitsOptions{
+		Owner:       workspace,
+		RepoSlug:    repoSlug,
+		Branchortag: branchName,
+	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	// Return the name of the default branch
-	return repoDetails.Mainbranch.Name, nil
-}*/
+	var recentCommits []interface{}
+	for _, commit := range commits.(map[string]interface{})["values"].([]interface{}) {
+		dateStr := commit.(map[string]interface{})["date"].(string)
+		commitDate, err := time.Parse(time.RFC3339, dateStr)
+		if err != nil {
+			fmt.Printf("Error parsing commit date: %v\n", err)
+			continue
+		}
 
-func sortBranchesByCommits(branchPushes map[string]int) []string {
+		if commitDate.After(lastMonth) {
+			recentCommits = append(recentCommits, commit)
+		}
+	}
+
+	return recentCommits, nil
+}
+
+/*func sortBranchesByCommits(branchPushes map[string]int) []string {
 	// Create a slice to hold branch names
 	var branches []string
 
@@ -628,7 +680,7 @@ func sortBranchesByCommits(branchPushes map[string]int) []string {
 	})
 
 	return branches
-}
+}*/
 
 func saveAnalysisResult(filepath string, result AnalysisResult) error {
 	file, err := os.Create(filepath)

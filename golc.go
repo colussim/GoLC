@@ -18,7 +18,7 @@ import (
 	"github.com/colussim/GoLC/assets"
 	"github.com/colussim/GoLC/pkg/goloc"
 
-	getbibucket "github.com/colussim/GoLC/pkg/devops/getbitbucket"
+	getbibucket "github.com/colussim/GoLC/pkg/devops/getbitbucket/v2"
 	getbibucketdc "github.com/colussim/GoLC/pkg/devops/getbitbucketdc"
 	"github.com/colussim/GoLC/pkg/devops/getgithub"
 	"github.com/colussim/GoLC/pkg/devops/getgitlab"
