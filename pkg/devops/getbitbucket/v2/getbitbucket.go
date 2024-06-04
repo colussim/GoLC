@@ -390,10 +390,18 @@ func getRepoAnalyse(params ParamsProjectBitbucket) ([]ProjectBranch, int, int, i
 		totalexclude = totalexclude + excludedCount
 
 		spin1.Stop()
+		if emptyOrArchivedCount > 0 {
+			NBRrepo = len(repos) + emptyOrArchivedCount
+			fmt.Printf("\t  ✅ The number of %s found is: %d - Find empty %d:\n", message4, NBRrepo, emptyOrArchivedCount)
+		} else {
+			NBRrepo = len(repos)
+			fmt.Printf("\t  ✅ The number of %s found is: %d\n", message4, NBRrepo)
+		}
 
 		for _, repo := range repos {
 
-			largestRepoBranch, repoBranches, nbrb, err := analyzeRepoBranches(params, repo, cpt, spin1)
+			//largestRepoBranch, repoBranches, nbrb, err := analyzeRepoBranches(params, repo, cpt, spin1)
+			largestRepoBranch, _, nbrb, err := analyzeRepoBranches(params, repo, cpt, spin1)
 			if err != nil {
 				largestRepoBranch = repo.Mainbranch.Name
 
@@ -403,18 +411,11 @@ func getRepoAnalyse(params ParamsProjectBitbucket) ([]ProjectBranch, int, int, i
 				Org:         params.Organization,
 				RepoSlug:    repo.Slug,
 				MainBranch:  largestRepoBranch,
-				LargestSize: len(repoBranches),
+				LargestSize: nbrb,
 			})
 			TotalBranches += nbrb
 
 			cpt++
-		}
-		if emptyOrArchivedCount > 0 {
-			NBRrepo = len(repos) + emptyOrArchivedCount
-			fmt.Printf("\t  ✅ The number of %s found is: %d - Find empty %d:\n", message4, NBRrepo, emptyOrArchivedCount)
-		} else {
-			NBRrepo = len(repos)
-			fmt.Printf("\t  ✅ The number of %s found is: %d\n", message4, NBRrepo)
 		}
 
 		NBRrepos += NBRrepo
@@ -553,7 +554,7 @@ func analyzeRepoBranches(parms ParamsProjectBitbucket, repo *bitbucket.Repositor
 	}
 
 	// Determine the largest branch based on the number of commits
-	largestRepoBranch := determineLargestBranch(parms, repo, repoBranches)
+	largestRepoBranch, brsize := determineLargestBranch(parms, repo, repoBranches)
 	if err != nil {
 		spin1.Stop()
 		return "", nil, 1, err
@@ -562,9 +563,9 @@ func analyzeRepoBranches(parms ParamsProjectBitbucket, repo *bitbucket.Repositor
 	spin1.Stop()
 
 	// Print analysis summary
-	fmt.Printf("\t✅ Repo %d: %s - Number of branches: %d - Largest Branch: %s\n", cpt, repo.Slug, len(repoBranches), largestRepoBranch)
+	fmt.Printf("\t\t✅ Repo %d: %s - Number of branches: %d - Largest Branch: %s\n", cpt, repo.Slug, len(repoBranches), largestRepoBranch)
 
-	return largestRepoBranch, branches, len(repoBranches), nil
+	return largestRepoBranch, branches, brsize, nil
 }
 
 func getAllBranches(client *bitbucket.Client, workspace, repoSlug string) ([]*bitbucket.RepositoryBranch, error) {
@@ -602,7 +603,7 @@ func getAllBranches(client *bitbucket.Client, workspace, repoSlug string) ([]*bi
 
 	return allBranches, nil
 }
-func determineLargestBranch(parms ParamsProjectBitbucket, repo *bitbucket.Repository, branches []*bitbucket.RepositoryBranch) string {
+func determineLargestBranch(parms ParamsProjectBitbucket, repo *bitbucket.Repository, branches []*bitbucket.RepositoryBranch) (string, int) {
 	var largestRepoBranch string
 	var maxCommits, branchSize int
 
@@ -618,21 +619,18 @@ func determineLargestBranch(parms ParamsProjectBitbucket, repo *bitbucket.Reposi
 			branchSize = len(commits)
 		}
 
-		fmt.Println("reposize:", branchSize)
-
-		//branchSize := len(commits)
 		if branchSize > maxCommits {
 			maxCommits = branchSize
 			largestRepoBranch = branch.Name
 		}
 	}
 
+	// If no branch has commits, use the default main branch
 	if largestRepoBranch == "" {
 		largestRepoBranch = repo.Mainbranch.Name
-		//maxCommits, _ = GetSize(parms, repo)
 	}
 
-	return largestRepoBranch
+	return largestRepoBranch, branchSize
 }
 
 func getCommitsForLastMonth(client *bitbucket.Client, workspace, repoSlug, branchName string, periode int) ([]interface{}, error) {
