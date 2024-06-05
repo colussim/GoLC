@@ -104,6 +104,7 @@ type ParamsReposDC struct {
 	ExclusionList    *ExclusionList
 	Branch           string
 	Spin             *spinner.Spinner
+	DefaultB         bool
 }
 
 type BranchResponse struct {
@@ -121,6 +122,15 @@ type Branch struct {
 	LatestCommit    string `json:"latestCommit"`
 	LatestChangeset string `json:"latestChangeset"`
 	IsDefault       bool   `json:"isDefault"`
+}
+
+type BranchesResponse struct {
+	Size          int      `json:"size"`
+	Limit         int      `json:"limit"`
+	IsLastPage    bool     `json:"isLastPage"`
+	Values        []Branch `json:"values"`
+	Start         int      `json:"start"`
+	NextPageStart int      `json:"nextPageStart"`
 }
 type FileResponse struct {
 	Path          Path     `json:"path"`
@@ -166,6 +176,7 @@ type ParamsReposProjectDC struct {
 	ExclusionList    *ExclusionList
 	Spin             *spinner.Spinner
 	Branch           string
+	DefaultB         bool
 }
 
 func loadExclusionList(filename string) (*ExclusionList, error) {
@@ -262,6 +273,7 @@ func GetReposProject(projects []Project, parms ParamsReposProjectDC, bitbucketUR
 						os.Exit(1)
 					}
 				} else {
+
 					urlrepos := fmt.Sprintf("%s%s%s/projects/%s/repos/%s/branches?filterText=%s", parms.URL, parms.BaseAPI, parms.APIVersion, project.Key, repo.Slug, parms.Branch)
 
 					branches, err = ifExistBranches(urlrepos, parms.AccessToken)
@@ -348,11 +360,59 @@ func GetReposProject(projects []Project, parms ParamsReposProjectDC, bitbucketUR
 
 	err = encoder.Encode(result)
 	if err != nil {
-		fmt.Println("Error encoding JSON file <Results/config/analysis_repos.json> :", err)
+		fmt.Println("❌ Error encoding JSON file <Results/config/analysis_repos.json> :", err)
 		return importantBranches, nbRepos, emptyRepo
 	}
 
 	return importantBranches, nbRepos, emptyRepo
+}
+
+func getDefaultBranch(baseURL, projectKey, repoSlug, accessToken string) (*Branch, error) {
+	var allBranches []Branch
+	start := 0
+
+	for {
+		url := fmt.Sprintf("%s/rest/api/latest/projects/%s/repos/%s/branches?limit=100&start=%d", baseURL, projectKey, repoSlug, start)
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Authorization", "Bearer "+accessToken)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("❌ failed to get branches: %s", resp.Status)
+		}
+
+		var branchesRes BranchesResponse
+		if err := json.NewDecoder(resp.Body).Decode(&branchesRes); err != nil {
+			return nil, err
+		}
+
+		allBranches = append(allBranches, branchesRes.Values...)
+
+		if branchesRes.IsLastPage {
+			break
+		}
+
+		start = branchesRes.NextPageStart
+	}
+
+	for _, branch := range allBranches {
+		if branch.IsDefault {
+			return &branch, nil
+		}
+	}
+
+	return nil, fmt.Errorf("❌ default branch not found")
 }
 
 func GetRepos(project string, repos []Repo, parms ParamsReposDC, bitbucketURLBase string, exclusionList *ExclusionList) ([]ProjectBranch, int, int) {
@@ -391,7 +451,20 @@ func GetRepos(project string, repos []Repo, parms ParamsReposDC, bitbucketURLBas
 			fmt.Printf("\n\t   ✅ Repo: <%s> - Number of branches: %d\n", repos[0].Name, len(branches))
 		} else {
 
-			urlrepos := fmt.Sprintf("%s%s%s/projects/%s/repos/%s/branches?filterText=%s", parms.URL, parms.BaseAPI, parms.APIVersion, project, repos[0].Slug, parms.Branch)
+			var branchName string
+			if parms.DefaultB {
+
+				defaultBranch, err := getDefaultBranch(baseURL, projectKey, repoSlug, token)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "❌ Error fetching default branch: %v\n", err)
+					os.Exit(1)
+				}
+				branchName = defaultBranch.Name
+
+			} else {
+				branchName = parms.Branch
+			}
+			urlrepos := fmt.Sprintf("%s%s%s/projects/%s/repos/%s/branches?filterText=%s", parms.URL, parms.BaseAPI, parms.APIVersion, project, repos[0].Slug, branchName)
 
 			branches, err = ifExistBranches(urlrepos, parms.AccessToken)
 
@@ -478,8 +551,6 @@ func GetRepos(project string, repos []Repo, parms ParamsReposDC, bitbucketURLBas
 
 }
 
-//func GetProjectBitbucketList(url, baseapi, apiver, accessToken, exlusionfile, project, repo, branchmain string) ([]ProjectBranch, error) {
-
 func GetProjectBitbucketList(platformConfig map[string]interface{}, exlusionfile string) ([]ProjectBranch, error) {
 
 	var largestRepoSize int
@@ -539,6 +610,7 @@ func GetProjectBitbucketList(platformConfig map[string]interface{}, exlusionfile
 			ExclusionList:    exclusionList,
 			Spin:             spin,
 			Branch:           platformConfig["Branch"].(string),
+			DefaultB:         platformConfig["DefaultBranch"].(bool),
 		}
 
 		importantBranches, nbRepos, emptyRepo = GetReposProject(projects, parms, bitbucketURLBase, nbRepos, exclusionList)
@@ -610,6 +682,7 @@ func GetProjectBitbucketList(platformConfig map[string]interface{}, exlusionfile
 				ExclusionList:    exclusionList,
 				Branch:           platformConfig["Branch"].(string),
 				Spin:             spin,
+				DefaultB:         platformConfig["DefaultBranch"].(bool),
 			}
 
 			importantBranches, nbRepos, emptyRepo = GetRepos(platformConfig["Project"].(string), Repos, parms, bitbucketURLBase, exclusionList)

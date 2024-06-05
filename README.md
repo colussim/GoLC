@@ -150,7 +150,7 @@ This file represents the 6 supported platforms for analysis: BitBucketSRV (Bitbu
 "Organization": "xxxxxx": Your organization
  ```
 
-If '**Projects**' and '**Repos**' are not specified, the analysis will be conducted on all repositories. You can specify a project name in '**Projects**', and the analysis will be limited to the specified project. If you specify '**Repos**', the analysis will be limited to the specified repositories.
+If '**Projects**' and '**Repos**' are not specified, the analysis will be conducted on all repositories. You can specify a project name (PROJECT_KEY) in '**Projects**', and the analysis will be limited to the specified project. If you specify '**Repos**' (REPO_SLUG), the analysis will be limited to the specified repositories.
 ```json
 "Project": "",
 "Repos": "",
@@ -168,27 +168,27 @@ You can create a **.cloc_'your_platform'_ignore** file to ignore projects or rep
 The syntax of this file is as follows for BitBucket:
 
 ```
-REPO_KEY
+REPO_SLUG
 PROJECT_KEY 
-PROJECT_KEY/REPO_KEY
+PROJECT_KEY/REPO_SLUG
 ```
 
 ```
-- REPO_KEY = for one Repository
+- REPO_SLUG = for one Repository
 - PROJECT_KEY = for one Project
-- PROJECT_KEY/REPO_KEY For un Repository in one Project
+- PROJECT_KEY/REPO_SLUG For un Repository in one Project
 ```
 
 The syntax of this file is as follows for GitHub:
 
 ```
-REPO1_KEY
-REPO2_KEY
+REPO1_SLUG
+REPO2_SLUG
 ...
 ```
 
 ```
-- REPO1_KEY = for one Repository
+- REPO1_SLUG = for one Repository
 ```
 
 The syntax of this file is as follows for File:

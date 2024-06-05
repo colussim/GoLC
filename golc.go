@@ -845,7 +845,7 @@ func main() {
 		projects1, err := getbibucket.GetProjectBitbucketListCloud(platformConfig, fileexclusionEX)
 
 		if err != nil {
-			fmt.Printf("❌ Error Get Info Projects in Bitbucket cloud '%s' : ", err)
+			fmt.Printf("❌ Error Get Info Project(s) in Bitbucket cloud '%v' ", err)
 			return
 		}
 		if len(projects1) == 0 {

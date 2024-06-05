@@ -55,10 +55,9 @@ type ProjectcsResponse struct {
 	Values []Projectc `json:"values"`
 	Next   string     `json:"next"`
 }
-
 type ExclusionList struct {
-	Projectcs map[string]bool `json:"Projects"`
-	Repos     map[string]bool `json:"repos"`
+	Projects map[string]bool
+	Repos    map[string]bool
 }
 
 type ParamsProjectBitbucket struct {
@@ -72,10 +71,13 @@ type ParamsProjectBitbucket struct {
 	BitbucketURLBase string
 	Organization     string
 	Exclusionlist    *ExclusionList
+	Excludeproject   int
 	Spin             *spinner.Spinner
 	Period           int
 	Stats            bool
 	DefaultB         bool
+	SingleRepos      string
+	SingleBranch     string
 }
 
 type Response1 struct {
@@ -120,8 +122,8 @@ func loadExclusionList(filename string) (*ExclusionList, error) {
 	defer file.Close()
 
 	exclusionList := &ExclusionList{
-		Projectcs: make(map[string]bool),
-		Repos:     make(map[string]bool),
+		Projects: make(map[string]bool),
+		Repos:    make(map[string]bool),
 	}
 
 	scanner := bufio.NewScanner(file)
@@ -129,10 +131,10 @@ func loadExclusionList(filename string) (*ExclusionList, error) {
 		line := scanner.Text()
 		parts := strings.Split(line, "/")
 		if len(parts) == 1 {
-			// Get Projet
-			exclusionList.Projectcs[parts[0]] = true
+			// Exclusion de projet
+			exclusionList.Projects[parts[0]] = true
 		} else if len(parts) == 2 {
-			// Get Repos
+			// Exclusion de répertoire
 			exclusionList.Repos[line] = true
 		}
 	}
@@ -144,18 +146,20 @@ func loadExclusionList(filename string) (*ExclusionList, error) {
 	return exclusionList, nil
 }
 
-func isRepoExcluded(exclusionList *ExclusionList, repoKey string) bool {
-	_, excluded := exclusionList.Repos[repoKey]
-	return excluded
+func isRepoExcluded(exclusionList *ExclusionList, projectKey, repoKey string) bool {
+	_, repoExcluded := exclusionList.Repos[projectKey+"/"+repoKey]
+	return repoExcluded
 }
+
+// Fonction pour vérifier si un projet est exclu
 func isProjectExcluded(exclusionList *ExclusionList, projectKey string) bool {
-	_, excluded := exclusionList.Projectcs[projectKey]
-	return excluded
+	_, projectExcluded := exclusionList.Projects[projectKey]
+	return projectExcluded
 }
 
 func GetProjectBitbucketListCloud(platformConfig map[string]interface{}, exclusionFile string) ([]ProjectBranch, error) {
 
-	var totalExclude, totalArchiv, emptyRepo, TotalBranches int
+	var totalExclude, totalArchiv, emptyRepo, TotalBranches, exludedprojects int
 	var nbRepos int
 
 	var largestRepoBranch, largesRepo string
@@ -186,42 +190,40 @@ func GetProjectBitbucketListCloud(platformConfig map[string]interface{}, exclusi
 	bitbucketURLBase := fmt.Sprintf("%s%s/", platformConfig["Url"].(string), platformConfig["Apiver"].(string))
 
 	if len(project) == 0 && len(repos) == 0 {
-		projects, err = getAllProjects(client, platformConfig["Workspace"].(string), exclusionList)
+		// Get All Project
+		projects, exludedprojects, err = getAllProjects(client, platformConfig["Workspace"].(string), exclusionList)
 		if err != nil {
 			fmt.Println("\r❌ Error Get All Projects:", err)
 			spin.Stop()
 			return nil, err
 		}
-
-		//importantBranches, nbRepos, err = getAllProjects(client, platformConfig["Workspace"].(string), exclusionList)
-	} /*else if len(project) > 0 && len(repos) == 0 {
-		importantBranches, nbRepos, err = getProject(client, exclusionList, project)
-	} else if len(project) > 0 && len(repos) > 0 {
-		importantBranches, nbRepos, err = getProjectRepos(client, exclusionList, project, repos)
-	} else {
-		spin.Stop()
-		fmt.Println("❌ Error Project name is empty")
-		return nil, fmt.Errorf("project name is empty")
+	} else if len(project) != 0 {
+		//else if len(project) != 0 && len(repos) == 0 {
+		projects, exludedprojects, err = getSepecificProjects(client, platformConfig["Workspace"].(string), project, exclusionList)
+		if err != nil {
+			spin.Stop()
+			return nil, err
+		}
 	}
+	spin.Stop()
 
+	params := getCommonParams(client, platformConfig, projects, exclusionList, exludedprojects, spin, bitbucketURLBase)
+	importantBranches, emptyRepo, nbRepos, TotalBranches, totalExclude, totalArchiv, err = getRepoAnalyse(params)
 	if err != nil {
 		spin.Stop()
 		return nil, err
-	}*/
-
-	spin.Stop()
-	params := getCommonParams(client, platformConfig, projects, exclusionList, spin, bitbucketURLBase)
-	importantBranches, emptyRepo, nbRepos, TotalBranches, totalExclude, totalArchiv = getRepoAnalyse(params)
+	}
 
 	largestRepoBranch, largesRepo = findLargestRepository(importantBranches, &totalSize)
 
-	/*result.NumProjects = 1
-	result.NumRepositories = nbRepos
-	result.ProjectBranches = importantBranches
-
-	if err := saveAnalysisResult("Results/config/analysis_repos_bitbucketdc.json", result); err != nil {
-		return importantBranches, nil
-	}*/
+	result := AnalysisResult{
+		NumRepositories: nbRepos,
+		ProjectBranches: importantBranches,
+	}
+	if err := SaveResult(result); err != nil {
+		fmt.Println("❌ Error Save Result of Analysis :", err)
+		os.Exit(1)
+	}
 
 	stats := SummaryStats{
 		LargestRepo:       largesRepo,
@@ -234,7 +236,7 @@ func GetProjectBitbucketListCloud(platformConfig map[string]interface{}, exclusi
 	}
 
 	printSummary(params.Organization, stats)
-	os.Exit(1)
+
 	return importantBranches, nil
 }
 
@@ -264,8 +266,8 @@ func printSummary(Org string, stats SummaryStats) {
 func loadExclusionFileOrCreateNew(exclusionFile string) (*ExclusionList, error) {
 	if exclusionFile == "0" {
 		return &ExclusionList{
-			Projectcs: make(map[string]bool),
-			Repos:     make(map[string]bool),
+			Projects: make(map[string]bool),
+			Repos:    make(map[string]bool),
 		}, nil
 	}
 	return loadExclusionList(exclusionFile)
@@ -308,7 +310,7 @@ func GetSize(parms ParamsProjectBitbucket, repo *bitbucket.Repository) (int, err
 
 }
 
-func getCommonParams(client *bitbucket.Client, platformConfig map[string]interface{}, project []Projectc, exclusionList *ExclusionList, spin *spinner.Spinner, bitbucketURLBase string) ParamsProjectBitbucket {
+func getCommonParams(client *bitbucket.Client, platformConfig map[string]interface{}, project []Projectc, exclusionList *ExclusionList, excludeproject int, spin *spinner.Spinner, bitbucketURLBase string) ParamsProjectBitbucket {
 	return ParamsProjectBitbucket{
 		Client:           client,
 		Projects:         project,
@@ -320,24 +322,29 @@ func getCommonParams(client *bitbucket.Client, platformConfig map[string]interfa
 		BitbucketURLBase: bitbucketURLBase,
 		Organization:     platformConfig["Organization"].(string),
 		Exclusionlist:    exclusionList,
+		Excludeproject:   excludeproject,
 		Spin:             spin,
 		Period:           int(platformConfig["Period"].(float64)),
 		Stats:            platformConfig["Stats"].(bool),
 		DefaultB:         platformConfig["DefaultBranch"].(bool),
+		SingleRepos:      platformConfig["Repos"].(string),
+		SingleBranch:     platformConfig["Branch"].(string),
 	}
 }
 
-func getAllProjects(client *bitbucket.Client, workspace string, exclusionList *ExclusionList) ([]Projectc, error) {
+func getAllProjects(client *bitbucket.Client, workspace string, exclusionList *ExclusionList) ([]Projectc, int, error) {
 
 	var projects []Projectc
+	var excludedCount int
 
 	projectsRes, err := client.Workspaces.Projects(workspace)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	for _, project := range projectsRes.Items {
 		if isProjectExcluded(exclusionList, project.Key) {
+			excludedCount++
 			continue
 		}
 
@@ -350,15 +357,51 @@ func getAllProjects(client *bitbucket.Client, workspace string, exclusionList *E
 		})
 	}
 
-	return projects, nil
+	return projects, excludedCount, nil
 }
 
-func getRepoAnalyse(params ParamsProjectBitbucket) ([]ProjectBranch, int, int, int, int, int) {
+func getSepecificProjects(client *bitbucket.Client, workspace, projectKeys string, exclusionList *ExclusionList) ([]Projectc, int, error) {
+
+	var projects []Projectc
+	var excludedCount int
+
+	projectsRes, err := client.Workspaces.GetProject(&bitbucket.ProjectOptions{
+		Owner: workspace,
+		Key:   projectKeys,
+	})
+	if err != nil {
+		errmessage := fmt.Sprintf("%s - %v", projectKeys, err)
+		err1 := fmt.Errorf(errmessage)
+		return nil, 0, err1
+	}
+
+	if isProjectExcluded(exclusionList, projectsRes.Key) {
+		excludedCount++
+		errmessage := fmt.Sprintf(" - Skipping analysis for Project %s , it is excluded", projectKeys)
+		err = fmt.Errorf(errmessage)
+		return projects, excludedCount, err
+
+	} else {
+
+		projects = append(projects, Projectc{
+			Key:         projectsRes.Key,
+			UUID:        projectsRes.Uuid,
+			IsPrivate:   projectsRes.Is_private,
+			Name:        projectsRes.Name,
+			Description: projectsRes.Description,
+		})
+	}
+
+	return projects, excludedCount, nil
+}
+
+func getRepoAnalyse(params ParamsProjectBitbucket) ([]ProjectBranch, int, int, int, int, int, error) {
 
 	var emptyRepos = 0
 	var totalexclude = 0
 	var importantBranches []ProjectBranch
 	var NBRrepo, TotalBranches int
+	var messageF = ""
 	NBRrepos := 0
 	cptarchiv := 0
 
@@ -371,7 +414,11 @@ func getRepoAnalyse(params ParamsProjectBitbucket) ([]ProjectBranch, int, int, i
 	spin1.Color("green", "bold")
 
 	params.Spin.Start()
-	messageF := fmt.Sprintf("✅ The number of project(s) to analyze is %d\n", len(params.Projects))
+	if params.Excludeproject > 0 {
+		messageF = fmt.Sprintf("✅ The number of project(s) to analyze is %d - Excluded : %d\n", len(params.Projects), params.Excludeproject)
+	} else {
+		messageF = fmt.Sprintf("✅ The number of project(s) to analyze is %d\n", len(params.Projects))
+	}
 	params.Spin.FinalMSG = messageF
 	params.Spin.Stop()
 
@@ -382,9 +429,15 @@ func getRepoAnalyse(params ParamsProjectBitbucket) ([]ProjectBranch, int, int, i
 
 		emptyOrArchivedCount, excludedCount, repos, err := listReposForProject(params, project.Key)
 		if err != nil {
-			fmt.Println("\r❌ Get Repos for each Project:", err)
-			spin1.Stop()
-			continue
+			if len(params.SingleRepos) == 0 {
+				fmt.Println("\r❌ Get Repos for each Project:", err)
+				spin1.Stop()
+				continue
+			} else {
+				errmessage := fmt.Sprintf(" Get Repo %s for Project %s %v", params.SingleRepos, project.Key, err)
+				spin1.Stop()
+				return importantBranches, emptyRepos, NBRrepos, TotalBranches, totalexclude, cptarchiv, fmt.Errorf(errmessage)
+			}
 		}
 		emptyRepos = emptyRepos + emptyOrArchivedCount
 		totalexclude = totalexclude + excludedCount
@@ -400,8 +453,7 @@ func getRepoAnalyse(params ParamsProjectBitbucket) ([]ProjectBranch, int, int, i
 
 		for _, repo := range repos {
 
-			//largestRepoBranch, repoBranches, nbrb, err := analyzeRepoBranches(params, repo, cpt, spin1)
-			largestRepoBranch, _, nbrb, err := analyzeRepoBranches(params, repo, cpt, spin1)
+			largestRepoBranch, repobranches, brsize, err := analyzeRepoBranches(params, repo, cpt, spin1)
 			if err != nil {
 				largestRepoBranch = repo.Mainbranch.Name
 
@@ -409,11 +461,12 @@ func getRepoAnalyse(params ParamsProjectBitbucket) ([]ProjectBranch, int, int, i
 
 			importantBranches = append(importantBranches, ProjectBranch{
 				Org:         params.Organization,
+				ProjectKey:  project.Key,
 				RepoSlug:    repo.Slug,
 				MainBranch:  largestRepoBranch,
-				LargestSize: nbrb,
+				LargestSize: brsize,
 			})
-			TotalBranches += nbrb
+			TotalBranches += len(repobranches)
 
 			cpt++
 		}
@@ -422,7 +475,7 @@ func getRepoAnalyse(params ParamsProjectBitbucket) ([]ProjectBranch, int, int, i
 
 	}
 
-	return importantBranches, emptyRepos, NBRrepos, TotalBranches, totalexclude, cptarchiv
+	return importantBranches, emptyRepos, NBRrepos, TotalBranches, totalexclude, cptarchiv, nil
 
 }
 func listReposForProject(parms ParamsProjectBitbucket, projectKey string) (int, int, []*bitbucket.Repository, error) {
@@ -440,7 +493,10 @@ func listReposForProject(parms ParamsProjectBitbucket, projectKey string) (int, 
 			return 0, 0, nil, err
 		}
 
-		eoc, exc, repos := listRepos(parms, reposRes)
+		eoc, exc, repos, err := listRepos(parms, projectKey, reposRes)
+		if err != nil {
+			return 0, 0, nil, err
+		}
 		emptyOrArchivedCount += eoc
 		excludedCount += exc
 		allRepos = append(allRepos, repos...)
@@ -455,30 +511,66 @@ func listReposForProject(parms ParamsProjectBitbucket, projectKey string) (int, 
 	return emptyOrArchivedCount, excludedCount, allRepos, nil
 }
 
-// List Repository in each Project
-func listRepos(parms ParamsProjectBitbucket, reposRes *bitbucket.RepositoriesRes) (int, int, []*bitbucket.Repository) {
+func listRepos(parms ParamsProjectBitbucket, projectKey string, reposRes *bitbucket.RepositoriesRes) (int, int, []*bitbucket.Repository, error) {
 	var allRepos []*bitbucket.Repository
 	var excludedCount, emptyOrArchivedCount int
 
-	for _, repo := range reposRes.Items {
-		repoCopy := repo
-		if isRepoExcluded(parms.Exclusionlist, repo.Slug) {
-			excludedCount++
-			continue
+	if len(parms.SingleRepos) == 0 {
+
+		for _, repo := range reposRes.Items {
+			repoCopy := repo
+			if isRepoExcluded(parms.Exclusionlist, projectKey, repo.Slug) {
+				excludedCount++
+				continue
+			}
+
+			isEmpty, err := isRepositoryEmpty(parms.Workspace, repo.Slug, repo.Mainbranch.Name, parms.AccessToken, parms.BitbucketURLBase)
+			if err != nil {
+				fmt.Printf("❌ Error when Testing if repo is empty %s: %v\n", repo.Slug, err)
+			}
+			if isEmpty {
+				emptyOrArchivedCount++
+				continue
+			}
+			allRepos = append(allRepos, &repoCopy)
+		}
+	} else {
+
+		var repoFound bool
+		for _, repo := range reposRes.Items {
+
+			if repo.Slug == parms.SingleRepos {
+				repoFound = true
+				repoCopy := repo
+
+				if isRepoExcluded(parms.Exclusionlist, projectKey, repo.Slug) {
+					excludedCount++
+					errmessage := fmt.Sprintf(" - Skipping analysis for Repo %s , it is excluded", repo.Slug)
+					err := fmt.Errorf(errmessage)
+					return 0, excludedCount, allRepos, err
+				}
+
+				isEmpty, err := isRepositoryEmpty(parms.Workspace, repo.Slug, repo.Mainbranch.Name, parms.AccessToken, parms.BitbucketURLBase)
+				if err != nil {
+					fmt.Printf("❌ Error when Testing if repo is empty %s: %v\n", repo.Slug, err)
+				}
+				if isEmpty {
+					emptyOrArchivedCount++
+					errmessage := fmt.Sprintf(" - Skipping analysis for Repo %s , it is empty", repo.Slug)
+					err := fmt.Errorf(errmessage)
+					return emptyOrArchivedCount, excludedCount, allRepos, err
+				}
+
+				allRepos = append(allRepos, &repoCopy)
+				break
+			}
 		}
 
-		isEmpty, err := isRepositoryEmpty(parms.Workspace, repo.Slug, repo.Mainbranch.Name, parms.AccessToken, parms.BitbucketURLBase)
-		if err != nil {
-			fmt.Printf("❌ Error when Testing if repo is empty %s: %v\n", repo.Slug, err)
+		if !repoFound {
+			excludedCount++
 		}
-		if isEmpty {
-			emptyOrArchivedCount++
-			continue
-		}
-		//allRepos = append(allRepos, &repo)
-		allRepos = append(allRepos, &repoCopy)
 	}
-	return emptyOrArchivedCount, excludedCount, allRepos
+	return emptyOrArchivedCount, excludedCount, allRepos, nil
 }
 
 // Test is Repository is empty
@@ -540,32 +632,74 @@ func fetchFiles(url string, accessToken string) (*Response1, error) {
 }
 
 func analyzeRepoBranches(parms ParamsProjectBitbucket, repo *bitbucket.Repository, cpt int, spin1 *spinner.Spinner) (string, []*bitbucket.RepositoryBranch, int, error) {
-	var branches []*bitbucket.RepositoryBranch
-	//var branchPushes map[string]int
+
+	var repoBranches []*bitbucket.RepositoryBranch
+	var largestRepoBranch string
+	var err error
+	var brsize, nbrbranche int
 
 	spin1.Prefix = "\r Analyzing branches"
 	spin1.Start()
 
-	// Get all branches for the repository
-	repoBranches, err := getAllBranches(parms.Client, parms.Workspace, repo.Slug)
-	if err != nil {
-		spin1.Stop()
-		return "", nil, 0, err
-	}
+	if parms.DefaultB || len(parms.SingleBranch) != 0 {
+		var branchName string
+		if parms.DefaultB {
+			branchName = repo.Mainbranch.Name
+		} else if len(parms.SingleBranch) != 0 {
+			branchName = parms.SingleBranch
+		}
+		repoBranches, largestRepoBranch, brsize, err = getSingleBranches(parms, branchName, repo.Slug, spin1)
+		if err != nil {
+			spin1.Stop()
+			return "", nil, 0, err
+		}
+		nbrbranche = 1
 
-	// Determine the largest branch based on the number of commits
-	largestRepoBranch, brsize := determineLargestBranch(parms, repo, repoBranches)
-	if err != nil {
-		spin1.Stop()
-		return "", nil, 1, err
+	} else {
+		repoBranches, err := getAllBranches(parms.Client, parms.Workspace, repo.Slug)
+		if err != nil {
+			spin1.Stop()
+			return "", nil, 0, err
+		}
+
+		// Determine the largest branch based on the number of commits
+		largestRepoBranch, brsize = determineLargestBranch(parms, repo, repoBranches)
+		if err != nil {
+			spin1.Stop()
+			return "", nil, 1, err
+		}
+		nbrbranche = len(repoBranches)
+
 	}
 
 	spin1.Stop()
 
 	// Print analysis summary
-	fmt.Printf("\t\t✅ Repo %d: %s - Number of branches: %d - Largest Branch: %s\n", cpt, repo.Slug, len(repoBranches), largestRepoBranch)
+	fmt.Printf("\t\t✅ Repo %d: %s - Number of branches: %d - Largest Branch: %s\n", cpt, repo.Slug, nbrbranche, largestRepoBranch)
 
-	return largestRepoBranch, branches, brsize, nil
+	return largestRepoBranch, repoBranches, brsize, nil
+}
+
+func getSingleBranches(parms ParamsProjectBitbucket, singlebranch string, repoSlug string, spin1 *spinner.Spinner) ([]*bitbucket.RepositoryBranch, string, int, error) {
+
+	var repoBranches1 []*bitbucket.RepositoryBranch
+
+	branchesRes1, err := parms.Client.Repositories.Repository.ListBranches(&bitbucket.RepositoryBranchOptions{
+		Owner:      parms.Workspace,
+		RepoSlug:   repoSlug,
+		BranchName: singlebranch,
+	})
+	if err != nil {
+		spin1.Stop()
+		return repoBranches1, "", 0, err
+	}
+	for _, branch := range branchesRes1.Branches {
+		branchCopy := branch
+		repoBranches1 = append(repoBranches1, &branchCopy)
+	}
+
+	return repoBranches1, singlebranch, 1, nil
+
 }
 
 func getAllBranches(client *bitbucket.Client, workspace, repoSlug string) ([]*bitbucket.RepositoryBranch, error) {
@@ -663,36 +797,24 @@ func getCommitsForLastMonth(client *bitbucket.Client, workspace, repoSlug, branc
 	return recentCommits, nil
 }
 
-/*func sortBranchesByCommits(branchPushes map[string]int) []string {
-	// Create a slice to hold branch names
-	var branches []string
-
-	// Iterate over the branchPushes map and append branch names to the slice
-	for branch := range branchPushes {
-		branches = append(branches, branch)
-	}
-
-	// Sort the branches by the number of commits in descending order
-	sort.Slice(branches, func(i, j int) bool {
-		return branchPushes[branches[i]] > branchPushes[branches[j]]
-	})
-
-	return branches
-}*/
-
-func saveAnalysisResult(filepath string, result AnalysisResult) error {
-	file, err := os.Create(filepath)
+func SaveResult(result AnalysisResult) error {
+	// Open or create the file
+	file, err := os.Create("Results/config/analysis_analysis_result.json")
 	if err != nil {
 		fmt.Println("❌ Error creating Analysis file:", err)
 		return err
 	}
 	defer file.Close()
 
+	// Create a JSON encoder
 	encoder := json.NewEncoder(file)
+
+	// Encode the result and write it to the file
 	if err := encoder.Encode(result); err != nil {
-		fmt.Println("Error encoding JSON file <", filepath, ">:", err)
+		fmt.Println("❌ Error encoding JSON file <Results/config/analysis_result_bitbucket.json> :", err)
 		return err
 	}
 
+	fmt.Println("✅ Result saved successfully!")
 	return nil
 }
