@@ -44,37 +44,42 @@ You can install from the stable release by clicking [here](https://github.com/co
         "Project": "",
         "Repos": "",
         "Branch": "",
+        "DefaultBranch": false,
         "Url": "http://X.X.X.X/",
         "Apiver": "1.0",
         "Baseapi": "rest/api/",
         "Protocol": "http",
         "FileExclusion":".cloc_bitbucketdc_ignore",
-         "Period":-1,
+        "Period":-1,
         "Factor":33,
         "Multithreading":true,
         "Stats": false,
-        "Workers": 50
+        "Workers": 50,
+        "NumberWorkerRepos":50
       },
       "BitBucket": {
         "Users": "xxxxxxxxxxxxxx",
         "AccessToken": "xxxxxxxxxxxxxx",
         "Organization": "xxxxx",
         "DevOps": "bitbucket",
-        "Workspace":"sonarsource",
+        "Workspace":"xxxxxxxxxxxxx",
         "Project": "",
         "Repos": "",
         "Branch": "",
+        "DefaultBranch": false,
         "Url": "https://api.bitbucket.org/",
         "Apiver": "2.0",
         "Baseapi": "bitbucket.org",
         "Protocol": "http",
         "FileExclusion":".cloc_bitbucket_ignore",
-         "Period":-1,
+        "Period":-1,
         "Factor":33,
         "Multithreading":true,
         "Stats": false,
-        "Workers": 50
+        "Workers": 50,
+        "NumberWorkerRepos":50
       },
+      
       "Github": {
         "Users": "xxxxxxxxxxxxxx",
         "AccessToken": "xxxxxxxxxxxxxx",
@@ -82,7 +87,8 @@ You can install from the stable release by clicking [here](https://github.com/co
         "DevOps": "github",
         "Project": "",
         "Repos": "",
-        "Branch": "2022-11-28",
+        "Branch": "",
+        "DefaultBranch": false,
         "Url": "https://api.github.com/",
         "Apiver": "",
         "Baseapi": "api.github.com/",
@@ -92,7 +98,8 @@ You can install from the stable release by clicking [here](https://github.com/co
         "Factor":33,
         "Multithreading":true,
         "Stats": false,
-        "Workers": 50
+        "Workers": 50,
+        "NumberWorkerRepos":50
       },
       "Gitlab": {
         "Users": "xxxxxxxxxxxxxx",
@@ -102,16 +109,18 @@ You can install from the stable release by clicking [here](https://github.com/co
         "Project": "",
         "Repos": "",
         "Branch": "",
+        "DefaultBranch": false,
         "Url": "https://gitlab.com/",
         "Apiver": "v4",
         "Baseapi": "api/",
         "Protocol": "https",
         "FileExclusion":".cloc_gitlab_ignore",
-         "Period":-1,
         "Factor":33,
         "Multithreading":true,
         "Stats": false,
-        "Workers": 50
+        "Workers": 50,
+        "NumberWorkerRepos":50
+
       },
       "Azure": {
         "Users": "xxxxxxxxxxxxxx",
@@ -121,26 +130,29 @@ You can install from the stable release by clicking [here](https://github.com/co
         "Project": "",
         "Repos": "",
         "Branch": "",
+        "DefaultBranch": false,
         "Url": "https://dev.azure.com/",
         "Apiver": "7.1",
         "Baseapi": "_apis/git/",
         "Protocol": "https",
         "FileExclusion":".cloc_azure_ignore",
-         "Period":-1,
         "Factor":33,
         "Multithreading":true,
         "Stats": false,
-        "Workers": 50
+        "Workers": 50,
+        "NumberWorkerRepos":50
       },
       "File": {
+        "Organization": "xxxxxxxxx",
         "DevOps": "file",
-        "Directory": "",
+        "Directory":"",
         "FileExclusion":".cloc_file_ignore",
-         "FileLoad":".cloc_file_load"
+        "FileLoad":".cloc_file_load"
+
       }
     }
   }
-  
+    
  ```
 This file represents the 6 supported platforms for analysis: BitBucketSRV (Bitbucket DC), BitBucket (cloud), GitHub, GitLab, Azure (Azure DevOps), and File. Depending on your platform, for example, Bitbucket DC (enter BitBucketSRV), specify the parameters:
 
@@ -207,6 +219,7 @@ FILE_NAME
 
 ❗️ The parameters **'Multithreading'** and **'Workers'** initialize whether multithreading is enabled or not, allowing parallel analysis. You can disable it by setting **'Multithreading'** to **false**. **'Workers'** corresponds to the number of concurrent analyses.
 
+❗️ The boolean parameters **DefaultBranch**, if set to true, specifies that only the default branch of each repository should be analyzed. If set to false, it will analyze all branches of each repository to determine the most important one.
 
  ✅ Run GoLC
 
