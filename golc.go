@@ -18,6 +18,7 @@ import (
 	"github.com/colussim/GoLC/assets"
 	"github.com/colussim/GoLC/pkg/goloc"
 
+	"github.com/colussim/GoLC/pkg/devops/getazure"
 	getbibucket "github.com/colussim/GoLC/pkg/devops/getbitbucket/v2"
 	getbibucketdc "github.com/colussim/GoLC/pkg/devops/getbitbucketdc"
 	"github.com/colussim/GoLC/pkg/devops/getgithub"
@@ -98,8 +99,8 @@ type RepoParams struct {
 }
 
 const errorMessageRepo = "\n❌ Error Analyse Repositories: "
-const errorMessageDi = "❌ Error deleting Repository Directory: %v\n"
-const errorMessageAnalyse = "❌ No Analysis performed...\n"
+const errorMessageDi = "\r❌ Error deleting Repository Directory: %v\n"
+const errorMessageAnalyse = "\r❌ No Analysis performed...\n"
 
 var logFile *os.File
 
@@ -659,12 +660,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Temporary function for future functionality
-	if *devopsFlag == "Azure" {
-		fmt.Println("❗️ Functionality coming soon...")
-		os.Exit(0)
-	}
-
 	platformConfig, ok := AppConfig.Platforms[*devopsFlag].(map[string]interface{})
 	if !ok {
 		fmt.Printf("\n❌ Configuration for DevOps platform '%s' not found\n", *devopsFlag)
@@ -754,6 +749,29 @@ func main() {
 	// Select DevOps Platform
 
 	switch devops := platformConfig["DevOps"].(string); devops {
+
+	case "azure":
+		var fileexclusion = ".cloc_azure_ignore"
+		fileexclusionEX := getFileNameIfExists(fileexclusion)
+
+		startTime = time.Now()
+
+		gitproject, err := getazure.GetRepoAzureList(platformConfig, fileexclusionEX)
+		if err != nil {
+			fmt.Printf("Error Get Info Repositories in organization '%s' : '%s'", platformConfig["Organization"].(string), err)
+			return
+		}
+
+		if len(gitproject) == 0 {
+			fmt.Printf(errorMessageAnalyse)
+			os.Exit(1)
+
+		} else {
+			//os.Exit(1)
+			//	NumberRepos = AnalyseReposListGitlab(DestinationResult, platformConfig, gitproject)
+
+		}
+
 	case "github":
 
 		var fileexclusion = ".cloc_github_ignore"
