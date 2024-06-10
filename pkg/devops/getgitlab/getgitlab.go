@@ -269,7 +269,7 @@ func loadExclusionRepos(filename string) (ExclusionRepos, error) {
 
 func SaveResult(result AnalysisResult) error {
 	// Open or create the file
-	file, err := os.Create("Results/config/analysis_analysis_result.json")
+	file, err := os.Create("Results/config/analysis_result_github.json")
 	if err != nil {
 		fmt.Println("❌ Error creating Analysis file:", err)
 		return err
@@ -705,7 +705,7 @@ func GetRepoGitLabList(platformConfig map[string]interface{}, exclusionfile stri
 
 	}
 
-	fmt.Printf("\n✅ The largest Project is <%s> in the Organizationa <%s> with the branch <%s> \n", largesRepo, platformConfig["Organization"].(string), largestRepoBranch)
+	fmt.Printf("\n✅ The largest Repository is <%s> in the Organizationa <%s> with the branch <%s> \n", largesRepo, platformConfig["Organization"].(string), largestRepoBranch)
 	fmt.Printf("\r✅ TotalProject(s) that will be analyzed: %d - Find empty : %d - Excluded : %d - Archived : %d\n", len(projectBranches), emptyRepos, excludedProjects, archivedRepos)
 	fmt.Printf("\r✅ Total Branches that will be analyzed: %d\n", TotalBranches)
 
