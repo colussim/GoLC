@@ -34,10 +34,6 @@ func Getrepos(src, branch, token string) (string, error) {
 	}
 
 	_, err = git.PlainClone(dst, false, &git.CloneOptions{
-		/*Auth: &http.BasicAuth{
-			Username: "",
-			Password: """,
-		},*/
 		URL: src,
 
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
