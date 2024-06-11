@@ -570,7 +570,7 @@ func getRepoAnalyse(params ParamsProjectAzure, gitClient git.Client) ([]ProjectB
 				return importantBranches, emptyRepos, NBRrepos, TotalBranches, totalexclude, cptarchiv, fmt.Errorf(errmessage)
 			}
 		}
-		emptyRepos = emptyRepos + emptyOrArchivedCount
+		//emptyRepos = emptyRepos + emptyOrArchivedCount
 		totalexclude = totalexclude + excludedCount
 
 		spin1.Stop()
@@ -657,7 +657,7 @@ func analyzeRepoBranches(parms ParamsProjectAzure, projectKey string, repo strin
 	var err error
 	var brsize int64
 
-	largestRepoBranch, brsize, nbrbranch, err = getMostImportantBranch(parms.Context, gitClient, projectKey, repo, parms.Period, parms.DefaultB)
+	largestRepoBranch, brsize, nbrbranch, err = getMostImportantBranch(parms.Context, gitClient, projectKey, repo, parms.Period, parms.DefaultB, parms.SingleBranch)
 	if err != nil {
 		spin1.Stop()
 		return "", 0, 1, err
@@ -671,31 +671,75 @@ func analyzeRepoBranches(parms ParamsProjectAzure, projectKey string, repo strin
 	return largestRepoBranch, nbrbranch, brsize, nil
 
 }
-
-func getMostImportantBranch(ctx context.Context, gitClient git.Client, projectID string, repoID string, periode int, DefaultB bool) (string, int64, int, error) {
+func getMostImportantBranch(ctx context.Context, gitClient git.Client, projectID string, repoID string, periode int, DefaultB bool, Singlebranch string) (string, int64, int, error) {
 	const REF = "refs/heads/"
-
-	var mostImportantBranch string
-	var maxCommits, nbrbranches, commitCount int
-	var totalCommitSize int64
 	var defaultBranch string
-	var err1 error
+	var err error
 
 	since := time.Now().AddDate(0, periode, 0)
 	sinceStr := since.Format(time.RFC3339)
 
 	// Get default branch
-	repo, err1 := gitClient.GetRepository(ctx, git.GetRepositoryArgs{
+	repo, err := gitClient.GetRepository(ctx, git.GetRepositoryArgs{
 		RepositoryId: &repoID,
 		Project:      &projectID,
 	})
-	if err1 != nil {
-		return "", 0, 0, err1
+	if err != nil {
+		return "", 0, 0, err
 	}
 	defaultBranch = *repo.DefaultBranch
 
-	if !DefaultB {
+	// Prioritize DefaultB over Singlebranch if DefaultB is true
+	if DefaultB {
+		return handleDefaultOrSingleBranch(ctx, gitClient, projectID, repoID, strings.TrimPrefix(defaultBranch, REF), "", sinceStr)
+	} else if Singlebranch != "" {
+		return handleDefaultOrSingleBranch(ctx, gitClient, projectID, repoID, "", Singlebranch, sinceStr)
+	} else {
+		return handleNonDefaultBranch(ctx, gitClient, projectID, repoID, sinceStr, defaultBranch)
+	}
+}
+func handleNonDefaultBranch(ctx context.Context, gitClient git.Client, projectID string, repoID string, sinceStr string, defaultBranch string) (string, int64, int, error) {
+	const REF = "refs/heads/"
+	var mostImportantBranch string
+	var maxCommits int
+	var totalCommitSize int64
 
+	branches, err := gitClient.GetBranches(ctx, git.GetBranchesArgs{
+		RepositoryId: &repoID,
+		Project:      &projectID,
+	})
+	if err != nil {
+		return "", 0, 0, err
+	}
+
+	for _, branch := range *branches {
+		commitCount, branchCommitSize, err := getCommitDetails(ctx, gitClient, projectID, repoID, *branch.Name, sinceStr)
+		if err != nil {
+			return "", 0, 0, err
+		}
+
+		if commitCount > maxCommits {
+			maxCommits = commitCount
+			mostImportantBranch = strings.TrimPrefix(*branch.Name, REF)
+			totalCommitSize = branchCommitSize
+		}
+	}
+
+	if maxCommits == 0 {
+		mostImportantBranch = strings.TrimPrefix(defaultBranch, REF)
+	}
+
+	return mostImportantBranch, totalCommitSize, len(*branches), nil
+}
+
+func handleDefaultOrSingleBranch(ctx context.Context, gitClient git.Client, projectID string, repoID string, defaultBranch string, singleBranch string, sinceStr string) (string, int64, int, error) {
+	const REF = "refs/heads/"
+	var branchName string
+
+	if defaultBranch != "" {
+		branchName = defaultBranch
+	} else {
+		// Vérifier si Singlebranch existe dans les branches
 		branches, err := gitClient.GetBranches(ctx, git.GetBranchesArgs{
 			RepositoryId: &repoID,
 			Project:      &projectID,
@@ -703,46 +747,46 @@ func getMostImportantBranch(ctx context.Context, gitClient git.Client, projectID
 		if err != nil {
 			return "", 0, 0, err
 		}
-
+		branchExists := false
 		for _, branch := range *branches {
-
-			branchCommitSize := int64(0)
-
-			commitCount, err = getCommitCount(ctx, gitClient, projectID, repoID, *branch.Name, sinceStr)
-			if err != nil {
-				return "", 0, 0, err
+			if strings.TrimPrefix(*branch.Name, REF) == singleBranch {
+				branchExists = true
+				break
 			}
-
-			if commitCount > maxCommits {
-				maxCommits = commitCount
-				mostImportantBranch = strings.TrimPrefix(*branch.Name, REF)
-				totalCommitSize = branchCommitSize
-			}
-
-			if maxCommits == 0 {
-				mostImportantBranch = strings.TrimPrefix(defaultBranch, REF)
-			}
-
-			nbrbranches = len(*branches)
-
 		}
-	} else {
-		commitCount, err1 = getCommitCount(ctx, gitClient, projectID, repoID, strings.TrimPrefix(defaultBranch, REF), sinceStr)
-		if err1 != nil {
-			return "", 0, 0, err1
+		if !branchExists {
+			return "", 0, 0, fmt.Errorf("branch %s not found in repository %s", singleBranch, repoID)
 		}
-		if commitCount == 0 {
-			totalCommitSize = int64(*repo.Size)
-		} else {
-			totalCommitSize = int64(commitCount)
-		}
-
-		mostImportantBranch = strings.TrimPrefix(defaultBranch, REF)
-		nbrbranches = 1
-
+		branchName = singleBranch
 	}
 
-	return mostImportantBranch, totalCommitSize, nbrbranches, nil
+	commitCount, commitSize, err := getCommitDetails(ctx, gitClient, projectID, repoID, branchName, sinceStr)
+	if err != nil {
+		return "", 0, 0, err
+	}
+
+	if commitCount == 0 {
+		repo, err := gitClient.GetRepository(ctx, git.GetRepositoryArgs{
+			RepositoryId: &repoID,
+			Project:      &projectID,
+		})
+		if err != nil {
+			return "", 0, 0, err
+		}
+		commitSize = int64(*repo.Size)
+	}
+
+	return branchName, commitSize, 1, nil
+}
+
+func getCommitDetails(ctx context.Context, gitClient git.Client, projectID string, repoID string, branchName string, sinceStr string) (int, int64, error) {
+	commitCount, err := getCommitCount(ctx, gitClient, projectID, repoID, branchName, sinceStr)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	commitSize := int64(commitCount)
+	return commitCount, commitSize, nil
 }
 
 func getCommitCount(ctx context.Context, gitClient git.Client, projectID string, repoID string, branchName string, sinceStr string) (int, error) {
