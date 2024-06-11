@@ -24,10 +24,6 @@ type ProjectBranch struct {
 	LargestSize int64
 }
 
-/*type ExclusionList struct {
-	Repos map[string]bool `json:"repos"`
-}*/
-
 type AnalysisResult struct {
 	NumRepositories int
 	ProjectBranches []ProjectBranch
@@ -84,6 +80,7 @@ const Message1 = "\t✅ The number of %s found is: %d\n"
 const Message2 = "\t   Analysis top branch(es) in project <%s> ..."
 const Message3 = "\r\t\t✅ %d Project: %s - Number of branches: %d - largest Branch: %s \n"
 const Message4 = "Project(s)"
+const REF = "refs/heads/"
 
 func loadExclusionList(filename string) (*ExclusionList, error) {
 	file, err := os.Open(filename)
@@ -226,22 +223,9 @@ func GetRepoAzureList(platformConfig map[string]interface{}, exclusionFile strin
 	var totalExclude, totalArchiv, emptyRepo, TotalBranches, nbRepos int
 	var totalSize int64
 	var largestRepoBranch, largesRepo string
-	//	var emptyRepos, archivedRepos int
-	//	var TotalBranches int = 0 // Counter Number of Branches on All Repositories
 	var exclusionList *ExclusionList
 	var err error
 
-	//var totalExclude, totalArchiv, emptyRepo, TotalBranches, exludedprojects int
-	//var nbRepos int
-
-	//	var totalSize int
-
-	//	excludedProjects := 0
-	//	result := AnalysisResult{}
-
-	// Calculating the period
-	//	until := time.Now()
-	//	since := until.AddDate(0, int(platformConfig["Period"].(float64)), 0)
 	ApiURL := platformConfig["Url"].(string) + platformConfig["Organization"].(string)
 
 	fmt.Print("\n🔎 Analysis of devops platform objects ...\n")
@@ -272,8 +256,6 @@ func GetRepoAzureList(platformConfig map[string]interface{}, exclusionFile strin
 	if err != nil {
 		log.Fatalf("Erreur lors de la création du client Git: %v", err)
 	}
-
-	//	cpt := 1
 
 	/* --------------------- Analysis all projects with a default branche  ---------------------  */
 	if platformConfig["Project"].(string) == "" {
@@ -323,138 +305,17 @@ func GetRepoAzureList(platformConfig map[string]interface{}, exclusionFile strin
 		}
 	}
 
-	largestRepoBranch, largesRepo = findLargestRepository(importantBranches, &totalSize)
-
-	result := AnalysisResult{
-		NumRepositories: nbRepos,
-		ProjectBranches: importantBranches,
-	}
-	if err := SaveResult(result); err != nil {
-		fmt.Println("❌ Error Save Result of Analysis :", err)
-		os.Exit(1)
-	}
-
-	stats := SummaryStats{
-		LargestRepo:       largesRepo,
-		LargestRepoBranch: largestRepoBranch,
-		NbRepos:           nbRepos,
-		EmptyRepo:         emptyRepo,
-		TotalExclude:      totalExclude,
-		TotalArchiv:       totalArchiv,
-		TotalBranches:     TotalBranches,
-	}
-
-	printSummary(platformConfig["Organization"].(string), stats)
-	os.Exit(1)
-	return importantBranches, nil
-}
-
-func GetRepoAzureList1(platformConfig map[string]interface{}, exclusionFile string) ([]ProjectBranch, error) {
-
-	var importantBranches []ProjectBranch
-	var totalExclude, totalArchiv, emptyRepo, TotalBranches, nbRepos int
-	var totalSize int64
-	var largestRepoBranch, largesRepo string
-	//	var emptyRepos, archivedRepos int
-	//	var TotalBranches int = 0 // Counter Number of Branches on All Repositories
-	var exclusionList *ExclusionList
-	var err error
-
-	//var totalExclude, totalArchiv, emptyRepo, TotalBranches, exludedprojects int
-	//var nbRepos int
-
-	//	var totalSize int
-
-	//	excludedProjects := 0
-	//	result := AnalysisResult{}
-
-	// Calculating the period
-	//	until := time.Now()
-	//	since := until.AddDate(0, int(platformConfig["Period"].(float64)), 0)
-	ApiURL := platformConfig["Url"].(string) + platformConfig["Organization"].(string)
-
-	fmt.Print("\n🔎 Analysis of devops platform objects ...\n")
-
-	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
-	spin.Prefix = PrefixMsg
-	spin.Color("green", "bold")
-	spin.Start()
-
-	exclusionList, err = loadExclusionFileOrCreateNew(exclusionFile)
-	if err != nil {
-		fmt.Printf("\n❌ Error Read Exclusion File <%s>: %v", exclusionFile, err)
-		spin.Stop()
-		return nil, err
-	}
-
-	// Create a connection to your organization
-	connection := azuredevops.NewPatConnection(ApiURL, platformConfig["AccessToken"].(string))
-	ctx := context.Background()
-
-	// Create a client to interact with the Core area
-	coreClient, err := core.NewClient(ctx, connection)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	gitClient, err := git.NewClient(ctx, connection)
-	if err != nil {
-		log.Fatalf("Erreur lors de la création du client Git: %v", err)
-	}
-
-	if platformConfig["DefaultBranch"].(bool) {
-		//	cpt := 1
-
-		/* --------------------- Analysis all projects with a default branche  ---------------------  */
-		if platformConfig["Project"].(string) == "" {
-
-			// Get All Project
-			projects, exludedprojects, err := getAllProjects(ctx, coreClient, exclusionList)
-
-			if err != nil {
-				spin.Stop()
-				log.Fatalf(MessageErro1, platformConfig["Organization"].(string), err)
-			}
-			spin.Stop()
-			spin1 := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
-			spin1.Color("green", "bold")
-
-			fmt.Printf(Message1, Message4, len(projects)+exludedprojects)
-
-			// Set Parmams
-			params := getCommonParams(ctx, coreClient, platformConfig, projects, exclusionList, exludedprojects, spin, ApiURL)
-			// Analyse Get important Branch
-			importantBranches, emptyRepo, nbRepos, TotalBranches, totalExclude, totalArchiv, err = getRepoAnalyse(params, gitClient)
-			if err != nil {
-				spin.Stop()
-				return nil, err
-			}
-
+	if len(importantBranches) == 1 && platformConfig["Repos"].(string) != "" {
+		// If there is only one important branch and SingleRepos is set, use it directly
+		if platformConfig["DefaultBranch"].(bool) {
+			largestRepoBranch = importantBranches[0].MainBranch
 		} else {
-			projects, exludedprojects, err := getProjectByName(ctx, coreClient, platformConfig["Project"].(string), exclusionList)
-			if err != nil {
-				spin.Stop()
-				log.Fatalf(MessageErro2, platformConfig["Organization"].(string), err)
-			}
-
-			spin.Stop()
-			spin1 := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
-			spin1.Color("green", "bold")
-
-			fmt.Printf(Message1, Message4, 1+exludedprojects)
-
-			// Set Parmams
-			params := getCommonParams(ctx, coreClient, platformConfig, projects, exclusionList, exludedprojects, spin, ApiURL)
-			// Analyse Get important Branch
-			importantBranches, emptyRepo, nbRepos, TotalBranches, totalExclude, totalArchiv, err = getRepoAnalyse(params, gitClient)
-			if err != nil {
-				spin.Stop()
-				return nil, err
-			}
+			largestRepoBranch = strings.TrimPrefix(importantBranches[0].MainBranch, "refs/heads/")
 		}
+		largesRepo = importantBranches[0].RepoSlug
+	} else {
+		largestRepoBranch, largesRepo = findLargestRepository(importantBranches, &totalSize)
 	}
-
-	largestRepoBranch, largesRepo = findLargestRepository(importantBranches, &totalSize)
 
 	result := AnalysisResult{
 		NumRepositories: nbRepos,
@@ -476,7 +337,7 @@ func GetRepoAzureList1(platformConfig map[string]interface{}, exclusionFile stri
 	}
 
 	printSummary(platformConfig["Organization"].(string), stats)
-	os.Exit(1)
+
 	return importantBranches, nil
 }
 
@@ -554,7 +415,6 @@ func getRepoAnalyse(params ParamsProjectAzure, gitClient git.Client) ([]ProjectB
 	// Get Repository in each Project
 	for _, project := range params.Projects {
 
-		//	if !isProjectExcluded(params.Exclusionlist, *project.Name) {
 		fmt.Printf("\n\t🟢  Analyse Projet: %s \n", *project.Name)
 
 		emptyOrArchivedCount, emptyRepos, excludedCount, repos, err := listReposForProject(params, *project.Name, gitClient)
@@ -570,7 +430,7 @@ func getRepoAnalyse(params ParamsProjectAzure, gitClient git.Client) ([]ProjectB
 				return importantBranches, emptyRepos, NBRrepos, TotalBranches, totalexclude, cptarchiv, fmt.Errorf(errmessage)
 			}
 		}
-		//emptyRepos = emptyRepos + emptyOrArchivedCount
+
 		totalexclude = totalexclude + excludedCount
 
 		spin1.Stop()
@@ -585,9 +445,19 @@ func getRepoAnalyse(params ParamsProjectAzure, gitClient git.Client) ([]ProjectB
 		for _, repo := range repos {
 
 			largestRepoBranch, repobranches, brsize, err := analyzeRepoBranches(params, *project.Name, *repo.Name, gitClient, cpt, spin1)
-			if err != nil {
-				largestRepoBranch = *repo.DefaultBranch
 
+			if err != nil {
+				if params.SingleBranch != "" {
+					// Skip this repository if SingleBranch is set but not found
+					continue
+				}
+				largestRepoBranch = *repo.DefaultBranch
+			} else {
+				// Check if SingleBranch is set and the returned branch is not SingleBranch
+				if params.SingleBranch != "" && !params.DefaultB && largestRepoBranch != params.SingleBranch {
+					// Skip this repository if the most important branch is not the SingleBranch
+					continue
+				}
 			}
 
 			importantBranches = append(importantBranches, ProjectBranch{
@@ -603,9 +473,7 @@ func getRepoAnalyse(params ParamsProjectAzure, gitClient git.Client) ([]ProjectB
 		}
 
 		NBRrepos += NBRrepo
-		/*	} else {
-			continue
-		}*/
+
 	}
 
 	return importantBranches, emptyRepos, NBRrepos, TotalBranches, totalexclude, cptarchiv, nil
@@ -615,6 +483,12 @@ func getRepoAnalyse(params ParamsProjectAzure, gitClient git.Client) ([]ProjectB
 func listReposForProject(parms ParamsProjectAzure, projectKey string, gitClient git.Client) (int, int, int, []git.GitRepository, error) {
 	var allRepos []git.GitRepository
 	var archivedCount, emptyCount, excludedCount int
+
+	// Convert SingleRepos to a slice if it's not empty
+	var singleReposList []string
+	if parms.SingleRepos != "" {
+		singleReposList = strings.Split(parms.SingleRepos, ",")
+	}
 
 	// Get repositories
 	repos, err := gitClient.GetRepositories(parms.Context, git.GetRepositoriesArgs{
@@ -627,6 +501,11 @@ func listReposForProject(parms ParamsProjectAzure, projectKey string, gitClient 
 
 	for _, repo := range *repos {
 		repoName := *repo.Name
+
+		// If SingleRepos is specified, skip repositories not in the list
+		if len(parms.SingleRepos) > 0 && !contains(singleReposList, repoName) {
+			continue
+		}
 
 		// check if exclude
 		if isRepoExcluded(parms.Exclusionlist, projectKey, repoName) {
@@ -648,6 +527,16 @@ func listReposForProject(parms ParamsProjectAzure, projectKey string, gitClient 
 	}
 
 	return archivedCount, emptyCount, excludedCount, allRepos, nil
+}
+
+// Helper function to check if a slice contains a string
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }
 
 func analyzeRepoBranches(parms ParamsProjectAzure, projectKey string, repo string, gitClient git.Client, cpt int, spin1 *spinner.Spinner) (string, int, int64, error) {
@@ -672,7 +561,7 @@ func analyzeRepoBranches(parms ParamsProjectAzure, projectKey string, repo strin
 
 }
 func getMostImportantBranch(ctx context.Context, gitClient git.Client, projectID string, repoID string, periode int, DefaultB bool, Singlebranch string) (string, int64, int, error) {
-	const REF = "refs/heads/"
+
 	var defaultBranch string
 	var err error
 
@@ -699,7 +588,7 @@ func getMostImportantBranch(ctx context.Context, gitClient git.Client, projectID
 	}
 }
 func handleNonDefaultBranch(ctx context.Context, gitClient git.Client, projectID string, repoID string, sinceStr string, defaultBranch string) (string, int64, int, error) {
-	const REF = "refs/heads/"
+
 	var mostImportantBranch string
 	var maxCommits int
 	var totalCommitSize int64
@@ -733,7 +622,7 @@ func handleNonDefaultBranch(ctx context.Context, gitClient git.Client, projectID
 }
 
 func handleDefaultOrSingleBranch(ctx context.Context, gitClient git.Client, projectID string, repoID string, defaultBranch string, singleBranch string, sinceStr string) (string, int64, int, error) {
-	const REF = "refs/heads/"
+
 	var branchName string
 
 	if defaultBranch != "" {

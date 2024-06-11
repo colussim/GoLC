@@ -360,6 +360,18 @@ func analyseGitlabRepo(project interface{}, DestinationResult string, platformCo
 	performRepoAnalysis(params, DestinationResult, spin, results, count)
 }
 
+func analyseAzurebRepo(project interface{}, DestinationResult string, platformConfig map[string]interface{}, spin *spinner.Spinner, results chan int, count *int) {
+	p := project.(getazure.ProjectBranch)
+	params := RepoParams{
+		ProjectKey: p.ProjectKey,
+		Namespace:  "",
+		RepoSlug:   p.RepoSlug,
+		MainBranch: p.MainBranch,
+		PathToScan: fmt.Sprintf("%s://%s@%s/%s/%s/%s/%s", platformConfig["Protocol"].(string), platformConfig["AccessToken"].(string), "dev.azure.com", platformConfig["Organization"].(string), p.ProjectKey, "_git", p.RepoSlug),
+	}
+	performRepoAnalysis(params, DestinationResult, spin, results, count)
+}
+
 // Perform repository analysis (common logic)
 func performRepoAnalysis(params RepoParams, DestinationResult string, spin *spinner.Spinner, results chan int, count *int) {
 	var outputFileName = ""
@@ -460,6 +472,15 @@ func AnalyseReposListGitlab(DestinationResult string, platformConfig map[string]
 		repoInterfaces[i] = v
 	}
 	return AnalyseReposList(DestinationResult, platformConfig, repoInterfaces, analyseGitlabRepo)
+}
+
+// Analysis function call for Gitlab
+func AnalyseReposListAzure(DestinationResult string, platformConfig map[string]interface{}, repolist []getazure.ProjectBranch) (cpt int) {
+	repoInterfaces := make([]interface{}, len(repolist))
+	for i, v := range repolist {
+		repoInterfaces[i] = v
+	}
+	return AnalyseReposList(DestinationResult, platformConfig, repoInterfaces, analyseAzurebRepo)
 }
 
 /* ---------------- Analyse Directory ---------------- */
@@ -767,8 +788,8 @@ func main() {
 			os.Exit(1)
 
 		} else {
-			//os.Exit(1)
-			//	NumberRepos = AnalyseReposListGitlab(DestinationResult, platformConfig, gitproject)
+
+			NumberRepos = AnalyseReposListAzure(DestinationResult, platformConfig, gitproject)
 
 		}
 
