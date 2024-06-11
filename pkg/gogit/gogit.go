@@ -36,7 +36,7 @@ func Getrepos(src, branch, token string) (string, error) {
 	_, err = git.PlainClone(dst, false, &git.CloneOptions{
 		/*Auth: &http.BasicAuth{
 			Username: "x-token-auth",
-			Password: "z7dob3ddyaytegsrsrdzf6uzvsxup6azt27dbx54s3ohnucdrz6q",
+			Password: """,
 		},*/
 		URL: src,
 
