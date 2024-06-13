@@ -101,7 +101,7 @@ type RepoParams struct {
 const errorMessageRepo = "\n❌ Error Analyse Repositories: "
 const errorMessageDi = "\r❌ Error deleting Repository Directory: %v\n"
 const errorMessageAnalyse = "\r❌ No Analysis performed...\n"
-const errorMessageRepos = "Error Get Info Repositories in organization"
+const errorMessageRepos = "Error Get Info Repositories in organization '%s' : '%s'"
 
 var logFile *os.File
 
@@ -780,7 +780,7 @@ func main() {
 
 		gitproject, err := getazure.GetRepoAzureList(platformConfig, fileexclusionEX)
 		if err != nil {
-			fmt.Printf("%s '%s' : '%s'", errorMessageRepos, platformConfig["Organization"].(string), err)
+			fmt.Printf(errorMessageRepos, platformConfig["Organization"].(string), err)
 
 			return
 		}
@@ -817,7 +817,7 @@ func main() {
 
 			repositories, err := getgithub.GetRepoGithubList(platformConfig, fileexclusionEX, fast)
 			if err != nil {
-				fmt.Printf("%s '%s' : '%s'", errorMessageRepos, platformConfig["Organization"].(string), err)
+				fmt.Printf(errorMessageRepos, platformConfig["Organization"].(string), err)
 				return
 			}
 
@@ -841,7 +841,7 @@ func main() {
 
 		gitproject, err := getgitlab.GetRepoGitLabList(platformConfig, fileexclusionEX)
 		if err != nil {
-			fmt.Printf("%s '%s' : '%s'", errorMessageRepos, platformConfig["Organization"].(string), err)
+			fmt.Printf(errorMessageRepos, platformConfig["Organization"].(string), err)
 			return
 		}
 

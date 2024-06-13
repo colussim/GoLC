@@ -132,7 +132,7 @@ const ApiHeader1 = "application/vnd.github.v3+json"
 const ErrorMesssage1 = "❌ Error saving repositories in file Results/config/analysis_repos_github.json: %v\n"
 
 // Load repository ignore map from file
-func loadExclusionRepos(filename string) (ExclusionRepos, error) {
+func loadExclusionRepos1(filename string) (ExclusionRepos, error) {
 	ignoreMap := make(ExclusionRepos)
 
 	file, err := os.Open(filename)
@@ -636,7 +636,7 @@ func loadExclusionFile(exclusionfile string, spin *spinner.Spinner) (ExclusionRe
 	if exclusionfile == "0" {
 		exclusionList = make(map[string]bool)
 	} else {
-		exclusionList, err = loadExclusionRepos(exclusionfile)
+		exclusionList, err = loadExclusionRepos1(exclusionfile)
 		if err != nil {
 			fmt.Printf("\n❌ Error Read Exclusion File <%s>: %v", exclusionfile, err)
 			spin.Stop()
@@ -744,7 +744,7 @@ func FastAnalys(platformConfig map[string]interface{}, exlusionfile string) erro
 		exclusionList = make(map[string]bool)
 
 	} else {
-		exclusionList, err1 = loadExclusionRepos(exlusionfile)
+		exclusionList, err1 = loadExclusionRepos1(exlusionfile)
 		if err1 != nil {
 			fmt.Printf("\n❌ Error Read Exclusion File <%s>: %v", exlusionfile, err1)
 			spin.Stop()

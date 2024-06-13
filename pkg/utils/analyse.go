@@ -1,9 +1,17 @@
 package utils
 
-// Load repository ignore map from file
-func loadExclusionRepos(filename string) (ExclusionRepos, error) {
+import (
+	"bufio"
+	"os"
+	"strings"
+)
 
-	ignoreMap := make(ExclusionRepos)
+type ExclusionRepos1 map[string]bool
+
+// Load repository ignore map from file
+func LoadExclusionRepos1(filename string) (ExclusionRepos1, error) {
+
+	ignoreMap := make(ExclusionRepos1)
 
 	file, err := os.Open(filename)
 	if err != nil {

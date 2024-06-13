@@ -1,6 +1,7 @@
 package getgitlab
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -55,6 +56,33 @@ const Message4 = "Project(s)"
 const (
 	perPage = 100
 )
+
+// Load repository ignore map from file
+func LoadExclusionRepos(filename string) (ExclusionRepos, error) {
+
+	ignoreMap := make(ExclusionRepos)
+
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		repoName := strings.TrimSpace(scanner.Text())
+		if repoName != "" {
+			ignoreMap[repoName] = true
+
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return ignoreMap, nil
+}
 
 // Function to Get Commit count
 func getCommitCount(client *gitlab.Client, projectID int, branchName string, since, until time.Time) (int, error) {
@@ -376,7 +404,8 @@ func GetRepoGitLabList(platformConfig map[string]interface{}, exclusionfile stri
 		exclusionList = make(map[string]bool)
 
 	} else {
-		exclusionList, err1 = utils.loadExclusionRepos(exclusionfile)
+
+		exclusionList, err1 = LoadExclusionRepos(exclusionfile)
 		if err1 != nil {
 			fmt.Printf("\n❌ Error Read Exclusion File <%s>: %v", exclusionfile, err1)
 			spin.Stop()
