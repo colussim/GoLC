@@ -1,7 +1,6 @@
 package getgitlab
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -240,33 +239,6 @@ func isExcluded(projectName string, exclusionList map[string]bool) bool {
 
 }
 
-// Load repository ignore map from file
-func loadExclusionRepos(filename string) (ExclusionRepos, error) {
-
-	ignoreMap := make(ExclusionRepos)
-
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		repoName := strings.TrimSpace(scanner.Text())
-		if repoName != "" {
-			ignoreMap[repoName] = true
-
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-
-	return ignoreMap, nil
-}
-
 func SaveResult(result AnalysisResult) error {
 	// Open or create the file
 	file, err := os.Create("Results/config/analysis_result_github.json")
@@ -404,7 +376,7 @@ func GetRepoGitLabList(platformConfig map[string]interface{}, exclusionfile stri
 		exclusionList = make(map[string]bool)
 
 	} else {
-		exclusionList, err1 = loadExclusionRepos(exclusionfile)
+		exclusionList, err1 = utils.loadExclusionRepos(exclusionfile)
 		if err1 != nil {
 			fmt.Printf("\n❌ Error Read Exclusion File <%s>: %v", exclusionfile, err1)
 			spin.Stop()

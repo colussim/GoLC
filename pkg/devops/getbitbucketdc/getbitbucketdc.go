@@ -180,6 +180,9 @@ type ParamsReposProjectDC struct {
 	DefaultB         bool
 }
 
+const tokenOpt = "Bearer "
+const Startopt = "%s?start=%d"
+
 var ErrEmptyRepo = errors.New("repository is empty")
 
 func loadExclusionList(filename string) (*ExclusionList, error) {
@@ -316,7 +319,7 @@ func getDefaultBranch(url1, accessToken string) (*Branch, error) {
 			return nil, err
 		}
 
-		req.Header.Set("Authorization", "Bearer "+accessToken)
+		req.Header.Set("Authorization", tokenOpt+accessToken)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -677,7 +680,7 @@ func ifExistBranches(repoURL, accessToken string) ([]Branch, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Authorization", tokenOpt+accessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -734,7 +737,7 @@ func fetchAllProjects(url string, accessToken string, exclusionList *ExclusionLi
 		if projectResponse.IsLastPage {
 			break
 		}
-		url = fmt.Sprintf("%s?start=%d", url, projectResponse.NextPageStart)
+		url = fmt.Sprintf(Startopt, url, projectResponse.NextPageStart)
 	}
 	return allProjects, nil
 }
@@ -797,7 +800,7 @@ func fetchProjects(url string, accessToken string, isProjectResponse bool) (inte
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Authorization", tokenOpt+accessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -870,7 +873,7 @@ func fetchAllRepos(url string, accessToken string, exclusionList *ExclusionList)
 		if ReposResponse.IsLastPage {
 			break
 		}
-		url = fmt.Sprintf("%s?start=%d", url, ReposResponse.NextPageStart)
+		url = fmt.Sprintf(Startopt, url, ReposResponse.NextPageStart)
 	}
 	return allRepos, nil
 }
@@ -882,7 +885,7 @@ func fetchRepos(url string, accessToken string, isProjectResponse bool) (interfa
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Authorization", tokenOpt+accessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -922,7 +925,7 @@ func fetchAllBranches(url string, accessToken string) ([]Branch, error) {
 		if branchesResp.IsLastPage {
 			break
 		}
-		url = fmt.Sprintf("%s?start=%d", url, branchesResp.NextPageStart)
+		url = fmt.Sprintf(Startopt, url, branchesResp.NextPageStart)
 	}
 	return allBranches, nil
 }
@@ -932,7 +935,7 @@ func fetchBranches(url string, accessToken string) (*BranchResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Authorization", tokenOpt+accessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -960,7 +963,7 @@ func fetchFiles(url string, accessToken string) (*FileResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Authorization", tokenOpt+accessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -990,7 +993,7 @@ func fetchBranchSize(projectKey string, repoSlug string, branchName string, acce
 	if err != nil {
 		return 0, err
 	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Authorization", tokenOpt+accessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -1051,7 +1054,7 @@ func fetchDirectorySize(projectKey string, repoSlug string, branchName string, c
 	if err != nil {
 		return 0, err
 	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Authorization", tokenOpt+accessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

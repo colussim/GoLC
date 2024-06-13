@@ -167,6 +167,8 @@ type SizeResponse struct {
 }
 
 const PrefixMsg = "Get Projects..."
+const errorMessage = "\n❌ Error creating Analysis file: %v"
+const tokenOpt = "Bearer "
 
 func loadExclusionList(filename string) (*ExclusionList, error) {
 	file, err := os.Open(filename)
@@ -350,7 +352,7 @@ func GetReposProjectCloud(parms ParamsReposProjectCloud) ([]ProjectBranch, int, 
 	// Save Result of Analysis
 	file, err := os.Create("Results/config/analysis_repos.json")
 	if err != nil {
-		fmt.Println("❌ Error creating Analysis file:", err)
+		fmt.Printf(errorMessage, err)
 		return importantBranches, parms.NBRepos, emptyRepo
 	}
 	defer file.Close()
@@ -475,7 +477,7 @@ func GetRepos(parms ParamsReposCloud) ([]ProjectBranch, int, int) {
 	// Save Result of Analysis
 	file, err := os.Create("Results/config/analysis_repos_bitbucket.json")
 	if err != nil {
-		fmt.Println("❌ Error creating Analysis file:", err)
+		fmt.Printf(errorMessage, err)
 		return importantBranches, nbRepos, emptyRepo
 	}
 	defer file.Close()
@@ -659,7 +661,7 @@ func GetProjectBitbucketListCloud(platformConfig map[string]interface{}, exlusio
 	// Save Result of Analysis
 	file, err := os.Create("Results/config/analysis_repos_bitbucketdc.json")
 	if err != nil {
-		fmt.Println("❌ Error creating Analysis file:", err)
+		fmt.Printf(errorMessage, err)
 		return importantBranches, nil
 	}
 	defer file.Close()
@@ -705,7 +707,7 @@ func ifExistBranches(repoURL, accessToken string) ([]Branch, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Authorization", tokenOpt+accessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -770,7 +772,7 @@ func CloudProjects(url string, accessToken string, isProjectResponse bool) (inte
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Authorization", tokenOpt+accessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -858,7 +860,7 @@ func CloudRepos(url string, accessToken string, isProjectResponse bool) (interfa
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Authorization", tokenOpt+accessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -907,7 +909,7 @@ func CloudBranches(url string, accessToken string) (*BranchResponse, error) {
 		return nil, err
 	}
 	//fmt.Println(url)
-	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Authorization", tokenOpt+accessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -968,7 +970,7 @@ func fetchFiles(url string, accessToken string) (*Response1, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Authorization", tokenOpt+accessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -1003,7 +1005,7 @@ func fetchBranchSize(workspace, repoSlug, branchName, accessToken, url, apiver s
 	if err != nil {
 		return 0, err
 	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Authorization", tokenOpt+accessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -1065,7 +1067,7 @@ func fetchBranchSize1(workspace, repoSlug, accessToken, url, apiver string) (int
 	if err != nil {
 		return 0, err
 	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Authorization", tokenOpt+accessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -1100,7 +1102,7 @@ func fetchDirectorySize(workspace string, repoSlug string, branchName string, co
 	if err != nil {
 		return 0, err
 	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Authorization", tokenOpt+accessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
