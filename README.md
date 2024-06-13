@@ -30,7 +30,7 @@ You can install from the stable release by clicking [here](https://github.com/co
 
 To show all supported languages use the subcommand languages :
 
- ```bash
+ ```
 $:> golc.go -languages
 
 Language           | Extensions                               | Single Comments | Multi Line Comments
