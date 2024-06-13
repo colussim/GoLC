@@ -33,12 +33,12 @@ To show all supported languages use the subcommand languages :
  ```bash
 $:> golc.go -languages
 
-Language           | Extensions                                                                     | Single Comments | Multi Line Comments
--------------------+--------------------------------------------------------------------------------+-----------------+--------------------
-Objective-C        | .m                                                                             | //              | /* */ 
-Ruby               | .rb                                                                            | #               | =begin =end 
-Visual Basic .NET  | .vb                                                                            | '               | 
-YAML               | .yaml, .yml                                                                    | #               | 
+Language           | Extensions                               | Single Comments | Multi Line Comments
+-------------------+------------------------------------------+-----------------+--------------------
+Objective-C        | .m                                       | //              | /* */ 
+Ruby               | .rb                                      | #               | =begin =end 
+Visual Basic .NET  | .vb                                      | '               | 
+YAML               | .yaml, .yml                              | #               | 
 C#                 | .cs                                                                            | //              | /* */ 
 Flex               | .as                                                                            | //              | /* */ 
 C++ Header         | .hh, .hpp                                                                      | //              | /* */ 
@@ -49,7 +49,7 @@ RPG                | .rpg                                                       
 Swift              | .swift                                                                         | //              | /* */ 
 JCL                | .jcl, .JCL                                                                     | //              | /* */ 
 Apex               | .cls, .trigger                                                                 | //              | /* */ 
-PHP                | .php, .php3, .php4, .php5, .phtml, .inc                                        | //, #           | /* */ 
+PHP                | .php, .php3, .php4, .php5, .phtml, .inc | //, #           | /* */ 
 TypeScript         | .ts, .tsx                                                                      | //              | /* */ 
 XML                | .xml, .XML                                                                     | <!--            | <!-- --> 
 XHTML              | .xhtml                                                                         | <!--            | <!-- --> 
@@ -57,7 +57,8 @@ Terraform          | .tf                                                        
 T-SQL              | .tsql                                                                          | --              | 
 Vue                | .vue                                                                           | <!--            | <!-- --> 
 COBOL              | .cbl, .ccp, .cob, .cobol, .cpy                                                 | *, /            | 
-HTML               | .html, .htm, .cshtml, .vbhtml, .aspx, .ascx, .rhtml, .erb, .shtml, .shtm, cmp  |                 | <!-- --> 
+HTML               | .html, .htm, .cshtml, .vbhtml, .aspx,   |                 | <!-- --> 
+                   | .ascx, .rhtml, .erb, .shtml, .shtm, cmp
 JavaScript         | .js, .jsx, .jsp, .jspf                                                         | //              | /* */ 
 Python             | .py                                                                            | #               | """ """ 
 Scss               | .scss                                                                          | //              | /* */ 
