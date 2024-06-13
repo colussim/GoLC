@@ -114,7 +114,7 @@ type Reposize struct {
 
 const PrefixMsg = "Get Projects..."
 
-func loadExclusionList(filename string) (*ExclusionList, error) {
+func loadExclusionList4(filename string) (*ExclusionList, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -270,7 +270,7 @@ func loadExclusionFileOrCreateNew(exclusionFile string) (*ExclusionList, error) 
 			Repos:    make(map[string]bool),
 		}, nil
 	}
-	return loadExclusionList(exclusionFile)
+	return loadExclusionList4(exclusionFile)
 }
 
 func GetSize(parms ParamsProjectBitbucket, repo *bitbucket.Repository) (int, error) {

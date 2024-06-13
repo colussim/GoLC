@@ -185,7 +185,7 @@ const Startopt = "%s?start=%d"
 
 var ErrEmptyRepo = errors.New("repository is empty")
 
-func loadExclusionList(filename string) (*ExclusionList, error) {
+func loadExclusionList2(filename string) (*ExclusionList, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -610,7 +610,7 @@ func loadOrCreateExclusionList(exclusionFile string) (*ExclusionList, error) {
 			Repos:    make(map[string]bool),
 		}, nil
 	}
-	return loadExclusionList(exclusionFile)
+	return loadExclusionList2(exclusionFile)
 }
 
 func determineProjectsAndRepos(platformConfig map[string]interface{}, exclusionList *ExclusionList, bitbucketURL string, spin *spinner.Spinner) ([]Project, []Repo, error) {

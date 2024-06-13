@@ -82,7 +82,7 @@ const Message3 = "\r\t\t✅ %d Project: %s - Number of branches: %d - largest Br
 const Message4 = "Project(s)"
 const REF = "refs/heads/"
 
-func loadExclusionList(filename string) (*ExclusionList, error) {
+func loadExclusionList3(filename string) (*ExclusionList, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ func loadExclusionFileOrCreateNew(exclusionFile string) (*ExclusionList, error) 
 			Repos:    make(map[string]bool),
 		}, nil
 	}
-	return loadExclusionList(exclusionFile)
+	return loadExclusionList3(exclusionFile)
 }
 
 func isRepoExcluded(exclusionList *ExclusionList, projectKey, repoKey string) bool {
