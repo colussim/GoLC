@@ -1,7 +1,6 @@
 package getbibucketdc
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -102,7 +101,7 @@ type ParamsReposDC struct {
 	APIVersion       string
 	AccessToken      string
 	BitbucketURLBase string
-	ExclusionList    *ExclusionList
+	ExclusionList    *utils.ExclusionList
 	Branch           string
 	Spin             *spinner.Spinner
 	DefaultB         bool
@@ -174,7 +173,7 @@ type ParamsReposProjectDC struct {
 	AccessToken      string
 	BitbucketURLBase string
 	NBRepos          int
-	ExclusionList    *ExclusionList
+	ExclusionList    *utils.ExclusionList
 	Spin             *spinner.Spinner
 	Branch           string
 	DefaultB         bool
@@ -185,39 +184,7 @@ const Startopt = "%s?start=%d"
 
 var ErrEmptyRepo = errors.New("repository is empty")
 
-func loadExclusionList2(filename string) (*ExclusionList, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	exclusionList := &ExclusionList{
-		Projects: make(map[string]bool),
-		Repos:    make(map[string]bool),
-	}
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		parts := strings.Split(line, "/")
-		if len(parts) == 1 {
-			// Get Projet
-			exclusionList.Projects[parts[0]] = true
-		} else if len(parts) == 2 {
-			// Get Repos
-			exclusionList.Repos[line] = true
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-
-	return exclusionList, nil
-}
-
-func GetReposProject(projects []Project, parms ParamsReposProjectDC, bitbucketURLBase string, nbRepos int, exclusionList *ExclusionList) ([]ProjectBranch, int, int) {
+func GetReposProject(projects []Project, parms ParamsReposProjectDC, bitbucketURLBase string, nbRepos int, exclusionList *utils.ExclusionList) ([]ProjectBranch, int, int) {
 	var importantBranches []ProjectBranch
 	emptyRepo := 0
 	result := AnalysisResult{}
@@ -355,7 +322,7 @@ func getDefaultBranch(url1, accessToken string) (*Branch, error) {
 	return nil, fmt.Errorf("❌ default branch not found")
 }
 
-func GetRepos(project string, repos []Repo, parms ParamsReposDC, bitbucketURLBase string, exclusionList *ExclusionList) ([]ProjectBranch, int, int) {
+func GetRepos(project string, repos []Repo, parms ParamsReposDC, bitbucketURLBase string, exclusionList *utils.ExclusionList) ([]ProjectBranch, int, int) {
 	var largestRepoSize int
 	var largestRepoBranch string
 	var importantBranches []ProjectBranch
@@ -542,7 +509,7 @@ func saveAnalysisResult1(filePath string, result AnalysisResult) error {
 
 func GetProjectBitbucketList(platformConfig map[string]interface{}, exclusionFile string) ([]ProjectBranch, error) {
 	var importantBranches []ProjectBranch
-	var exclusionList *ExclusionList
+	var exclusionList *utils.ExclusionList
 	var err error
 	var nbRepos int
 
@@ -603,17 +570,17 @@ func GetProjectBitbucketList(platformConfig map[string]interface{}, exclusionFil
 	return summarizeAnalysisResults(importantBranches, nbRepos), nil
 }
 
-func loadOrCreateExclusionList(exclusionFile string) (*ExclusionList, error) {
+func loadOrCreateExclusionList(exclusionFile string) (*utils.ExclusionList, error) {
 	if exclusionFile == "0" {
-		return &ExclusionList{
+		return &utils.ExclusionList{
 			Projects: make(map[string]bool),
 			Repos:    make(map[string]bool),
 		}, nil
 	}
-	return loadExclusionList2(exclusionFile)
+	return utils.LoadExclusionList(exclusionFile)
 }
 
-func determineProjectsAndRepos(platformConfig map[string]interface{}, exclusionList *ExclusionList, bitbucketURL string, spin *spinner.Spinner) ([]Project, []Repo, error) {
+func determineProjectsAndRepos(platformConfig map[string]interface{}, exclusionList *utils.ExclusionList, bitbucketURL string, spin *spinner.Spinner) ([]Project, []Repo, error) {
 	var projects []Project
 	var repos []Repo
 	var err error
@@ -714,7 +681,7 @@ func ifExistBranches(repoURL, accessToken string) ([]Branch, error) {
 	return branchesResp.Values, nil
 }
 
-func fetchAllProjects(url string, accessToken string, exclusionList *ExclusionList) ([]Project, error) {
+func fetchAllProjects(url string, accessToken string, exclusionList *utils.ExclusionList) ([]Project, error) {
 	var allProjects []Project
 	for {
 		projectsResp, err := fetchProjects(url, accessToken, true)
@@ -742,7 +709,7 @@ func fetchAllProjects(url string, accessToken string, exclusionList *ExclusionLi
 	return allProjects, nil
 }
 
-func fetchOnelProjects(url string, accessToken string, exclusionList *ExclusionList) ([]Project, error) {
+func fetchOnelProjects(url string, accessToken string, exclusionList *utils.ExclusionList) ([]Project, error) {
 	var allProjects []Project
 
 	projectsResp, err := fetchProjects(url, accessToken, false)
@@ -766,7 +733,7 @@ func fetchOnelProjects(url string, accessToken string, exclusionList *ExclusionL
 	return allProjects, nil
 }
 
-func fetchOneRepos(url string, accessToken string, exclusionList *ExclusionList) ([]Repo, error) {
+func fetchOneRepos(url string, accessToken string, exclusionList *utils.ExclusionList) ([]Repo, error) {
 	var allRepos []Repo
 
 	reposResp, err := fetchRepos(url, accessToken, false)
@@ -829,27 +796,27 @@ func fetchProjects(url string, accessToken string, isProjectResponse bool) (inte
 
 }
 
-func isProjectAndRepoExcluded(repoName string, exclusionList ExclusionList) bool {
+func isProjectAndRepoExcluded(repoName string, exclusionList utils.ExclusionList) bool {
 
 	excluded, repoExcluded := exclusionList.Repos[repoName]
 	return repoExcluded && excluded
 }
 
-func isProjectExcluded1(projectName string, exclusionList ExclusionList) bool {
+func isProjectExcluded1(projectName string, exclusionList utils.ExclusionList) bool {
 	_, found := exclusionList.Projects[projectName]
 	return found
 }
-func isProjectExcluded(exclusionList *ExclusionList, project string) bool {
+func isProjectExcluded(exclusionList *utils.ExclusionList, project string) bool {
 	_, excluded := exclusionList.Projects[project]
 	return excluded
 }
 
-func isRepoExcluded(exclusionList *ExclusionList, repo string) bool {
+func isRepoExcluded(exclusionList *utils.ExclusionList, repo string) bool {
 	_, excluded := exclusionList.Repos[repo]
 	return excluded
 }
 
-func fetchAllRepos(url string, accessToken string, exclusionList *ExclusionList) ([]Repo, error) {
+func fetchAllRepos(url string, accessToken string, exclusionList *utils.ExclusionList) ([]Repo, error) {
 	var allRepos []Repo
 	for {
 		reposResp, err := fetchRepos(url, accessToken, true)
