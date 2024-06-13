@@ -59,7 +59,7 @@ T-SQL              | .tsql                                    | --              
 Vue                | .vue                                     | <!--            | <!-- --> 
 COBOL              | .cbl, .ccp, .cob, .cobol, .cpy           | *, /            | 
 HTML               | .html, .htm, .cshtml, .vbhtml, .aspx,    |                 | <!-- --> 
-                   | .ascx, .rhtml, .erb, .shtml, .shtm, cmp  |                 | <!-- -->
+                    | .ascx, .rhtml, .erb, .shtml, .shtm, cmp  |                 | <!-- -->
 JavaScript         | .js, .jsx, .jsp, .jspf                   | //              | /* */ 
 Python             | .py                                      | #               | """ """ 
 Scss               | .scss                                    | //              | /* */ 
