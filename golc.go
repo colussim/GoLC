@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -648,6 +649,7 @@ func main() {
 	var ListDirectory []string
 	var ListExclusion []string
 	var message3, message4, message5 string
+	var version = "1.0.3"
 
 	// Test command line Flags
 
@@ -655,6 +657,7 @@ func main() {
 	fastFlag := flag.Bool("fast", false, "Enable fast mode (only for Github)")
 	helpFlag := flag.Bool("help", false, "Show help message")
 	languagesFlag := flag.Bool("languages", false, "Show all supported languages")
+	versionflag := flag.Bool("version", false, "Show version")
 
 	flag.Parse()
 
@@ -667,7 +670,12 @@ func main() {
 
 	if *languagesFlag {
 		displayLanguages()
-		os.Exit(0) // Exit after displaying languages
+		os.Exit(0)
+	}
+
+	if *versionflag {
+		fmt.Printf("GoLC version: %s %s/%s\n", version, runtime.GOOS, runtime.GOARCH)
+		os.Exit(0)
 	}
 
 	if *devopsFlag == "" {
