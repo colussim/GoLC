@@ -179,6 +179,16 @@ type ParamsReposProjectDC struct {
 	DefaultB         bool
 }
 
+type FetchParams struct {
+	ProjectKey       string
+	RepoSlug         string
+	BranchName       string
+	AccessToken      string
+	BitbucketURLBase string
+	ApiVer           string
+	Components       []string
+}
+
 const tokenOpt = "Bearer "
 const Startopt = "%s?start=%d"
 
@@ -446,7 +456,16 @@ func findLargestBranch(project, repoSlug string, branches []Branch, parms Params
 		parms.Spin.Prefix = fmt.Sprintf("\t   Analysis branch <%s> size...", branch.Name)
 		parms.Spin.Start()
 
-		size, err := fetchBranchSize(project, repoSlug, branch.Name, parms.AccessToken, parms.URL, parms.APIVersion)
+		Fetchparams := FetchParams{
+			ProjectKey:       project,
+			RepoSlug:         repoSlug,
+			BranchName:       branch.Name,
+			AccessToken:      parms.AccessToken,
+			BitbucketURLBase: parms.URL,
+			ApiVer:           parms.APIVersion,
+		}
+
+		size, err := fetchBranchSize(Fetchparams)
 		parms.Spin.Stop()
 		if err != nil {
 			fmt.Println("❌ Error retrieving branch size:", err)
@@ -470,7 +489,16 @@ func findLargestBranch1(projectKey, repoSlug string, branches []Branch, parms Pa
 		spin1.Prefix = fmt.Sprintf("\t   Analysis branch <%s> size...", branch.Name)
 		spin1.Start()
 
-		size, err := fetchBranchSize(projectKey, repoSlug, branch.Name, parms.AccessToken, parms.URL, parms.APIVersion)
+		Fetchparams := FetchParams{
+			ProjectKey:       projectKey,
+			RepoSlug:         repoSlug,
+			BranchName:       branch.Name,
+			AccessToken:      parms.AccessToken,
+			BitbucketURLBase: parms.URL,
+			ApiVer:           parms.APIVersion,
+		}
+
+		size, err := fetchBranchSize(Fetchparams)
 		spin1.Stop()
 		if err != nil {
 			return 0, "", fmt.Errorf("retrieving branch size: %w", err)
@@ -953,48 +981,52 @@ func fetchFiles(url string, accessToken string) (*FileResponse, error) {
 	return &filesResp, nil
 }
 
-func fetchBranchSize(projectKey string, repoSlug string, branchName string, accessToken string, bitbucketURLBase string, apiver string) (int, error) {
-	url := fmt.Sprintf("%srest/api/%s/projects/%s/repos/%s/browse?at=refs/heads/%s", bitbucketURLBase, apiver, projectKey, repoSlug, branchName)
-
+func fetchFileResponse(url string, accessToken string) (FileResponse, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return 0, err
+		return FileResponse{}, err
 	}
 	req.Header.Set("Authorization", tokenOpt+accessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return 0, err
+		return FileResponse{}, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return 0, err
+		return FileResponse{}, err
 	}
 
 	var filesResp FileResponse
 	err = json.Unmarshal(body, &filesResp)
 	if err != nil {
-		return 0, err
+		return FileResponse{}, err
 	}
 
+	return filesResp, nil
+}
+func calculateTotalSize(files []File, params FetchParams) (int, error) {
 	var wg sync.WaitGroup
-	wg.Add(len(filesResp.Children.Values))
+	wg.Add(len(files))
 
 	totalSize := 0
 	resultCh := make(chan int)
 
-	for _, file := range filesResp.Children.Values {
+	for _, file := range files {
 		go func(fileInfo File) {
 			defer wg.Done()
 			if fileInfo.Type == "FILE" {
 				resultCh <- fileInfo.Size
 			} else if fileInfo.Type == "DIRECTORY" {
-				dirSize, err := fetchDirectorySize(projectKey, repoSlug, branchName, fileInfo.Path.Components, accessToken, bitbucketURLBase, apiver)
+				dirComponents := append(params.Components, fileInfo.Path.Components...)
+				dirParams := params
+				dirParams.Components = dirComponents
+				dirSize, err := fetchDirectorySize(dirParams)
 				if err != nil {
-					fmt.Println("Error fetchDirectorySize:", err)
+					fmt.Printf("\r❌ Error fetchDirectorySize:%s - Decrease the number of repo workers (variable <NumberWorkerRepos> in config.json file)", err)
 					return
 				}
 				resultCh <- dirSize
@@ -1014,65 +1046,24 @@ func fetchBranchSize(projectKey string, repoSlug string, branchName string, acce
 	return totalSize, nil
 }
 
-func fetchDirectorySize(projectKey string, repoSlug string, branchName string, components []string, accessToken string, bitbucketURLBase string, apiver string) (int, error) {
-	url := fmt.Sprintf("%srest/api/%s/projects/%s/repos/%s/browse/%s?at=refs/heads/%s", bitbucketURLBase, apiver, projectKey, repoSlug, strings.Join(components, "/"), branchName)
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return 0, err
-	}
-	req.Header.Set("Authorization", tokenOpt+accessToken)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return 0, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
+func fetchBranchSize(params FetchParams) (int, error) {
+	url := fmt.Sprintf("%srest/api/%s/projects/%s/repos/%s/browse?at=refs/heads/%s", params.BitbucketURLBase, params.ApiVer, params.ProjectKey, params.RepoSlug, params.BranchName)
+	filesResp, err := fetchFileResponse(url, params.AccessToken)
 	if err != nil {
 		return 0, err
 	}
 
-	var filesResp FileResponse
-	err = json.Unmarshal(body, &filesResp)
+	return calculateTotalSize(filesResp.Children.Values, params)
+}
+
+func fetchDirectorySize(params FetchParams) (int, error) {
+	url := fmt.Sprintf("%srest/api/%s/projects/%s/repos/%s/browse/%s?at=refs/heads/%s", params.BitbucketURLBase, params.ApiVer, params.ProjectKey, params.RepoSlug, strings.Join(params.Components, "/"), params.BranchName)
+	filesResp, err := fetchFileResponse(url, params.AccessToken)
 	if err != nil {
 		return 0, err
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(len(filesResp.Children.Values))
-
-	totalSize := 0
-	resultCh := make(chan int)
-
-	for _, file := range filesResp.Children.Values {
-		go func(fileInfo File) {
-			defer wg.Done()
-			if fileInfo.Type == "FILE" {
-				resultCh <- fileInfo.Size
-			} else if fileInfo.Type == "DIRECTORY" {
-				subdirSize, err := fetchDirectorySize(projectKey, repoSlug, branchName, append(components, fileInfo.Path.Components...), accessToken, bitbucketURLBase, apiver)
-				if err != nil {
-					//fmt.Println("Error fetchDirectorySize on subdirSize :", err)
-					return
-				}
-				resultCh <- subdirSize
-			}
-		}(file)
-	}
-
-	go func() {
-		wg.Wait()
-		close(resultCh)
-	}()
-
-	for size := range resultCh {
-		totalSize += size
-	}
-
-	return totalSize, nil
+	return calculateTotalSize(filesResp.Children.Values, params)
 }
 
 func isRepositoryEmpty(projectKey, repoSlug, accessToken, bitbucketURLBase, apiver string) (bool, error) {
