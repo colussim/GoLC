@@ -1,0 +1,15 @@
+# Utilisez une image Alpine minimaliste comme image de base
+FROM arm64v8/alpine:latest
+
+# Définissez le répertoire de travail à l'intérieur du conteneur
+WORKDIR /app
+
+# Copiez les fichiers de l'application dans le conteneur
+COPY golc/golc_arm64 /app/golc
+
+# Rendez le binaire exécutable
+RUN chmod +x /app/golc
+
+# Définissez une commande par défaut vide, pour permettre le passage de commandes à l'exécution
+ENTRYPOINT  ["/app/golc"]
+

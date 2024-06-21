@@ -1,0 +1,22 @@
+# Utilisez une image Alpine minimaliste comme image de base
+FROM alpine:latest
+
+# Définissez le répertoire de travail à l'intérieur du conteneur
+WORKDIR /app
+
+# Copiez le répertoire dist dans le conteneur
+COPY resultsall/dist /app/dist
+COPY resultsall/imgs /app/imgs
+
+# Copiez les fichiers de l'application dans le conteneur
+COPY resultsall/ResultsAll_amd64 /app/ResultsAll
+
+# Rendez le binaire exécutable
+RUN chmod +x /app/ResultsAll
+
+# Exposez le port sur lequel le service HTTP sera exécuté
+EXPOSE 8090
+
+# Définissez la commande par défaut pour exécuter le programme
+CMD ["/app/ResultsAll"]
+
