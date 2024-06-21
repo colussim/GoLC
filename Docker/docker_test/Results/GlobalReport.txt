@@ -1,6 +1,0 @@
-
-✅ Number of Repository analyzed in Organization <SonarSource-Demos> is 1 
-✅ The repository with the largest line of code is in project <SonarSource-Demos> the repo name is <sonar-golc> with <41.48K> lines of code
-✅ The total sum of lines of code in Organization <SonarSource-Demos> is : 41.48K Lines of Code
-
-✅ Time elapsed : 00:00:08
