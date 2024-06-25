@@ -4,3 +4,17 @@ Saves/*
 mod_tests/*
 config.json
 .cloc_*_ignore 
+Release/*
+createrelease.sh 
+scan.sh
+generate_test.sh
+**/*_test.go
+pkglist.txt
+cover.sh
+ResultsAll/*
+createreportdocker.sh
+Docker/docker_test/*
+Docker/dockerbuid.sh 
+dockerbuild.sh
+.cloc_file_load
+.scannerwork/

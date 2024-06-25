@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/briandowns/spinner"
@@ -14,15 +13,19 @@ import (
 )
 
 func extractLastString(url string) string {
-	parts := strings.Split(url, "/")
-	return parts[len(parts)-1]
+	/*parts := strings.Split(url, "/")
+	return parts[len(parts)-1]*/
+
+	return filepath.Base(url)
 }
 
 func Getter(src string) (string, error) {
 	RepoString := extractLastString(src)
 
-	spinner := newSpinner(fmt.Sprintf(" Extracting files from %s \n", RepoString))
+	spinner := newSpinner(fmt.Sprintf("\r Extracting files from %s \n", RepoString))
 	spinner.Color("green", "bold")
+	messageF := ""
+	spinner.FinalMSG = messageF
 	spinner.Start()
 	defer spinner.Stop()
 
