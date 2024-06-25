@@ -10,7 +10,7 @@
 
 GoLC The tool analyzes your repositories and identifies the largest branch of each repository, counting the total number of lines of code per language for that branch. At the end of the analysis, a text and PDF report is generated, along with a JSON results file for each repository.It starts an HTTP service to display an HTML page with the results.
 
-> This version ver1.0.3 is available for Bitbucket Cloud , Bitbucket DC, GitHub , GitLab , Azure DevOps and Files.A Docker version will be planned.
+> This version ver1.0.3 is available for Bitbucket Cloud , Bitbucket DC, GitHub , GitLab , Azure DevOps and Files.A Docker version is available.
 
 ---
 ## Installation
@@ -275,7 +275,7 @@ PROJECT_KEY
 
 ❗️ The parameters **'Period'**, **'Factor'**, and **'Stats'** should not be modified as they will be used in a future version.
 
-❗️ The parameters **'Multithreading'** and **'Workers'** initialize whether multithreading is enabled or not, allowing parallel analysis. You can disable it by setting **'Multithreading'** to **false**. **'Workers'** corresponds to the number of concurrent analyses.
+❗️ The parameters **'Multithreading'** and **'Workers'** initialize whether multithreading is enabled or not, allowing parallel analysis. You can disable it by setting **'Multithreading'** to **false**. **'Workers'** corresponds to the number of concurrent analyses.These parameters can be adjusted according to the performance of the compute running GoLC.
 
 ❗️ The boolean parameters **DefaultBranch**, if set to true, specifies that only the default branch of each repository should be analyzed. If set to false, it will analyze all branches of each repository to determine the most important one.
 
@@ -286,7 +286,7 @@ PROJECT_KEY
 flag : <BitBucketSRV>||<BitBucket>||<Github>||<Gitlab>||<Azure>||<File>
 
  ```
- ❗️ And for now, only the **BitBucketSRV** and **BitBucket** flags are supported...
+ ❗️ GoLC runs on Windows, Linux, and OSX, but the preferred platforms are OSX or Linux.
 
 ```bash
 
@@ -360,6 +360,41 @@ Extracting files from repo : testempty
 $:>        
 
 ```
+
+
+✅ Run on Windows
+
+For execution on Windows, it is preferable to use PowerShell.
+
+```
+PS C:\Users\ecadmin\sonar-golc> .\golc.exe -devops File
+
+✅ Using configuration for DevOps platform 'File'
+❗️ Directory <'C:\Users\ecadmin\sonar-golc\Results'> already exists. Do you want to delete it? (y/n): y
+❗️ Do you want to create a backup of the directory before deleting? (y/n): n
+
+🔎 Analysis of Directories ...
+ Extracting files from sonar-golc
+OutputName: Result_sonar-golc
+
+        ✅ json report exported to Results\Result_sonar-golc.json
+        ✅ 1 The directory <c:\Users\ecadmin\Picktalk> has been analyzed
+
+🔎 Analyse Report ...
+
+✅ Number of Directory analyzed in Organization <test> is 1
+✅ The total sum of lines of code in Organization <test> is : 41.48K Lines of Code
+
+✅ Reports are located in the <'Results'> directory
+
+✅ Time elapsed : 00:00:02
+
+ℹ️  To generate and visualize results on a web interface, follow these steps:
+        ✅ run : ResultsAll
+
+PS C:\Users\ecadmin\sonar-golc>
+```
+
 
 ✅ Run Report
 
