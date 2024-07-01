@@ -18,3 +18,10 @@ Docker/docker_test/*
 Docker/dockerbuild.sh
 dockerbuild.sh
 ResultsAll/*
+ResultsAll/*
+createreportdocker.sh
+Docker/docker_test/*
+Docker/dockerbuid.sh 
+dockerbuild.sh
+.cloc_file_load
+.scannerwork/
