@@ -15,24 +15,17 @@ GoLC The tool analyzes your repositories and identifies the largest branch of ea
 ---
 ## Installation
 
-<<<<<<< HEAD
-You can install from the stable release by clicking [here](https://github.com/colussim/GoLC/releases/tag/v1.0.0)
-=======
+
 You can install from the stable release by clicking [here](https://github.com/colussim/GoLC/releases/tag/V1.0.3)
->>>>>>> ver1.0.3
 
 ## Prerequisites 
 
 * A personal access tokens for : Bitbucket Cloud,Bitbucket DC,GitHub, GitLab and Azure DevOps.The token must have repo scope.
-<<<<<<< HEAD
-  * For Bitbucket DC :
-       - Perform pull request actions
-     - Push, pull and clone repositories
-=======
+* 
      - Perform pull request actions
      - Push, pull and clone repositories
   
->>>>>>> ver1.0.3
+
 * [Go language installed](https://go.dev/) : If you want to use the sources...
 
 ## Supported languages
