@@ -18,3 +18,4 @@ Docker/dockerbuid.sh
 dockerbuild.sh
 .cloc_file_load
 .scannerwork/
+scan1.sh
