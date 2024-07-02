@@ -15,24 +15,14 @@ GoLC The tool analyzes your repositories and identifies the largest branch of ea
 ---
 ## Installation
 
-<<<<<<< HEAD
-You can install from the stable release by clicking [here](https://github.com/colussim/GoLC/releases/tag/v1.0.0)
-=======
 You can install from the stable release by clicking [here](https://github.com/colussim/GoLC/releases/tag/V1.0.3)
->>>>>>> ver1.0.3
 
 ## Prerequisites 
 
 * A personal access tokens for : Bitbucket Cloud,Bitbucket DC,GitHub, GitLab and Azure DevOps.The token must have repo scope.
-<<<<<<< HEAD
-  * For Bitbucket DC :
-       - Perform pull request actions
-     - Push, pull and clone repositories
-=======
      - Perform pull request actions
      - Push, pull and clone repositories
   
->>>>>>> ver1.0.3
 * [Go language installed](https://go.dev/) : If you want to use the sources...
 
 ## Supported languages
@@ -228,11 +218,8 @@ If '**Projects**' and '**Repos**' are not specified, the analysis will be conduc
 "Project": "",
 "Repos": "",
 ```
-<<<<<<< HEAD
-=======
 ❗️ The '**Projects**' entry is supported exclusively on the BitBucket and AzureDevops platform.
 
->>>>>>> ver1.0.3
 For Bitbucket DC, you must provide the URL with your server address and change the '**Protocol**' entry if you are using an https connection , ending with '**/**'. The '**Branch**' input allows you to select a specific branch for all repositories within an organization or project, or for a single repository. For example, if you only want all branches to be "main", '**"Branch":"main"**' .
 ```json
  "Url": "http://X.X.X.X/"
@@ -288,7 +275,7 @@ PROJECT_KEY
 
 ❗️ The parameters **'Period'**, **'Factor'**, and **'Stats'** should not be modified as they will be used in a future version.
 
-❗️ The parameters **'Multithreading'** and **'Workers'** initialize whether multithreading is enabled or not, allowing parallel analysis. You can disable it by setting **'Multithreading'** to **false**. **'Workers'** corresponds to the number of concurrent analyses.These parameters can be adjusted according to the performance of the compute running GoLC.
+❗️ The parameters **'Multithreading'** and **'Workers'** initialize whether multithreading is enabled or not, allowing parallel analysis. You can disable it by setting **'Multithreading'** to **false**. **'Workers'** corresponds to the number of concurrent analyses.
 
 ❗️ The boolean parameters **DefaultBranch**, if set to true, specifies that only the default branch of each repository should be analyzed. If set to false, it will analyze all branches of each repository to determine the most important one.
 
@@ -299,7 +286,7 @@ PROJECT_KEY
 flag : <BitBucketSRV>||<BitBucket>||<Github>||<Gitlab>||<Azure>||<File>
 
  ```
- ❗️ GoLC runs on Windows, Linux, and OSX, but the preferred platforms are OSX or Linux.
+ ❗️ And for now, only the **BitBucketSRV** and **BitBucket** flags are supported...
 
 ```bash
 
@@ -373,41 +360,6 @@ Extracting files from repo : testempty
 $:>        
 
 ```
-
-
-✅ Run on Windows
-
-For execution on Windows, it is preferable to use PowerShell.
-
-```
-PS C:\Users\ecadmin\sonar-golc> .\golc.exe -devops File
-
-✅ Using configuration for DevOps platform 'File'
-❗️ Directory <'C:\Users\ecadmin\sonar-golc\Results'> already exists. Do you want to delete it? (y/n): y
-❗️ Do you want to create a backup of the directory before deleting? (y/n): n
-
-🔎 Analysis of Directories ...
- Extracting files from sonar-golc
-OutputName: Result_sonar-golc
-
-        ✅ json report exported to Results\Result_sonar-golc.json
-        ✅ 1 The directory <c:\Users\ecadmin\Picktalk> has been analyzed
-
-🔎 Analyse Report ...
-
-✅ Number of Directory analyzed in Organization <test> is 1
-✅ The total sum of lines of code in Organization <test> is : 41.48K Lines of Code
-
-✅ Reports are located in the <'Results'> directory
-
-✅ Time elapsed : 00:00:02
-
-ℹ️  To generate and visualize results on a web interface, follow these steps:
-        ✅ run : ResultsAll
-
-PS C:\Users\ecadmin\sonar-golc>
-```
-
 
 ✅ Run Report
 

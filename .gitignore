@@ -11,6 +11,13 @@ generate_test.sh
 **/*_test.go
 pkglist.txt
 cover.sh
+coverage.out
+ResultsAll/*
+createreportdocker.sh
+Docker/docker_test/*
+Docker/dockerbuild.sh
+dockerbuild.sh
+ResultsAll/*
 ResultsAll/*
 createreportdocker.sh
 Docker/docker_test/*
