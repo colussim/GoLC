@@ -10,12 +10,12 @@
 
 GoLC The tool analyzes your repositories and identifies the largest branch of each repository, counting the total number of lines of code per language for that branch. At the end of the analysis, a text and PDF report is generated, along with a JSON results file for each repository.It starts an HTTP service to display an HTML page with the results.
 
-> This version ver1.0.3 is available for Bitbucket Cloud , Bitbucket DC, GitHub , GitLab , Azure DevOps and Files.A Docker version is available.
+> This version ver1.0.4 is available for Bitbucket Cloud , Bitbucket DC, GitHub , GitLab , Azure DevOps and Files.A Docker version is available.
 
 ---
 ## Installation
 
-You can install from the stable release by clicking [here](https://github.com/colussim/GoLC/releases/tag/V1.0.3)
+You can install from the stable release by clicking [here](https://github.com/colussim/GoLC/releases/tag/V1.0.4)
 
 ## Prerequisites 
 
@@ -348,9 +348,9 @@ Extracting files from repo : testempty
 
 🔎 Analyse Report ...
 
-✅ Number of Repository analyzed in Organization <sonar-demo> is 11 
+✅ Number of Repository analyzed in Organization <techlabsnews> is 11 
 ✅ The repository with the largest line of code is in project <CLOC> the repo name is <gcloc> with <2.05M> lines of code
-✅ The total sum of lines of code in Organization <sonar-demo> is : 2.06M Lines of Code
+✅ The total sum of lines of code in Organization <techlabsnews> is : 2.06M Lines of Code
 
 
 ✅ Reports are located in the <'Results'> directory
@@ -362,6 +362,39 @@ Extracting files from repo : testempty
 $:>        
 
 ```
+
+
+✅ Run on Windows
+
+For execution on Windows, it is preferable to use PowerShell.
+
+```
+PS C:\Users\ecadmin\golc> .\golc.exe -devops File
+
+✅ Using configuration for DevOps platform 'File'
+❗️ Directory <'C:\Users\ecadmin\golc\Results'> already exists. Do you want to delete it? (y/n): y
+❗️ Do you want to create a backup of the directory before deleting? (y/n): n
+
+🔎 Analysis of Directories ...
+
+        ✅ json report exported to Results\Result_sonar-golc.json
+        ✅ 1 The directory <c:\Users\ecadmin\Picktalk> has been analyzed
+
+🔎 Analyse Report ...
+
+✅ Number of Directory analyzed in Organization <test> is 1
+✅ The total sum of lines of code in Organization <test> is : 41.48K Lines of Code
+
+✅ Reports are located in the <'Results'> directory
+
+✅ Time elapsed : 00:00:02
+
+ℹ️  To generate and visualize results on a web interface, follow these steps:
+        ✅ run : ResultsAll
+
+PS C:\Users\ecadmin\sonar-golc>
+```
+
 
 ✅ Run Report
 
@@ -466,3 +499,95 @@ Running in Docker mode
 ✅ Server started on http://localhost:8090
 ✅ please type < Ctrl+C> to stop the server
 ```
+
+
+ ✅ Run Report
+
+ Now we can start generating the report with the **resultsall** container.
+ You need to map the volume previously used for the analysis and map an available port for web access.
+
+```
+:> docker run --rm -p 8090:8090 -v /custom/Results_volume:/app/Results resultsall:arm64-1.0.4
+
+
+✅ Results analysis recorded in Results/code_lines_by_language.json
+✅ PDF generated successfully!
+✅ Launching web visualization...
+✅ Server started on http://localhost:8090
+✅ please type < Ctrl+C> to stop the server
+```
+
+## Execution Log
+
+The application generates a log file named `Logs.log` in the current directory. This log file records all the steps of the GoLC execution process, providing detailed information about the application's runtime behavior.
+
+### Location
+The log file is created in directory `Logs`, is placed in the following path:  `<GoLCHome/Logs>`.
+
+### Usage
+You can refer to this log file to troubleshoot issues, monitor the application's execution, and understand its internal processes.
+
+❗️ At each execution the file is deleted
+
+### Example Log Entry
+
+ ```
+[2024-07-11 17:22:52] INFO ✅ Using configuration for DevOps platform 'Github'
+
+[2024-07-11 17:22:55] INFO 🔎 Analysis of devops platform objects ...
+
+ Repos saved successfully! 
+[2024-07-11 17:22:56] INFO        ✅ The number of Repo(s) found is: 50
+
+[2024-07-11 17:22:57] INFO      ✅ 1 Repo: sonar-aws-cicd-tutorial - Number of branches: 1 - largest Branch: main 
+[2024-07-11 17:22:59] INFO      ✅ 2 Repo: sonar-golc - Number of branches: 1 - largest Branch: ver1.0.3 
+[2024-07-11 17:22:59] INFO      ✅ 3 Repo: jenkins-docker - Number of branches: 1 - largest Branch: main 
+[2024-07-11 17:23:00] INFO      ✅ 4 Repo: abapGit - Number of branches: 1 - largest Branch: main 
+[2024-07-11 17:23:01] INFO      ✅ 5 Repo: abap2UI5 - Number of branches: 1 - largest Branch: main 
+[2024-07-11 17:23:02] INFO      ✅ 6 Repo: abap-cheat-sheets - Number of branches: 1 - largest Branch: main 
+[2024-07-11 17:23:03] INFO      ✅ 7 Repo: Container_Architecture - Number of branches: 1 - largest Branch: main 
+[2024-07-11 17:23:04] INFO      ✅ 8 Repo: k8s-helm-sq-key - Number of branches: 1 - largest Branch: main 
+[2024-07-11 17:23:04] INFO      ✅ 9 Repo: k8s-hpa-sonarqubedce - Number of branches: 1 - largest Branch: main 
+[2024-07-11 17:23:05] INFO      ✅ 10 Repo: GitHub-Monorepo-Example - Number of branches: 1 - largest Branch: master 
+............
+✅ Result saved successfully!
+
+[2024-07-11 17:23:35] INFO ✅ The largest Repository is <sonar-aws-cicd-tutorial> in the organization <XXXXXXXXXXXXXX> with the branch <main> 
+[2024-07-11 17:23:35] INFO ✅ Total Repositories that will be analyzed: 49 - Find empty : 1 - Excluded : 0 - Archived : 0
+[2024-07-11 17:23:35] INFO ✅ Total Branches that will be analyzed: 49
+
+[2024-07-11 17:23:35] INFO 🔎 Analysis of Repos ...
+
+ Waiting for workers...
+[2024-07✅ json report exported to /XXXXXXX/sonar-golc/Results/Result_SonarSource-Demos_employee-api_main.json
+[2024-07-11 17:23:36] INFO      ✅ 2 The repository <employee-api> has been analyzed
+
+ Waiting for workers...
+[2024-07✅ json report exported to /XXXXXXX/sonar-golc/Results/Result_SonarSource-Demos_jenkins-docker_main.json
+[2024-07-11 17:23:36] INFO      ✅ 3 The repository <jenkins-docker> has been analyzed
+............
+
+[2024-07-11 17:27:20] INFO 🔎 Analyse Report ...
+
+[2024-07-11 17:27:20] INFO ✅ Number of Repository analyzed in Organization <XXXXXXXXXXXXXX> is 49 
+[2024-07-11 17:27:20] INFO ✅ The total sum of lines of code in Organization <XXXXXXXXXXXXXX>  is : 5.62M Lines of Code
+
+[2024-07-11 17:27:20] INFO ✅ Reports are located in the <'Results'> directory
+[2024-07-11 17:27:20] INFO ✅ Time elapsed : 00:02:24
+
+[2024-07-11 17:27:20] INFO  ℹ️  To generate and visualize results on a web interface, follow these steps: 
+[2024-07-11 17:27:20] INFO      ✅ run : ResultsAll
+
+  ```
+
+## Future Features
+
+We are continuously working to enhance and expand the functionality of our application. Here are some of the upcoming features you can look forward to:
+
+- **GitLab On-Premise Support**: We plan to add support for GitLab on-premise instances, allowing users to seamlessly integrate their self-hosted GitLab repositories with our application.
+- **Improved Exclusion Patterns**: Enhancements to the exclusion patterns to provide more precise and flexible control over what is included or excluded in various operations.
+- **Additional Integrations**: Beyond GitLab, we are exploring support for other platforms and services to broaden the scope of our integrations and offer more flexibility to our users.
+- **Improved User Interface**: Enhancements to the user interface to provide a more intuitive and user-friendly experience.
+- **Performance Optimizations**: Ongoing efforts to optimize the performance and scalability of the application to handle larger workloads more efficiently.
+
+Stay tuned for updates as we roll out these new features and improvements!
