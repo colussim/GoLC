@@ -15,10 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/briandowns/spinner"
-
 	"github.com/colussim/GoLC/assets"
 	"github.com/colussim/GoLC/pkg/goloc"
 
@@ -65,11 +62,6 @@ type SelfLink struct {
 
 type Config struct {
 	Platforms map[string]interface{} `json:"platforms"`
-	Logging   LoggingConfig          `json:"logging"`
-}
-
-type LoggingConfig struct {
-	Level logrus.Level `json:"level"`
 }
 
 type Report struct {
@@ -107,20 +99,36 @@ type RepoParams struct {
 	PathToScan string
 }
 
-type logWriter struct {
-	stdout  *os.File
-	logFile *os.File
-}
-
-const errorMessageRepo = "❌ Error Analyse Repositories: "
+const errorMessageRepo = "\n❌ Error Analyse Repositories: "
 const errorMessageDi = "\r❌ Error deleting Repository Directory: %v\n"
 const errorMessageAnalyse = "\r❌ No Analysis performed...\n"
 const errorMessageRepos = "Error Get Info Repositories in organization '%s' : '%s'"
 const directoryconf = "/config"
 
 var logFile *os.File
-var AppConfig Config
-var logger *logrus.Logger
+
+func OpenLogFile(filename string) error {
+	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	logFile = file
+	return nil
+}
+
+// CloseLogFile closes the log file.
+func CloseLogFile() {
+	if logFile != nil {
+		logFile.Close()
+	}
+}
+
+// LogError writes an error message to the log file along with additional context information.
+func LogError(message string, err error) {
+	if logFile != nil {
+		logFile.WriteString(fmt.Sprintf("[%s] ERROR: %s - %v\n", time.Now().Format(time.RFC3339), message, err))
+	}
+}
 
 // Check Exclusion File Exist
 func getFileNameIfExists(filePath string) string {
@@ -131,8 +139,7 @@ func getFileNameIfExists(filePath string) string {
 			return "0"
 		} else {
 			// Check file
-			//fmt.Printf("❌ Error check file exclusion: %v\n", err)
-			logger.Errorf("❌ Error check file exclusion: %v\n", err)
+			fmt.Printf("❌ Error check file exclusion: %v\n", err)
 			return "0"
 		}
 	} else {
@@ -147,11 +154,11 @@ func LoadConfig(filename string) (Config, error) {
 	// Lire le contenu du fichier de configuration
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		return config, fmt.Errorf("❌ failed to read config file: %v", err)
+		return config, fmt.Errorf("❌ failed to read config file: %w", err)
 	}
 
 	if err := json.Unmarshal(data, &config); err != nil {
-		return config, fmt.Errorf("❌ failed to parse config JSON: %v", err)
+		return config, fmt.Errorf("❌ failed to parse config JSON: %w", err)
 	}
 
 	return config, nil
@@ -161,15 +168,13 @@ func LoadConfig(filename string) (Config, error) {
 func parseJSONFile(filePath, reponame string) int {
 	file, err := os.ReadFile(filePath)
 	if err != nil {
-		//fmt.Println("❌ Error reading file:", err)
-		logger.Errorf("❌ Error reading file:", err)
+		fmt.Println("❌ Error reading file:", err)
 	}
 
 	var report Report
 	err = json.Unmarshal(file, &report)
 	if err != nil {
-		//fmt.Println("❌ Error parsing JSON:", err)
-		logger.Errorf("❌ Error parsing JSON:", err)
+		fmt.Println("❌ Error parsing JSON:", err)
 	}
 
 	return report.TotalCodeLines
@@ -197,8 +202,7 @@ func createBackup(sourceDir, pwd string) error {
 		return err
 	}
 
-	//fmt.Println("✅ Backup created successfully:", backupFilePath)
-	logger.Infof("✅ Backup created successfully:", backupFilePath)
+	fmt.Println("✅ Backup created successfully:", backupFilePath)
 	return nil
 }
 
@@ -259,8 +263,7 @@ func addFileToZip(filePath, relPath string, fileInfo os.FileInfo, zipWriter *zip
 
 // Generic function to analyze repositories
 func AnalyseReposList(DestinationResult string, platformConfig map[string]interface{}, repolist interface{}, analyseRepoFunc func(project interface{}, DestinationResult string, platformConfig map[string]interface{}, spin *spinner.Spinner, results chan int, count *int)) (cpt int) {
-	//fmt.Print("\n🔎 Analysis of Repos ...\n")
-	logger.Infof("🔎 Analysis of Repos ...\n")
+	fmt.Print("\n🔎 Analysis of Repos ...\n")
 
 	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
 	spin.Color("green", "bold")
@@ -404,26 +407,24 @@ func performRepoAnalysis(params RepoParams, DestinationResult string, spin *spin
 
 	gc, err := goloc.NewGCloc(golocParams, assets.Languages)
 	if err != nil {
-		logger.Errorf(errorMessageRepo, err)
-		*count++
-		results <- 1
+		fmt.Println(errorMessageRepo, err)
 		return
-	} else {
-
-		gc.Run()
-		*count++
-
-		// Remove Repository Directory
-		err1 := os.RemoveAll(gc.Repopath)
-		if err1 != nil {
-			logger.Errorf(errorMessageDi, err1)
-		}
-
-		spin.Stop()
-		logger.Infof("\r\t\t\t\t✅ %d The repository <%s> has been analyzed\n", *count, params.RepoSlug)
-		// Send result through channel
-		results <- 1
 	}
+
+	gc.Run()
+	*count++
+
+	// Remove Repository Directory
+	err1 := os.RemoveAll(gc.Repopath)
+	if err1 != nil {
+		fmt.Printf(errorMessageDi, err1)
+	}
+
+	spin.Stop()
+	fmt.Printf("\r✅ %d The repository <%s> has been analyzed\n", *count, params.RepoSlug)
+
+	// Send result through channel
+	results <- 1
 }
 
 // Wait for all goroutines to complete
@@ -489,18 +490,14 @@ func AnalyseReposListAzure(DestinationResult string, platformConfig map[string]i
 
 func AnalyseReposListFile(Listdirectorie, fileexclusionEX []string) {
 
-	//fmt.Print("\n🔎 Analysis of Directories ...\n")
-	logger.Infof("🔎 Analysis of Directories ...\n")
+	fmt.Print("\n🔎 Analysis of Directories ...\n")
 
 	var wg sync.WaitGroup
 	wg.Add(len(Listdirectorie))
-	count := 1
 
 	for _, Listdirectories := range Listdirectorie {
 		go func(dir string) {
 			defer wg.Done()
-
-			//fmt.Println("Rep:", Listdirectories)
 
 			spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
 			spin.Color("green", "bold")
@@ -508,6 +505,7 @@ func AnalyseReposListFile(Listdirectorie, fileexclusionEX []string) {
 			spin.FinalMSG = messageF
 
 			outputFileName := "Result_"
+			count := 1
 
 			params := goloc.Params{
 				Path:              dir,
@@ -531,18 +529,15 @@ func AnalyseReposListFile(Listdirectorie, fileexclusionEX []string) {
 
 			gc, err := goloc.NewGCloc(params, assets.Languages)
 			if err != nil {
-				//fmt.Println(errorMessageRepo, err)
-				logger.Errorf(errorMessageRepo, err)
+				fmt.Println(errorMessageRepo, err)
 				return
 			}
 
 			gc.Run()
 			spin.Stop()
-			//	fmt.Printf("\r\t✅ %d The directory <%s> has been analyzed\n", count, dir)
-			logger.Infof("\t✅ %d The directory <%s> has been analyzed\n", count, dir)
+			fmt.Printf("\r\t✅ %d The directory <%s> has been analyzed\n", count, dir)
 			count++
 		}(Listdirectories)
-
 	}
 
 	wg.Wait()
@@ -646,35 +641,6 @@ func displayLanguages() {
 	}
 }
 
-func init() {
-
-	// Load Config file
-	var err error
-	AppConfig, err = LoadConfig("config.json")
-	if err != nil {
-		log.Fatalf("\n❌ Failed to load config: %s", err)
-		os.Exit(1)
-	}
-	// Create Logs Directory
-	logDir := "Logs"
-	if _, err := os.Stat(logDir); os.IsNotExist(err) {
-		err = os.MkdirAll(logDir, 0755)
-		if err != nil {
-			logrus.Fatalf("❌ Failed to create log directory: %v", err)
-		}
-	}
-	// Remove Log file
-	if err := os.Remove("Logs.log"); err != nil && !os.IsNotExist(err) {
-		logrus.Fatalf("❌ Failed to delete old log file: %v", err)
-	}
-
-	// Set Loggin
-	// Create a new logger instance
-
-	logger = utils.NewLogger()
-	logger.SetLevel(AppConfig.Logging.Level)
-}
-
 func main() {
 
 	var maxTotalCodeLines int
@@ -683,7 +649,7 @@ func main() {
 	var startTime time.Time
 	var ListDirectory []string
 	var ListExclusion []string
-	var message0, message1, message2, message3, message4, message5 string
+	var message3, message4, message5 string
 	var version = "1.0.3"
 
 	// Test command line Flags
@@ -720,6 +686,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	AppConfig, err := LoadConfig("config.json")
+	if err != nil {
+		log.Fatalf("\n❌ Failed to load config: %s", err)
+		os.Exit(1)
+	}
+
 	platformConfig, ok := AppConfig.Platforms[*devopsFlag].(map[string]interface{})
 	if !ok {
 		fmt.Printf("\n❌ Configuration for DevOps platform '%s' not found\n", *devopsFlag)
@@ -727,22 +699,21 @@ func main() {
 		os.Exit(1)
 	}
 
+	fmt.Printf("\n✅ Using configuration for DevOps platform '%s'\n", *devopsFlag)
+
+	// Test whether to delete the Results directory and save it before deleting.
+
 	pwd, err := os.Getwd()
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
 	DestinationResult := pwd + "/Results"
 
-	logger.Infof("✅ Using configuration for DevOps platform '%s'\n", *devopsFlag)
-
-	// Test whether to delete the Results directory and save it before deleting.
-
 	if *docker {
 		fmt.Println("Running in Docker mode")
 		ConfigDirectory := DestinationResult + directoryconf
 		if err := os.MkdirAll(ConfigDirectory, os.ModePerm); err != nil {
-			logger.Panic(err)
-
+			panic(err)
 		}
 
 	} else {
@@ -803,12 +774,21 @@ func main() {
 	GlobalReport := DestinationResult + "/GlobalReport.txt"
 	file, err := os.Create(GlobalReport)
 	if err != nil {
-		logger.Errorf("❌ Error creating file:%v", err)
+		fmt.Println("❌ Error creating file:", err)
 		return
 	}
 	defer file.Close()
 
-	/*---------------------------------- Select type of DevOps Platform ----------------------------------------------------*/
+	// Open Logs
+
+	err = OpenLogFile("Results/Logs.log")
+	if err != nil {
+		fmt.Println("❌ Error opening log file:", err)
+		return
+	}
+	defer CloseLogFile()
+
+	// Select DevOps Platform
 
 	switch devops := platformConfig["DevOps"].(string); devops {
 
@@ -820,13 +800,13 @@ func main() {
 
 		gitproject, err := getazure.GetRepoAzureList(platformConfig, fileexclusionEX)
 		if err != nil {
-			//fmt.Printf(errorMessageRepos, platformConfig["Organization"].(string), err)
-			logger.Errorf(errorMessageRepos, platformConfig["Organization"].(string), err)
+			fmt.Printf(errorMessageRepos, platformConfig["Organization"].(string), err)
+
 			return
 		}
 
 		if len(gitproject) == 0 {
-			logger.Error(errorMessageAnalyse)
+			fmt.Printf(errorMessageAnalyse)
 			os.Exit(1)
 
 		} else {
@@ -849,7 +829,7 @@ func main() {
 			err := getgithub.FastAnalys(platformConfig, fileexclusionEX)
 
 			if err != nil {
-				logger.Errorf("❌ Quick scan Analysis : '%s'", err)
+				fmt.Printf("❌ Quick scan Analysis : '%s'", err)
 				os.Exit(0)
 			}
 		} else {
@@ -857,12 +837,12 @@ func main() {
 
 			repositories, err := getgithub.GetRepoGithubList(platformConfig, fileexclusionEX, fast)
 			if err != nil {
-				logger.Errorf(errorMessageRepos, platformConfig["Organization"].(string), err)
+				fmt.Printf(errorMessageRepos, platformConfig["Organization"].(string), err)
 				return
 			}
 
 			if len(repositories) == 0 {
-				logger.Error(errorMessageAnalyse)
+				fmt.Printf(errorMessageAnalyse)
 				os.Exit(1)
 
 			} else {
@@ -881,12 +861,12 @@ func main() {
 
 		gitproject, err := getgitlab.GetRepoGitLabList(platformConfig, fileexclusionEX)
 		if err != nil {
-			logger.Errorf(errorMessageRepos, platformConfig["Organization"].(string), err)
+			fmt.Printf(errorMessageRepos, platformConfig["Organization"].(string), err)
 			return
 		}
 
 		if len(gitproject) == 0 {
-			logger.Error(errorMessageAnalyse)
+			fmt.Printf(errorMessageAnalyse)
 			os.Exit(1)
 
 		} else {
@@ -903,12 +883,12 @@ func main() {
 		startTime = time.Now()
 		projects, err := getbibucketdc.GetProjectBitbucketList(platformConfig, fileexclusionEX)
 		if err != nil {
-			logger.Errorf("❌ Error Get Info Projects in Bitbucket server '%s' : ", err)
+			fmt.Printf("❌ Error Get Info Projects in Bitbucket server '%s' : ", err)
 			os.Exit(1)
 		}
 
 		if len(projects) == 0 {
-			logger.Error(errorMessageAnalyse)
+			fmt.Printf(errorMessageAnalyse)
 			os.Exit(1)
 
 		} else {
@@ -926,11 +906,11 @@ func main() {
 		projects1, err := getbibucket.GetProjectBitbucketListCloud(platformConfig, fileexclusionEX)
 
 		if err != nil {
-			logger.Errorf("❌ Error Get Info Project(s) in Bitbucket cloud '%v' ", err)
+			fmt.Printf("❌ Error Get Info Project(s) in Bitbucket cloud '%v' ", err)
 			return
 		}
 		if len(projects1) == 0 {
-			logger.Errorf(errorMessageAnalyse)
+			fmt.Printf(errorMessageAnalyse)
 			os.Exit(1)
 
 		} else {
@@ -947,7 +927,7 @@ func main() {
 		if fileexclusionEX != "0" {
 			ListExclusion, err = ReadLines(fileexclusionEX)
 			if err != nil {
-				logger.Errorf("❌ Error reading file <.cloc_file_ignore>:%v", err)
+				fmt.Println("❌ Error reading file <.cloc_file_ignore>:", err)
 				os.Exit(1)
 			}
 		} else {
@@ -958,7 +938,7 @@ func main() {
 		if fileload != "0" {
 			ListDirectory, err = ReadLines(fileload)
 			if err != nil {
-				logger.Errorf("❌ Error reading file <.cloc_file_file>:%v", err)
+				fmt.Println("❌ Error reading file <.cloc_file_file>:", err)
 				os.Exit(1)
 			}
 			if len(ListDirectory) == 0 {
@@ -966,10 +946,9 @@ func main() {
 			}
 		} else {
 			if len(platformConfig["Directory"].(string)) == 0 {
-				logger.Error("❌ No analysis possible, no directory, specified file or specified loading file")
+				fmt.Println("❌ No analysis possible, no directory, specified file or specified loading file")
 				os.Exit(1)
 			} else {
-
 				ListDirectory = append(ListDirectory, platformConfig["Directory"].(string))
 			}
 		}
@@ -977,13 +956,8 @@ func main() {
 		AnalyseReposListFile(ListDirectory, ListExclusion)
 	}
 
-	/*---------------------------------- End Select type of DevOps Platform ----------------------------------------------------*/
-
 	// Begin of report file analysis
-	//fmt.Print("\n🔎 Analyse Report ...\n")
-
-	fmt.Printf("\n")
-	logger.Infof("🔎 Analyse Report ...\n")
+	fmt.Print("\n🔎 Analyse Report ...\n")
 	spin := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
 	spin.Suffix = " Analyse Report..."
 	spin.Color("green", "bold")
@@ -992,7 +966,7 @@ func main() {
 	// List files in the directory
 	files, err := os.ReadDir(DestinationResult)
 	if err != nil {
-		logger.Errorf("❌ Error listing files:%v", err)
+		fmt.Println("❌ Error listing files:", err)
 		os.Exit(1)
 	}
 
@@ -1007,7 +981,7 @@ func main() {
 			filePath := filepath.Join(DestinationResult, file.Name())
 			jsonData, err := os.ReadFile(filePath)
 			if err != nil {
-				logger.Errorf("❌ Error reading file %s: %v\n", file.Name(), err)
+				fmt.Printf("\n❌ Error reading file %s: %v\n", file.Name(), err)
 				continue
 			}
 
@@ -1015,7 +989,7 @@ func main() {
 			var result Result
 			err = json.Unmarshal(jsonData, &result)
 			if err != nil {
-				logger.Errorf("❌ Error parsing JSON contents of file %s: %v\n", file.Name(), err)
+				fmt.Printf("\n❌ Error parsing JSON contents of file %s: %v\n", file.Name(), err)
 				continue
 			}
 
@@ -1041,14 +1015,6 @@ func main() {
 	maxTotalCodeLines1 := utils.FormatCodeLines(float64(maxTotalCodeLines))
 	totalCodeLinesSum1 := utils.FormatCodeLines(float64(totalCodeLinesSum))
 
-	if totalCodeLinesSum1 == "0" {
-		spin.Stop()
-		fmt.Println("\n --------------------------------------------------------------------")
-		logger.Error("  ❌ There is definitely a problem, 0 lines of code are reported ???")
-		fmt.Println("\n --------------------------------------------------------------------")
-		os.Exit(1)
-	}
-
 	// Global Result file
 	data := OrganizationData{
 		Organization:           platformConfig["Organization"].(string),
@@ -1061,20 +1027,20 @@ func main() {
 
 	jsonData, err := json.MarshalIndent(data, "", "    ")
 	if err != nil {
-		logger.Errorf("❌ Error during JSON encoding in Gobal Report:%v", err)
+		fmt.Println("\n❌ Error during JSON encoding in Gobal Report:", err)
 		return
 	}
 	// Created Global Result json file
 	file1, err := os.Create("Results/GlobalReport.json")
 	if err != nil {
-		logger.Errorf("❌ Error during file creation Gobal Report:%v", err)
+		fmt.Println("\n❌ Error during file creation Gobal Report:", err)
 		return
 	}
 	defer file.Close()
 
 	_, err = file1.Write(jsonData)
 	if err != nil {
-		logger.Errorf("❌ Error writing to file:%v", err)
+		fmt.Println("\n❌ Error writing to file:", err)
 		return
 	}
 
@@ -1088,43 +1054,34 @@ func main() {
 	seconds := int(duration.Seconds()) % 60
 
 	if platformConfig["DevOps"].(string) != "file" {
-		message0 = fmt.Sprintf("✅ Number of Repository analyzed in Organization <%s> is %d ", platformConfig["Organization"].(string), NumberRepos)
-		message1 = fmt.Sprintf("✅ The repository with the largest line of code is in project <%s> the repo name is <%s> with <%s> lines of code", maxProject, maxRepo, maxTotalCodeLines1)
-		message2 = fmt.Sprintf("✅ The total sum of lines of code in Organization <%s> is : %s Lines of Code\n", platformConfig["Organization"].(string), totalCodeLinesSum1)
-		message4 = fmt.Sprintf("✅ Time elapsed : %02d:%02d:%02d\n", hours, minutes, seconds)
+		message0 := fmt.Sprintf("\n✅ Number of Repository analyzed in Organization <%s> is %d \n", platformConfig["Organization"].(string), NumberRepos)
+		message1 := fmt.Sprintf("✅ The repository with the largest line of code is in project <%s> the repo name is <%s> with <%s> lines of code\n", maxProject, maxRepo, maxTotalCodeLines1)
+		message2 := fmt.Sprintf("✅ The total sum of lines of code in Organization <%s> is : %s Lines of Code\n", platformConfig["Organization"].(string), totalCodeLinesSum1)
+		message4 = fmt.Sprintf("\n✅ Time elapsed : %02d:%02d:%02d\n", hours, minutes, seconds)
 		message3 = message0 + message1 + message2
 		message5 = message3 + message4
 
 	} else {
-		message0 = fmt.Sprintf("✅ Number of Directory analyzed in Organization <%s> is %d ", platformConfig["Organization"].(string), NumberRepos)
-		message2 = fmt.Sprintf("✅ The total sum of lines of code in Organization <%s> is : %s Lines of Code\n", platformConfig["Organization"].(string), totalCodeLinesSum1)
-		message4 = fmt.Sprintf("✅ Time elapsed : %02d:%02d:%02d\n", hours, minutes, seconds)
+		message0 := fmt.Sprintf("\n✅ Number of Directory analyzed in Organization <%s> is %d \n", platformConfig["Organization"].(string), NumberRepos)
+		message2 := fmt.Sprintf("✅ The total sum of lines of code in Organization <%s> is : %s Lines of Code\n", platformConfig["Organization"].(string), totalCodeLinesSum1)
+		message4 = fmt.Sprintf("\n✅ Time elapsed : %02d:%02d:%02d\n", hours, minutes, seconds)
 		message3 = message0 + message2
 		message5 = message3 + message4
 
 	}
 
-	// Old logger infos
-	/*fmt.Println(message3)
+	fmt.Println(message3)
 	fmt.Println("\n✅ Reports are located in the <'Results'> directory")
-	fmt.Println(message4)*/
-
-	logger.Infof(message0)
-	logger.Infof(message2)
-	logger.Infof("✅ Reports are located in the <'Results'> directory")
-	logger.Infof(message4)
+	fmt.Println(message4)
 
 	// Write message in Gobal Report File
 	_, err = file.WriteString(message5)
 	if err != nil {
-		logger.Errorf("❌ Error writing to file:", err)
+		fmt.Println("\n❌ Error writing to file:", err)
 		return
 	}
 
-	logger.Infof(" ℹ️  To generate and visualize results on a web interface, follow these steps: ")
-	logger.Infof("\t✅ run : ResultsAll")
-
-	//fmt.Println("\nℹ️  To generate and visualize results on a web interface, follow these steps: ")
-	//fmt.Println("\t✅ run : ResultsAll")
+	fmt.Println("\nℹ️  To generate and visualize results on a web interface, follow these steps: ")
+	fmt.Println("\t✅ run : ResultsAll")
 
 }
