@@ -501,22 +501,6 @@ Running in Docker mode
 ```
 
 
- ✅ Run Report
-
- Now we can start generating the report with the **resultsall** container.
- You need to map the volume previously used for the analysis and map an available port for web access.
-
-```
-:> docker run --rm -p 8090:8090 -v /custom/Results_volume:/app/Results resultsall:arm64-1.0.4
-
-
-✅ Results analysis recorded in Results/code_lines_by_language.json
-✅ PDF generated successfully!
-✅ Launching web visualization...
-✅ Server started on http://localhost:8090
-✅ please type < Ctrl+C> to stop the server
-```
-
 ## Execution Log
 
 The application generates a log file named `Logs.log` in the current directory. This log file records all the steps of the GoLC execution process, providing detailed information about the application's runtime behavior.
