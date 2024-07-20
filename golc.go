@@ -175,6 +175,27 @@ func parseJSONFile(filePath, reponame string) int {
 	return report.TotalCodeLines
 }
 
+// convert To Slice String
+func convertToSliceString(in []interface{}) []string {
+	out := make([]string, len(in))
+	for i, v := range in {
+		out[i] = v.(string)
+	}
+	return out
+}
+
+func isExcludeExtensionsEmpty(excludeExtensions []interface{}) bool {
+	if len(excludeExtensions) == 0 {
+		return true
+	}
+
+	if excludeExtensions[0] == "" {
+		return true
+	}
+
+	return false
+}
+
 // Create a Bakup File for Result directory
 func createBackup(sourceDir, pwd string) error {
 	backupDir := filepath.Join(pwd, "Saves")
@@ -487,7 +508,11 @@ func AnalyseReposListAzure(DestinationResult string, platformConfig map[string]i
 
 /* ---------------- Analyse Directory ---------------- */
 
-func AnalyseReposListFile(Listdirectorie, fileexclusionEX []string) {
+func AnalyseReposListFile(Listdirectorie, fileexclusionEX []string, extexclusion []string) {
+
+	type Configuration struct {
+		ExcludeExtensions []string
+	}
 
 	//fmt.Print("\n🔎 Analysis of Directories ...\n")
 	logger.Infof("🔎 Analysis of Directories ...\n")
@@ -513,7 +538,7 @@ func AnalyseReposListFile(Listdirectorie, fileexclusionEX []string) {
 				Path:              dir,
 				ByFile:            false,
 				ExcludePaths:      fileexclusionEX,
-				ExcludeExtensions: []string{},
+				ExcludeExtensions: extexclusion,
 				IncludeExtensions: []string{},
 				OrderByLang:       false,
 				OrderByFile:       false,
@@ -943,6 +968,17 @@ func main() {
 
 		fileexclusionEX := getFileNameIfExists(platformConfig["FileExclusion"].(string))
 		fileload := getFileNameIfExists(platformConfig["FileLoad"].(string))
+		Extexclusion := platformConfig["ExtExclusion"].([]interface{})
+		var excludeExtensions []string
+
+		if isExcludeExtensionsEmpty(Extexclusion) {
+
+			fmt.Println("ExcludeExtensions est vide pour la plateforme Github.")
+		} else {
+
+			excludeExtensions = convertToSliceString(platformConfig["ExtExclusion"].([]interface{}))
+
+		}
 
 		if fileexclusionEX != "0" {
 			ListExclusion, err = ReadLines(fileexclusionEX)
@@ -974,7 +1010,7 @@ func main() {
 			}
 		}
 		startTime = time.Now()
-		AnalyseReposListFile(ListDirectory, ListExclusion)
+		AnalyseReposListFile(ListDirectory, ListExclusion, excludeExtensions)
 	}
 
 	/*---------------------------------- End Select type of DevOps Platform ----------------------------------------------------*/
