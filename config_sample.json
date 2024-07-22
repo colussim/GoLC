@@ -14,7 +14,7 @@
         "Baseapi": "rest/api/",
         "Protocol": "http",
         "FileExclusion":".cloc_bitbucketdc_ignore",
-       "ExtExclusion":[""],
+        "ExtExclusion":[""],
         "Period":-5,
         "Factor":33,
         "Multithreading":true,
@@ -116,7 +116,7 @@
       "File": {
         "Organization": "XXXXX",
         "DevOps": "file",
-        "Directory":"../gcloc_m/.",
+        "Directory":"",
         "FileExclusion":".cloc_file_ignore",
         "ExtExclusion":[""],
         "FileLoad":".cloc_file_load"
