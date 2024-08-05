@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"bufio"
+	"io"
 	"os"
 	"strings"
 
@@ -61,7 +62,8 @@ func (sc *Scanner) createProgressbar(max int) *progressbar.ProgressBar {
 	)
 }
 
-func (sc *Scanner) scanFile(file analyzer.FileMetadata) (scanResult, error) {
+// OLD Function
+/*func (sc *Scanner) scanFile(file analyzer.FileMetadata) (scanResult, error) {
 	result := scanResult{Metadata: file}
 	isInBlockComment := false
 	var closeBlockCommentToken string
@@ -112,6 +114,64 @@ func (sc *Scanner) scanFile(file analyzer.FileMetadata) (scanResult, error) {
 	result.Lines = result.CodeLines + result.BlankLines + result.Comments
 
 	return result, fileScanner.Err()
+}*/
+
+func (sc *Scanner) scanFile(file analyzer.FileMetadata) (scanResult, error) {
+	result := scanResult{Metadata: file}
+	isInBlockComment := false
+	var closeBlockCommentToken string
+
+	f, err := os.Open(file.FilePath)
+	if err != nil {
+		return result, err
+	}
+	defer f.Close()
+
+	reader := bufio.NewReader(f)
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return result, err
+		}
+		line = strings.TrimSpace(line)
+
+		if isInBlockComment {
+			result.Comments++
+			if sc.hasSecondMultiLineComment(line, closeBlockCommentToken) {
+				isInBlockComment = false
+			}
+			continue
+		}
+
+		if sc.isBlankLine(line) {
+			result.BlankLines++
+			continue
+		}
+
+		if ok, secondCommentToken := sc.hasFirstMultiLineComment(file, line); ok {
+			isInBlockComment = true
+			closeBlockCommentToken = secondCommentToken
+			result.Comments++
+			if sc.hasSecondMultiLineComment(line, closeBlockCommentToken) {
+				isInBlockComment = false
+			}
+			continue
+		}
+
+		if sc.hasSingleLineComment(file, line) {
+			result.Comments++
+			continue
+		}
+
+		result.CodeLines++
+	}
+
+	result.Lines = result.CodeLines + result.BlankLines + result.Comments
+
+	return result, nil
 }
 
 func (sc *Scanner) hasFirstMultiLineComment(file analyzer.FileMetadata, line string) (bool, string) {

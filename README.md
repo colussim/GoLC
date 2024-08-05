@@ -10,12 +10,12 @@
 
 GoLC The tool analyzes your repositories and identifies the largest branch of each repository, counting the total number of lines of code per language for that branch. At the end of the analysis, a text and PDF report is generated, along with a JSON results file for each repository.It starts an HTTP service to display an HTML page with the results.
 
-> This version ver1.0.4 is available for Bitbucket Cloud , Bitbucket DC, GitHub , GitLab , Azure DevOps and Files.A Docker version is available.
+> This version ver1.0.5 is available for Bitbucket Cloud , Bitbucket DC, GitHub , GitLab , Azure DevOps and Files.A Docker version is available.
 
 ---
 ## Installation
 
-You can install from the stable release by clicking [here](https://github.com/colussim/GoLC/releases/tag/V1.0.4)
+You can install from the stable release by clicking [here](https://github.com/colussim/GoLC/releases/tag/V1.0.5)
 
 ## Prerequisites 
 
@@ -101,6 +101,7 @@ Scala              | .scala                                   | //              
         "Baseapi": "rest/api/",
         "Protocol": "http",
         "FileExclusion":".cloc_bitbucketdc_ignore",
+        "ExtExclusion":[""],
         "Period":-1,
         "Factor":33,
         "Multithreading":true,
@@ -123,6 +124,7 @@ Scala              | .scala                                   | //              
         "Baseapi": "bitbucket.org",
         "Protocol": "http",
         "FileExclusion":".cloc_bitbucket_ignore",
+        "ExtExclusion":[""],
         "Period":-1,
         "Factor":33,
         "Multithreading":true,
@@ -145,6 +147,7 @@ Scala              | .scala                                   | //              
         "Baseapi": "github.com",
         "Protocol": "https",
         "FileExclusion":".cloc_github_ignore",
+        "ExtExclusion":[""],
         "Period":-1,
         "Factor":33,
         "Multithreading":true,
@@ -166,6 +169,7 @@ Scala              | .scala                                   | //              
         "Baseapi": "api/",
         "Protocol": "https",
         "FileExclusion":".cloc_gitlab_ignore",
+        "ExtExclusion":[""],
         "Period":-1,
         "Factor":33,
         "Multithreading":true,
@@ -188,6 +192,7 @@ Scala              | .scala                                   | //              
         "Baseapi": "_apis/git/",
         "Protocol": "https",
         "FileExclusion":".cloc_azure_ignore",
+        "ExtExclusion":[""],
         "Period":-1,
         "Factor":33,
         "Multithreading":true,
@@ -200,6 +205,7 @@ Scala              | .scala                                   | //              
         "DevOps": "file",
         "Directory":"",
         "FileExclusion":".cloc_file_ignore",
+        "ExtExclusion":[""],
         "FileLoad":".cloc_file_load"
 
       }
@@ -280,6 +286,9 @@ PROJECT_KEY
 ❗️ The parameters **'Multithreading'** and **'Workers'** initialize whether multithreading is enabled or not, allowing parallel analysis. You can disable it by setting **'Multithreading'** to **false**. **'Workers'** corresponds to the number of concurrent analyses.
 
 ❗️ The boolean parameters **DefaultBranch**, if set to true, specifies that only the default branch of each repository should be analyzed. If set to false, it will analyze all branches of each repository to determine the most important one.
+
+❗️ Exclude extensions
+If you want to exclude files by their extensions, use the parameter **'ExtExclusion'**. For example, if you want to exclude all CSS or JS files : 'ExtExclusion':[".css",".js"],
 
  ✅ Run GoLC
 
