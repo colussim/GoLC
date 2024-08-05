@@ -9,7 +9,7 @@
         "Repos": "",
         "Branch": "",
         "DefaultBranch": true,
-        "Url": "http://ec2-18-194-139-24.eu-central-1.compute.amazonaws.com:7990/",
+        "Url": "XXXXXXX",
         "Apiver": "1.0",
         "Baseapi": "rest/api/",
         "Protocol": "http",
