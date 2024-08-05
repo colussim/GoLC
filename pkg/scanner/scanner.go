@@ -62,6 +62,7 @@ func (sc *Scanner) createProgressbar(max int) *progressbar.ProgressBar {
 	)
 }
 
+// OLD Function
 /*func (sc *Scanner) scanFile(file analyzer.FileMetadata) (scanResult, error) {
 	result := scanResult{Metadata: file}
 	isInBlockComment := false
