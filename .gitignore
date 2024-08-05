@@ -19,3 +19,5 @@ dockerbuild.sh
 .cloc_file_load
 .scannerwork/
 Logs/*
+ResultsAll/*
+scan1.sh
