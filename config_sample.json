@@ -20,7 +20,8 @@
         "Multithreading":true,
         "Stats": false,
         "Workers": 50,
-        "NumberWorkerRepos":50
+        "NumberWorkerRepos":50,
+        "Org": true
       },
       "BitBucket": {
         "Users": "XXXXX",
@@ -43,7 +44,8 @@
         "Multithreading":true,
         "Stats": false,
         "Workers": 50,
-        "NumberWorkerRepos":50
+        "NumberWorkerRepos":50,
+        "Org": true
       },
       
       "Github": {
@@ -66,7 +68,8 @@
         "Multithreading":true,
         "Stats": false,
         "Workers": 50 ,
-        "NumberWorkerRepos":50
+        "NumberWorkerRepos":50,
+        "Org": true
       },
 
       "Gitlab": {
@@ -89,7 +92,8 @@
         "Multithreading":true,
         "Stats": false,
         "Workers": 50,
-        "NumberWorkerRepos":50
+        "NumberWorkerRepos":50,
+        "Org": true
       },
       "Azure": {
         "Users": "XXXXX",
@@ -111,7 +115,8 @@
         "Multithreading":true,
         "Stats": false,
         "Workers": 50,
-        "NumberWorkerRepos":50
+        "NumberWorkerRepos":50,
+        "Org": true
       },
       "File": {
         "Organization": "XXXXX",

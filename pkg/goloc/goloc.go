@@ -58,6 +58,7 @@ func NewGCloc(params Params, languages language.Languages) (*GCloc, error) {
 			//fmt.Println(err)
 		}
 	} else {
+
 		path, err = getter.Getter(params.Path)
 		if err != nil {
 			return nil, err

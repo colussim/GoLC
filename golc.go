@@ -266,6 +266,24 @@ func addFileToZip(filePath, relPath string, fileInfo os.FileInfo, zipWriter *zip
 	return nil
 }
 
+// Extract url domain
+func extractDomain(url string) string {
+	// Remove the "http://" or "https://" prefix
+	url = strings.TrimPrefix(url, "https://")
+	url = strings.TrimPrefix(url, "http://")
+
+	// Find the index of the first "/"
+	index := strings.Index(url, "/")
+
+	// If "/" is found, return the part before "/"
+	if index != -1 {
+		return url[:index]
+	}
+
+	// Otherwise, return the entire url (in case there is no "/")
+	return url
+}
+
 // Generic function to analyze repositories
 func AnalyseReposList(DestinationResult string, platformConfig map[string]interface{}, repolist interface{}, analyseRepoFunc func(project interface{}, DestinationResult string, platformConfig map[string]interface{}, spin *spinner.Spinner, results chan int, count *int)) (cpt int) {
 	//fmt.Print("\n🔎 Analysis of Repos ...\n")
@@ -367,17 +385,19 @@ func analyseGithubRepo(project interface{}, DestinationResult string, platformCo
 }
 
 // Analysis functions for GitLab
+
 func analyseGitlabRepo(project interface{}, DestinationResult string, platformConfig map[string]interface{}, spin *spinner.Spinner, results chan int, count *int) {
 	p := project.(getgitlab.ProjectBranch)
 	var excludeExtensions []string
 	excludeExtensions = convertToSliceString(platformConfig["ExtExclusion"].([]interface{}))
+	domain := extractDomain(platformConfig["Url"].(string))
 
 	params := RepoParams{
 		ProjectKey: p.Org,
 		Namespace:  p.Namespace,
 		RepoSlug:   p.RepoSlug,
 		MainBranch: p.MainBranch,
-		PathToScan: fmt.Sprintf("%s://gitlab-ci-token:%s@%s/%s.git", platformConfig["Protocol"].(string), platformConfig["AccessToken"].(string), "gitlab.com", p.Namespace),
+		PathToScan: fmt.Sprintf("%s://gitlab-ci-token:%s@%s/%s.git", platformConfig["Protocol"].(string), platformConfig["AccessToken"].(string), domain, p.Namespace),
 	}
 	performRepoAnalysis(params, DestinationResult, spin, results, count, excludeExtensions)
 }
