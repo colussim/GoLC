@@ -1,5 +1,6 @@
 ![Static Badge](https://img.shields.io/badge/Go-v1.22-blue:)
 
+
 ## Introduction
 
 ![logo](imgs/Logob.png)
@@ -7,15 +8,19 @@
 **GoLC** is a clever abbreviation for "Go Line Counter," drawing inspiration from [CLOC](https://github.com/AlDanial/cloc "AlDanial") and various other line-counting tools in Go like [GCloc](https://github.com/JoaoDanielRufino/gcloc "João Daniel Rufino").
 
 **GoLC** counts physical lines of source code in numerous programming languages across your Bitbucket Cloud, Bitbucket Data Center, GitHub, GitLab, Azure DevOps and local repositories.
+GoLC can be used to estimate LoC counts that would be produced by a SonarQube analysis of these projects, without having to implement this analysis.
 
 GoLC The tool analyzes your repositories and identifies the largest branch of each repository, counting the total number of lines of code per language for that branch. At the end of the analysis, a text and PDF report is generated, along with a JSON results file for each repository.It starts an HTTP service to display an HTML page with the results.
 
-> This version ver1.0.5 is available for Bitbucket Cloud , Bitbucket DC, GitHub , GitLab cloud and On-Premise, Azure DevOps and Files.A Docker version is available.
+> This last version is ver1.0.6 is available for Bitbucket Cloud , Bitbucket DC, GitHub , GitLab cloud and  On-Premise , Azure DevOps and Files.A Docker version is available.
+
 
 ---
 ## Installation
 
-You can install from the stable release by clicking [here](https://github.com/colussim/GoLC/releases/tag/V1.0.5)
+You can install from the stable release by clicking [here](https://github.com/colussim/GoLC/releases/tag/V1.0.6)
+
+
 
 ## Prerequisites 
 
@@ -24,6 +29,7 @@ You can install from the stable release by clicking [here](https://github.com/co
      - Push, pull and clone repositories
   
 * [Go language installed](https://go.dev/) : If you want to use the sources...
+
 
 ## Supported languages
 
@@ -77,6 +83,7 @@ Scala              | .scala                                   | //              
 
  ❗️ To add a new language, you need to add an entry to the Languages structure defined in the file [assets/languages.go](assets/languages.go).
 
+
  ## Usage
 
  ✅ Environment Configuration
@@ -108,7 +115,9 @@ Scala              | .scala                                   | //              
         "Stats": false,
         "Workers": 50,
         "NumberWorkerRepos":50,
-        "Org": true
+        "ResultByFile": false,
+        "ResultAll": true,
+        "Org":true
       },
       "BitBucket": {
         "Users": "xxxxxxxxxxxxxx",
@@ -132,7 +141,9 @@ Scala              | .scala                                   | //              
         "Stats": false,
         "Workers": 50,
         "NumberWorkerRepos":50,
-        "Org": true
+        "ResultByFile": false,
+        "ResultAll": true,
+        "Org":true
       },
       
       "Github": {
@@ -146,7 +157,7 @@ Scala              | .scala                                   | //              
         "DefaultBranch": false,
         "Url": "https://api.github.com/",
         "Apiver": "",
-        "Baseapi": "api.github.com/",
+        "Baseapi": "github.com",
         "Protocol": "https",
         "FileExclusion":".cloc_github_ignore",
         "ExtExclusion":[""],
@@ -156,7 +167,9 @@ Scala              | .scala                                   | //              
         "Stats": false,
         "Workers": 50,
         "NumberWorkerRepos":50,
-        "Org": true
+        "ResultByFile": false,
+        "ResultAll": true,
+        "Org":true
       },
       "Gitlab": {
         "Users": "xxxxxxxxxxxxxx",
@@ -179,7 +192,9 @@ Scala              | .scala                                   | //              
         "Stats": false,
         "Workers": 50,
         "NumberWorkerRepos":50,
-        "Org": true
+        "ResultByFile": false,
+        "ResultAll": true,
+        "Org":true
 
       },
       "Azure": {
@@ -203,7 +218,9 @@ Scala              | .scala                                   | //              
         "Stats": false,
         "Workers": 50,
         "NumberWorkerRepos":50,
-        "Org": true
+        "ResultByFile": false,
+        "ResultAll": true,
+        "Org":true
       },
       "File": {
         "Organization": "xxxxxxxxx",
@@ -211,7 +228,9 @@ Scala              | .scala                                   | //              
         "Directory":"",
         "FileExclusion":".cloc_file_ignore",
         "ExtExclusion":[""],
-        "FileLoad":".cloc_file_load"
+        "FileLoad":".cloc_file_load",
+        "ResultByFile": false,
+        "ResultAll": true
 
       }
     }
@@ -290,10 +309,16 @@ PROJECT_KEY
 
 ❗️ The parameters **'Multithreading'** and **'Workers'** initialize whether multithreading is enabled or not, allowing parallel analysis. You can disable it by setting **'Multithreading'** to **false**. **'Workers'** corresponds to the number of concurrent analyses.These parameters can be adjusted according to the performance of the compute running GoLC.
 
-❗️ The boolean parameters **DefaultBranch**, if set to true, specifies that only the default branch of each repository should be analyzed. If set to false, it will analyze all branches of each repository to determine the most important one.
+❗️ The boolean parameter **DefaultBranch**, if set to true, specifies that only the default branch of each repository should be analyzed. If set to false, it will analyze all branches of each repository to determine the most important one.
 
 ❗️ Exclude extensions
 If you want to exclude files by their extensions, use the parameter **'ExtExclusion'**. For example, if you want to exclude all CSS or JS files : 'ExtExclusion':[".css",".js"],
+
+❗️ Results By File
+If you want results by file rather than globally by language, you need to set the **'ResultByFile'** parameter to true in the **config.json** file. In the **Results** directory, you will then have a JSON file for each analyzed repository containing a list of files with details such as the number of lines of code, comments, etc. Additionally, a PDF file named **complete_report.pdf** will be available in the **Results/reports** directory. To generate this report, you need to run the **ResultByfiles** program.
+
+❗️ Results All
+Results ALL is the default report format.It generates a report for by language and a report for by file. The variable to initialize this mode is **'ResultAll'**, which is set to true in the configuration file **config.json.**"
 
 ❗️ The boolean parameter **Org**, if set to true, will run the analysis on an organization. If set to false, it will run on a user account. The **Organization** parameter should be set to your personal account. This functionality is available for GitHub.
 
@@ -322,7 +347,7 @@ $:> golc -devops BitBucket
 
 ✅ The number of project(s) to analyze is 8
 
-        🟢  Analyse Projet: test2 
+         🟢  Analyse Projet: test2 
           ✅ The number of Repositories found is: 1
 
         🟢  Analyse Projet: tests 
@@ -340,6 +365,7 @@ $:> golc -devops BitBucket
         ✅ Repo: sonarqube-scan - Number of branches: 7
         ✅ Repo: sonarqube-quality-gate - Number of branches: 2
          ........
+
 
 ✅ The largest repo is <sample-nodejs-project> in the project <SAMPLES> with the branch <demo-app-week> and a size of 425.45 KB
 
@@ -364,9 +390,9 @@ Extracting files from repo : testempty
 
 🔎 Analyse Report ...
 
-✅ Number of Repository analyzed in Organization <techlabsnews> is 11 
+✅ Number of Repository analyzed in Organization <sonar-demo> is 11 
 ✅ The repository with the largest line of code is in project <CLOC> the repo name is <gcloc> with <2.05M> lines of code
-✅ The total sum of lines of code in Organization <techlabsnews> is : 2.06M Lines of Code
+✅ The total sum of lines of code in Organization <sonar-demo> is : 2.06M Lines of Code
 
 
 ✅ Reports are located in the <'Results'> directory
@@ -379,19 +405,20 @@ $:>
 
 ```
 
-
 ✅ Run on Windows
 
 For execution on Windows, it is preferable to use PowerShell.
 
 ```
-PS C:\Users\ecadmin\golc> .\golc.exe -devops File
+PS C:\Users\ecadmin\sonar-golc> .\golc.exe -devops File
 
 ✅ Using configuration for DevOps platform 'File'
-❗️ Directory <'C:\Users\ecadmin\golc\Results'> already exists. Do you want to delete it? (y/n): y
+❗️ Directory <'C:\Users\ecadmin\sonar-golc\Results'> already exists. Do you want to delete it? (y/n): y
 ❗️ Do you want to create a backup of the directory before deleting? (y/n): n
 
 🔎 Analysis of Directories ...
+ Extracting files from sonar-golc
+OutputName: Result_sonar-golc
 
         ✅ json report exported to Results\Result_sonar-golc.json
         ✅ 1 The directory <c:\Users\ecadmin\Picktalk> has been analyzed
@@ -412,19 +439,37 @@ PS C:\Users\ecadmin\sonar-golc>
 ```
 
 
-✅ Run Report
+✅ Reports
 
-To generate a comprehensive PDF report and view the results on a web interface, you need to launch the '**ResultsAll**' program.
+The report files are created in PDF, JSON, and CSV formats for the report by files.
 
-The '**ResultsAll**' program generates a 'GlobalReport.pdf' file in the 'Results' directory. It prompts you if you want to view the results on a web interface.It starts an HTTP service on the default port 8080. If this port is in use, you can choose another port.
+```bash
+Results
+├── Byfile-report
+│   ├── csv-report
+│   │   └── Result……_byfile.csv
+│   ├── pdf-report
+│   │   └── Result……_byfile.pdf
+│   └── Result……_byfile.json
+└── Bylanguage-report
+│   ├── csv-report
+│   ├── pdf-report
+│   └── Result……_.json
+├── GlobalReport.json
+├── GlobalReport.pdf
+├── GlobalReport.txt
+```
+
+
+To view the results on a web interface, you need to launch the '**ResultsAll**' program.
+
+The '**ResultsAll**' program prompts you if you want to view the results on a web interface.It starts an HTTP service on the default port 8080. If this port is in use, you can choose another port.
 To stop the local HTTP service, press the Ctrl+C keys
 
 
 ```bash
 $:> ./ResultsAll
 
-✅ Results analysis recorded in Results/code_lines_by_language.json
-✅ PDF generated successfully!
 Would you like to launch web visualization? (Y/N)
 ✅ Launching web visualization...
 ❗️ Port 8080 is already in use.
@@ -434,6 +479,8 @@ Would you like to launch web visualization? (Y/N)
 $:> 
 ```
 
+From the web interface, you have the option to download the report files in ZIP format.
+
 ✅  Web UI
 
 ![webui](imgs/webui.png)
@@ -442,14 +489,19 @@ $:>
 
 ![report](imgs/report.png)
 
----
+Report By file :
+
+![report](imgs/reportbyfiles.png)
+
+
+
 ## Usage with Docker image
 
 **GoLC** docker images support running both on the amd64 architecture and on arm64-based Apple Silicon.
 
 ✅ Pull Images
 
- ```bash
+```bash
 :> docker pull mcolussi/golc
 :> docker pull mcolussi/resultsall
 ```
@@ -461,8 +513,9 @@ You need a persistent volume or to map a local directory to store the analysis r
       - Results: contains the analysis files
 
 ✅ Running the container: 
+
  ```bash
-:> docker run --rm -v /custom/Results_volume:/app/Results -v /custom/config.json:/app/config.json golc:arm64-1.0.3 -devops Github -docker
+:> docker run --rm -v /custom/Results_volume:/app/Results -v /custom/config.json:/app/config.json golc:arm64-1.0.6 -devops Github -docker
 
 ✅ Using configuration for DevOps platform 'Github'
 Running in Docker mode
@@ -506,11 +559,9 @@ Running in Docker mode
  You need to map the volume previously used for the analysis and map an available port for web access.
 
 ```
-:> docker run --rm -p 8090:8090 -v /custom/Results_volume:/app/Results resultsall:arm64-1.0.3
+:> docker run --rm -p 8090:8090 -v /custom_Results_volume:/app/Results resultsall:arm64-1.0.6
 
 
-✅ Results analysis recorded in Results/code_lines_by_language.json
-✅ PDF generated successfully!
 ✅ Launching web visualization...
 ✅ Server started on http://localhost:8090
 ✅ please type < Ctrl+C> to stop the server
@@ -580,13 +631,15 @@ You can refer to this log file to troubleshoot issues, monitor the application's
 
   ```
 
+
 ## Future Features
 
 We are continuously working to enhance and expand the functionality of our application. Here are some of the upcoming features you can look forward to:
 
 - **Improved Exclusion Patterns**: Enhancements to the exclusion patterns to provide more precise and flexible control over what is included or excluded in various operations.
-- **Additional Integrations**: Beyond GitLab, we are exploring support for other platforms and services to broaden the scope of our integrations and offer more flexibility to our users.
+- **Additional Integrations**: We are exploring support for other platforms and services to broaden the scope of our integrations and offer more flexibility to our users.
 - **Improved User Interface**: Enhancements to the user interface to provide a more intuitive and user-friendly experience.
 - **Performance Optimizations**: Ongoing efforts to optimize the performance and scalability of the application to handle larger workloads more efficiently.
+- **Security Enhancements**: Continued focus on strengthening the security of the application to protect user data and ensure privacy.
 
 Stay tuned for updates as we roll out these new features and improvements!

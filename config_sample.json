@@ -9,7 +9,7 @@
         "Repos": "",
         "Branch": "",
         "DefaultBranch": true,
-        "Url": "XXXXXXX",
+        "Url": "http://ec2-18-194-139-24.eu-central-1.compute.amazonaws.com:7990/",
         "Apiver": "1.0",
         "Baseapi": "rest/api/",
         "Protocol": "http",
@@ -21,7 +21,9 @@
         "Stats": false,
         "Workers": 50,
         "NumberWorkerRepos":50,
-        "Org": true
+        "ResultByFile": false,
+        "ResultAll": true,
+        "Org":true
       },
       "BitBucket": {
         "Users": "XXXXX",
@@ -45,7 +47,9 @@
         "Stats": false,
         "Workers": 50,
         "NumberWorkerRepos":50,
-        "Org": true
+        "ResultByFile": false,
+        "ResultAll": true,
+        "Org":true
       },
       
       "Github": {
@@ -69,7 +73,9 @@
         "Stats": false,
         "Workers": 50 ,
         "NumberWorkerRepos":50,
-        "Org": true
+        "ResultByFile": false,
+        "ResultAll": true,
+        "Org":true
       },
 
       "Gitlab": {
@@ -93,7 +99,9 @@
         "Stats": false,
         "Workers": 50,
         "NumberWorkerRepos":50,
-        "Org": true
+        "ResultByFile": false,
+        "ResultAll": true,
+        "Org":true
       },
       "Azure": {
         "Users": "XXXXX",
@@ -109,22 +117,26 @@
         "Baseapi": "_apis/git/",
         "Protocol": "https",
         "FileExclusion":".cloc_azure_ignore",
-       "ExtExclusion":[""],
+        "ExtExclusion":[""],
         "Period":-1,
         "Factor":33,
         "Multithreading":true,
         "Stats": false,
         "Workers": 50,
         "NumberWorkerRepos":50,
-        "Org": true
+        "ResultByFile": false,
+        "ResultAll": true,
+        "Org":true
       },
       "File": {
         "Organization": "XXXXX",
         "DevOps": "file",
-        "Directory":"",
+        "Directory":"../gcloc_m/.",
         "FileExclusion":".cloc_file_ignore",
         "ExtExclusion":[""],
-        "FileLoad":".cloc_file_load"
+        "FileLoad":".cloc_file_load",
+        "ResultByFile": false,
+        "ResultAll": true
 
       }
     },

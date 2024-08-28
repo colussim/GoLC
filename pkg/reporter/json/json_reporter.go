@@ -75,8 +75,9 @@ func (j JsonReporter) GenerateReportByFile(summary *sorter.SortedSummary) error 
 	}
 
 	for _, r := range summary.Results {
+		cleanedName := utils.CleanFileName(r.Name)
 		jsonReport.Results = append(jsonReport.Results.([]fileResult), fileResult{
-			File:       r.Name,
+			File:       cleanedName,
 			Lines:      r.Lines,
 			BlankLines: r.BlankLines,
 			Comments:   r.Comments,
@@ -104,8 +105,7 @@ func (j JsonReporter) writeJson(jsonReport *report) error {
 		return err
 	}
 
-	//fmt.Printf("\n\t✅ json report exported to %s\n", path)
-	loggers.Infof("\r\t✅ json report exported to %s", path)
+	loggers.Infof("\t✅ json report exported to %s", path)
 
 	return nil
 }
