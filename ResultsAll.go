@@ -210,39 +210,39 @@ func main() {
 		json.NewEncoder(w).Encode(globalInfo)
 	})
 
-	fmt.Println("Would you like to launch web visualization? (Y/N)")
+	/*fmt.Println("Would you like to launch web visualization? (Y/N)")
 	var launchWeb string
-	fmt.Scanln(&launchWeb)
+	fmt.Scanln(&launchWeb)*/
 
-	if launchWeb == "Y" || launchWeb == "y" {
-		fmt.Println("✅ Launching web visualization...")
-		http.Handle("/dist/", http.StripPrefix("/dist/", http.FileServer(http.Dir("dist"))))
+	//if launchWeb == "Y" || launchWeb == "y" {
+	fmt.Println("✅ Launching web visualization...")
+	http.Handle("/dist/", http.StripPrefix("/dist/", http.FileServer(http.Dir("dist"))))
 
-		if isPortOpen(8080) {
-			fmt.Println("❗️ Port 8080 is already in use.")
-			reader := bufio.NewReader(os.Stdin)
+	if isPortOpen(8080) {
+		fmt.Println("❗️ Port 8080 is already in use.")
+		reader := bufio.NewReader(os.Stdin)
 
-			fmt.Print("✅ Please enter the port you wish to use : ")
-			portStr, _ := reader.ReadString('\n')
-			portStr = strings.TrimSpace(portStr)
-			port, err := strconv.Atoi(portStr)
-			if err != nil {
-				fmt.Println("❌ Invalid port...")
-				os.Exit(1)
-			}
-			if isPortOpen(port) {
-				fmt.Printf("❌ Port %d is already in use...\n", port)
-				os.Exit(1)
-			} else {
-				startServer(port)
-			}
+		fmt.Print("✅ Please enter the port you wish to use : ")
+		portStr, _ := reader.ReadString('\n')
+		portStr = strings.TrimSpace(portStr)
+		port, err := strconv.Atoi(portStr)
+		if err != nil {
+			fmt.Println("❌ Invalid port...")
+			os.Exit(1)
+		}
+		if isPortOpen(port) {
+			fmt.Printf("❌ Port %d is already in use...\n", port)
+			os.Exit(1)
 		} else {
-			startServer(8080)
+			startServer(port)
 		}
 	} else {
+		startServer(8080)
+	}
+	/*} else {
 		fmt.Println("Exiting...")
 		os.Exit(0)
-	}
+	} */
 }
 
 // HTML template

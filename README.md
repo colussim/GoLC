@@ -557,13 +557,14 @@ Running in Docker mode
 
  Now we can start generating the report with the **resultsall** container.
  You need to map the volume previously used for the analysis and map an available port for web access.
+ The default port is 8080.
 
 ```
-:> docker run --rm -p 8090:8090 -v /custom_Results_volume:/app/Results resultsall:arm64-1.0.6
+:> docker run --rm -p 8080:8080 -v /custom_Results_volume:/app/Results resultsall:arm64-1.0.6
 
 
 ✅ Launching web visualization...
-✅ Server started on http://localhost:8090
+✅ Server started on http://localhost:8080
 ✅ please type < Ctrl+C> to stop the server
 ```
 
