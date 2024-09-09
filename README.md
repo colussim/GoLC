@@ -108,7 +108,8 @@ Scala              | .scala                                   | //              
         "Baseapi": "rest/api/",
         "Protocol": "http",
         "FileExclusion":".cloc_bitbucketdc_ignore",
-        "ExtExclusion":[""],
+        "ExtExclusion":[],
+        "ExcludePaths":[],
         "Period":-1,
         "Factor":33,
         "Multithreading":true,
@@ -134,7 +135,8 @@ Scala              | .scala                                   | //              
         "Baseapi": "bitbucket.org",
         "Protocol": "http",
         "FileExclusion":".cloc_bitbucket_ignore",
-        "ExtExclusion":[""],
+        "ExtExclusion":[],
+        "ExcludePaths":[],
         "Period":-1,
         "Factor":33,
         "Multithreading":true,
@@ -160,7 +162,8 @@ Scala              | .scala                                   | //              
         "Baseapi": "github.com",
         "Protocol": "https",
         "FileExclusion":".cloc_github_ignore",
-        "ExtExclusion":[""],
+        "ExtExclusion":[],
+        "ExcludePaths":[],
         "Period":-1,
         "Factor":33,
         "Multithreading":true,
@@ -185,7 +188,8 @@ Scala              | .scala                                   | //              
         "Baseapi": "api/",
         "Protocol": "https",
         "FileExclusion":".cloc_gitlab_ignore",
-        "ExtExclusion":[""],
+        "ExtExclusion":[],
+        "ExcludePaths":[],
         "Period":-1,
         "Factor":33,
         "Multithreading":true,
@@ -211,7 +215,8 @@ Scala              | .scala                                   | //              
         "Baseapi": "_apis/git/",
         "Protocol": "https",
         "FileExclusion":".cloc_azure_ignore",
-        "ExtExclusion":[""],
+        "ExtExclusion":[],
+        "ExcludePaths":[],
         "Period":-1,
         "Factor":33,
         "Multithreading":true,
@@ -321,6 +326,10 @@ If you want results by file rather than globally by language, you need to set th
 Results ALL is the default report format.It generates a report for by language and a report for by file. The variable to initialize this mode is **'ResultAll'**, which is set to true in the configuration file **config.json.**"
 
 ❗️ The boolean parameter **Org**, if set to true, will run the analysis on an organization. If set to false, it will run on a user account. The **Organization** parameter should be set to your personal account. This functionality is available for GitHub.
+
+❗️ Exclude directories.
+To exclude directories from your repository from the analysis, initialize the variable **'ExcludePaths': ['']**. For example, to exclude two directories: **'ExcludePaths': ['test1', 'pkg/test2']**.
+
 
  ✅ Run GoLC
 
@@ -524,24 +533,24 @@ Running in Docker mode
 🔎 Analysis of devops platform objects ...
  Repos saved successfully!
           ✅ The number of Repo(s) found is: 1
-                ✅ 1 Repo: sonar-golc - Number of branches: 4 - largest Branch: ver1.0.3 
+                ✅ 1 Repo: GoLC - Number of branches: 4 - largest Branch: ver1.0.3 
 ✅ Result saved successfully!
 
-✅ The largest Repository is <sonar-golc> in the organization <SonarSource-Demos> with the branch <ver1.0.3> 
+✅ The largest Repository is <GoLC> in the organization <techlabnews> with the branch <ver1.0.3> 
 ✅ Total Repositories that will be analyzed: 1 - Find empty : 0 - Excluded : 0 - Archived : 0
 ✅ Total Branches that will be analyzed: 4
 
 🔎 Analysis of Repos ...
  Waiting for workers...
                                                                                                  
-        ✅ json report exported to /app/Results/Result_SonarSource-Demos_sonar-golc_ver1.0.3.json
+        ✅ json report exported to /app/Results/Result_techlabnews-GoLC_ver1.0.3.json
 ✅ 2 The repository <sonar-golc> has been analyzed
 
 🔎 Analyse Report ...
 
-✅ Number of Repository analyzed in Organization <SonarSource-Demos> is 1 
-✅ The repository with the largest line of code is in project <SonarSource-Demos> the repo name is <sonar-golc> with <41.48K> lines of code
-✅ The total sum of lines of code in Organization <SonarSource-Demos> is : 41.48K Lines of Code
+✅ Number of Repository analyzed in Organization <techlabnews> is 1 
+✅ The repository with the largest line of code is in project <techlabnews> the repo name is <GoLC> with <41.48K> lines of code
+✅ The total sum of lines of code in Organization <techlabnews> is : 41.48K Lines of Code
 
 
 ✅ Reports are located in the <'Results'> directory
