@@ -284,7 +284,6 @@ func GetReposGithub(parms ParamsReposGithub, ctx context.Context, client *github
 	spin1.Color("green", "bold")
 
 	message4 := "Repo(s)"
-	//fmt.Printf("\t  ✅ The number of %s found is: %d\n", message4, parms.NBRepos)
 	loggers.Infof("\t  ✅ The number of %s found is: %d\n", message4, parms.NBRepos)
 
 	for _, repo := range parms.Repos {
@@ -294,7 +293,6 @@ func GetReposGithub(parms ParamsReposGithub, ctx context.Context, client *github
 			continue
 		}
 		if len(parms.ExclusionList) != 0 && shouldIgnore(repoName, parms.ExclusionList) {
-			//fmt.Printf("\t   ✅ Skipping analysis for repository '%s' as per ignore list.\n", repoName)
 			loggers.Infof("\t   ✅ Skipping analysis for repository '%s' as per ignore list.\n", repoName)
 			notAnalyzedCount++
 			continue
@@ -324,7 +322,6 @@ func GetReposGithub(parms ParamsReposGithub, ctx context.Context, client *github
 		ProjectBranches: importantBranches,
 	}
 	if err := SaveResult(result); err != nil {
-		//fmt.Println("❌ Error Save Result of Analysis :", err)
 		loggers.Errorf("❌ Error Save Result of Analysis :", err)
 		os.Exit(1)
 	}
@@ -381,7 +378,6 @@ func analyzeRepoBranches(parms ParamsReposGithub, ctx context.Context, client *g
 		// If DefaultBranch is false and branch name is not provided, get all branches
 		branches, err = getAllBranches(ctx, client, *repo.Name, parms.Organization, opt)
 		if err != nil {
-			//fmt.Printf("❌ Error when retrieving branches for repo %v: %v\n", *repo.Name, err)
 			loggers.Errorf("❌ Error when retrieving branches for repo %v: %v\n", *repo.Name, err)
 			spin1.Stop()
 			return "", nil
@@ -392,18 +388,17 @@ func analyzeRepoBranches(parms ParamsReposGithub, ctx context.Context, client *g
 
 	allEvents, err = getAllEvents(ctx, client, *repo.Name, parms.Organization)
 	if err != nil {
-		//	fmt.Println("❌ Error fetching repository events:", err)
 		loggers.Errorf("❌ Error fetching repository events:", err)
 		spin1.Stop()
 		return "", nil
 	}
 
-	branchPushes = countBranchPushes(allEvents, parms.Period)
-	analyzeBranches(ctx, client, parms, *repo.Name, branchPushes)
-
+	if !parms.DefaultB {
+		branchPushes = countBranchPushes(allEvents, parms.Period)
+		analyzeBranches(ctx, client, parms, *repo.Name, branchPushes)
+	}
 	spin1.Stop()
 
-	//fmt.Printf("\r\t\t✅ %d Repo: %s - Number of branches: %d - largest Branch: %s \n", cpt, *repo.Name, nbrbranche, largestRepoBranch)
 	loggers.Infof("\r\t\t\t\t✅ %d Repo: %s - Number of branches: %d - largest Branch: %s ", cpt, *repo.Name, nbrbranche, largestRepoBranch)
 
 	return largestRepoBranch, branches
@@ -590,7 +585,6 @@ func GetRepoGithubList(platformConfig map[string]interface{}, exclusionfile stri
 	opt := &github.RepositoryListByOrgOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
-
 	opt1 := &github.RepositoryListByAuthenticatedUserOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 		Affiliation: "owner",
@@ -702,7 +696,6 @@ func fetchAllRepositories(ctx context.Context, client *github.Client, organizati
 	var repositories []*github.Repository
 	loggers := utils.NewLogger()
 	for {
-
 		repos, resp, err := client.Repositories.ListByOrg(ctx, organization, opt)
 		if err != nil {
 			loggers.Errorf("❌ Error fetching repositories: %v\n", err)
@@ -763,9 +756,6 @@ func findLargestRepository(importantBranches []ProjectBranch, totalSize *int64) 
 
 func printSummary(config PlatformConfig, stats SummaryStats) {
 	loggers := utils.NewLogger()
-	//fmt.Printf("\n✅ The largest Repository is <%s> in the organization <%s> with the branch <%s> \n", stats.LargestRepo, config.Organization, stats.LargestRepoBranch)
-	//fmt.Printf("\r✅ Total Repositories that will be analyzed: %d - Find empty : %d - Excluded : %d - Archived : %d\n", stats.NbRepos-stats.EmptyRepo-stats.TotalExclude-stats.TotalArchiv, stats.EmptyRepo, stats.TotalExclude, stats.TotalArchiv)
-	//fmt.Printf("\r✅ Total Branches that will be analyzed: %d\n", stats.TotalBranches)
 
 	fmt.Printf("\n")
 	loggers.Infof("✅ The largest Repository is <%s> in the organization <%s> with the branch <%s> ", stats.LargestRepo, config.Organization, stats.LargestRepoBranch)

@@ -118,7 +118,8 @@ Scala              | .scala                                   | //              
         "NumberWorkerRepos":50,
         "ResultByFile": false,
         "ResultAll": true,
-        "Org":true
+        "Org":true,
+        "Zip":false
       },
       "BitBucket": {
         "Users": "xxxxxxxxxxxxxx",
@@ -145,7 +146,8 @@ Scala              | .scala                                   | //              
         "NumberWorkerRepos":50,
         "ResultByFile": false,
         "ResultAll": true,
-        "Org":true
+        "Org":true,
+        "Zip":false
       },
       
       "Github": {
@@ -172,7 +174,8 @@ Scala              | .scala                                   | //              
         "NumberWorkerRepos":50,
         "ResultByFile": false,
         "ResultAll": true,
-        "Org":true
+        "Org":true,
+        "Zip":false
       },
       "Gitlab": {
         "Users": "xxxxxxxxxxxxxx",
@@ -198,7 +201,8 @@ Scala              | .scala                                   | //              
         "NumberWorkerRepos":50,
         "ResultByFile": false,
         "ResultAll": true,
-        "Org":true
+        "Org":true,
+        "Zip":false
 
       },
       "Azure": {
@@ -225,7 +229,8 @@ Scala              | .scala                                   | //              
         "NumberWorkerRepos":50,
         "ResultByFile": false,
         "ResultAll": true,
-        "Org":true
+        "Org":true,
+        "Zip":false
       },
       "File": {
         "Organization": "xxxxxxxxx",
@@ -329,6 +334,10 @@ Results ALL is the default report format.It generates a report for by language a
 
 ❗️ Exclude directories.
 To exclude directories from your repository from the analysis, initialize the variable **'ExcludePaths': ['']**. For example, to exclude two directories: **'ExcludePaths': ['test1', 'pkg/test2']**.
+
+❗️ The parameters **Zip**
+
+The Zip parameter improves performance if you have very large repositories.To enable it, you need to set it to true.
 
 
  ✅ Run GoLC

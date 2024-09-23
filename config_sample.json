@@ -14,7 +14,7 @@
         "Baseapi": "rest/api/",
         "Protocol": "http",
         "FileExclusion":".cloc_bitbucketdc_ignore",
-       "ExtExclusion":[],
+        "ExtExclusion":[],
         "ExcludePaths":[],
         "Period":-5,
         "Factor":33,
@@ -24,7 +24,8 @@
         "NumberWorkerRepos":30,
         "ResultByFile": false,
         "ResultAll": true,
-        "Org":true
+        "Org":true,
+        "Zip":false
       },
       "BitBucket": {
         "Users": "XXXXX",
@@ -51,7 +52,8 @@
         "NumberWorkerRepos":30,
         "ResultByFile": false,
         "ResultAll": true,
-        "Org":true
+        "Org":true,
+        "Zip":false
       },
       
       "Github": {
@@ -68,7 +70,7 @@
         "Baseapi": "github.com",
         "Protocol": "https",
         "FileExclusion":".cloc_github_ignore",
-       "ExtExclusion":[],
+        "ExtExclusion":[],
         "ExcludePaths":[],
         "Period":-1,
         "Factor":33,
@@ -78,7 +80,8 @@
         "NumberWorkerRepos":30,
         "ResultByFile": false,
         "ResultAll": true,
-        "Org":true
+        "Org":true,
+        "Zip":false
       },
 
       "Gitlab": {
@@ -95,7 +98,7 @@
         "Baseapi": "api/",
         "Protocol": "https",
         "FileExclusion":".cloc_gitlab_ignore",
-       "ExtExclusion":[],
+        "ExtExclusion":[],
         "ExcludePaths":[],
         "Period":-1,
         "Factor":33,
@@ -105,7 +108,8 @@
         "NumberWorkerRepos":30,
         "ResultByFile": false,
         "ResultAll": true,
-        "Org":true
+        "Org":true,
+        "Zip":false
       },
       "Azure": {
         "Users": "XXXXX",
@@ -131,7 +135,8 @@
         "NumberWorkerRepos":30,
         "ResultByFile": false,
         "ResultAll": true,
-        "Org":true
+        "Org":true,
+        "Zip":false
       },
       "File": {
         "Organization": "XXXXX",
