@@ -860,6 +860,7 @@ func isRepoExcluded(exclusionList *utils.ExclusionList, repo string) bool {
 
 func fetchAllRepos(url string, accessToken string, exclusionList *utils.ExclusionList) ([]Repo, error) {
 	var allRepos []Repo
+	initUrl := url
 	for {
 		reposResp, err := fetchRepos(url, accessToken, true)
 		if err != nil {
@@ -882,7 +883,7 @@ func fetchAllRepos(url string, accessToken string, exclusionList *utils.Exclusio
 		if ReposResponse.IsLastPage {
 			break
 		}
-		url = fmt.Sprintf(Startopt, url, ReposResponse.NextPageStart)
+		url = fmt.Sprintf(Startopt, initUrl, ReposResponse.NextPageStart)
 	}
 	return allRepos, nil
 }
