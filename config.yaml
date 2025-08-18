@@ -1,0 +1,222 @@
+# ==============================
+# GoLC Configuration (YAML)
+# ==============================
+# Remarque sécurité :
+# - Préfère la section `Secret:` plutôt que `AccessToken:` en clair.
+# - Si tu gardes `AccessToken`, ne commit jamais ce fichier avec des secrets.
+# - Les ${ENV} sont supportées (ex: "${GOLC_GITHUB_TOKEN}").
+
+platforms:
+  BitBucketSRV:
+    Users: "XXXXX"
+    # 1) Option historique : token en clair OU via ${ENV}
+    AccessToken: "${GOLC_BITBUCKETSRV_TOKEN}"
+    # 2) Option recommandée : Secret Manager / Keystore (si présent, il a priorité)
+    #    Choisir UN seul type parmi env|file|keyring|vault
+    Secret:
+      type: env         # env|file|keyring|vault
+      name: GOLC_BITBUCKETSRV_TOKEN   # pour type=env
+      # path: /run/secrets/bitbucketdc_token   # pour type=file
+      # service: golc                           # pour type=keyring
+      # user: bitbucketdc-token                 # pour type=keyring
+      # addr: https://vault.internal:8200       # pour type=vault
+      # path: kv/data/golc/bitbucketdc          # pour type=vault (chemin secret)
+      # field: token                             # pour type=vault (clé à extraire)
+
+    Organization: "XXXXX"
+    DevOps: "bitbucket_dc"
+    Project: ""
+    Repos: ""
+    Branch: ""
+    DefaultBranch: true
+    Url: "http://ec2-18-194-139-24.eu-central-1.compute.amazonaws.com:7990/"
+    Apiver: "1.0"
+    Baseapi: "rest/api/"
+    Protocol: "http"
+    FileExclusion: ".cloc_bitbucketdc_ignore"
+    ExtExclusion: []
+    ExcludePaths: []
+    Period: -5
+    Factor: 33
+    Multithreading: true
+    Stats: false
+    Workers: 30
+    NumberWorkerRepos: 30
+    ResultByFile: false
+    ResultAll: true
+    Org: true
+    Zip: false
+
+  BitBucket:
+    Users: "XXXXX"
+    AccessToken: "${GOLC_BITBUCKET_TOKEN}"
+    Secret:
+      type: env
+      name: GOLC_BITBUCKET_TOKEN
+      # path: /run/secrets/bitbucket_token
+      # service: golc
+      # user: bitbucket-token
+      # addr: https://vault.internal:8200
+      # path: kv/data/golc/bitbucket
+      # field: token
+
+    Organization: "XXXXX"
+    DevOps: "bitbucket"
+    Workspace: "XXXXX"
+    Project: ""
+    Repos: ""
+    Branch: ""
+    DefaultBranch: false
+    Url: "https://api.bitbucket.org/"
+    Apiver: "2.0"
+    Baseapi: "bitbucket.org"
+    Protocol: "https"
+    FileExclusion: ".cloc_bitbucket_ignore"
+    ExtExclusion: []
+    ExcludePaths: []
+    Period: -1
+    Factor: 33
+    Multithreading: true
+    Stats: false
+    Workers: 30
+    NumberWorkerRepos: 30
+    ResultByFile: false
+    ResultAll: true
+    Org: true
+    Zip: false
+
+  Github:
+    Users: "XXXXX"
+    AccessToken: "${GOLC_GITHUB_TOKEN}"
+    Secret:
+      type: env
+      name: GOLC_GITHUB_TOKEN
+      # path: /run/secrets/github_token
+      # service: golc
+      # user: github-token
+      # addr: https://vault.internal:8200
+      # path: kv/data/golc/github
+      # field: token
+
+    Organization: "XXXXX"
+    DevOps: "github"
+    Project: ""
+    Repos: ""
+    Branch: ""
+    DefaultBranch: true
+    Url: "https://api.github.com/"
+    Apiver: "2022-11-28"
+    Baseapi: "github.com"
+    Protocol: "https"
+    FileExclusion: ".cloc_github_ignore"
+    ExtExclusion: []
+    ExcludePaths: []
+    Period: -1
+    Factor: 33
+    Multithreading: true
+    Stats: false
+    Workers: 30
+    NumberWorkerRepos: 30
+    ResultByFile: false
+    ResultAll: true
+    Org: true
+    Zip: false
+
+  Gitlab:
+    Users: "XXXXX"
+    AccessToken: "${GOLC_GITLAB_TOKEN}"
+    Secret:
+      type: env
+      name: GOLC_GITLAB_TOKEN
+      # path: /run/secrets/gitlab_token
+      # service: golc
+      # user: gitlab-token
+      # addr: https://vault.internal:8200
+      # path: kv/data/golc/gitlab
+      # field: token
+
+    Organization: "XXXXX"
+    DevOps: "gitlab"
+    Project: ""
+    Repos: ""
+    Branch: ""
+    DefaultBranch: false
+    Url: "https://gitlab.com/"
+    Apiver: "v4"
+    Baseapi: "api/"
+    Protocol: "https"
+    FileExclusion: ".cloc_gitlab_ignore"
+    ExtExclusion: []
+    ExcludePaths: []
+    Period: -1
+    Factor: 33
+    Multithreading: true
+    Stats: false
+    Workers: 30
+    NumberWorkerRepos: 30
+    ResultByFile: false
+    ResultAll: true
+    Org: true
+    Zip: false
+
+  Azure:
+    Users: "XXXXX"
+    AccessToken: "${GOLC_AZURE_TOKEN}"
+    Secret:
+      type: env
+      name: GOLC_AZURE_TOKEN
+      # path: /run/secrets/azure_token
+      # service: golc
+      # user: azure-token
+      # addr: https://vault.internal:8200
+      # path: kv/data/golc/azure
+      # field: token
+
+    Organization: "XXXXX"
+    DevOps: "azure"
+    Project: ""
+    Repos: ""
+    Branch: ""
+    DefaultBranch: false
+    Url: "https://dev.azure.com/"
+    Apiver: "7.1"
+    Baseapi: "_apis/git/"
+    Protocol: "https"
+    FileExclusion: ".cloc_azure_ignore"
+    ExtExclusion: []
+    ExcludePaths: []
+    Period: -1
+    Factor: 33
+    Multithreading: true
+    Stats: false
+    Workers: 30
+    NumberWorkerRepos: 30
+    ResultByFile: false
+    ResultAll: true
+    Org: true
+    Zip: false
+
+  File:
+    Organization: "XXXXX"
+    DevOps: "file"
+    Directory: "../gcloc_m/."
+    FileExclusion: ".cloc_file_ignore"
+    ExtExclusion: [""]
+    FileLoad: ".cloc_file_load"
+    ResultByFile: false
+    ResultAll: true
+
+Release:
+  Version: "1.0.7"
+
+Logging:
+  Level: "info"          # trace|debug|info|warn|error|fatal
+  Format: "json"         # json|text (pour le fichier; la console reste en text)
+  ToFile: true           # active l’écriture fichier
+  Dir: "Logs"            # dossier (créé si absent)
+  File: ""               # (optionnel) nom de fichier; si vide => golc-YYYYMMDD-HHMM.log
+  Rotation:              # (optionnel) nécessite lumberjack
+    MaxSizeMB: 50
+    MaxBackups: 7
+    MaxAgeDays: 30
+    Compress: true
